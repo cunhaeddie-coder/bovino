@@ -29,6 +29,7 @@ use App\Http\Controllers\Api\PlanoController;
 use App\Http\Controllers\Api\FazendaController;
 use App\Http\Controllers\Api\VisitaController;
 use App\Http\Controllers\Api\GestaoSugestaoController;
+use App\Http\Controllers\Api\GoogleAuthController;
 use App\Http\Controllers\Api\WebhookController;
 use Illuminate\Support\Facades\Route;
 
@@ -65,6 +66,8 @@ Route::prefix('auth')->group(function () {
     Route::post('login', [AuthController::class, 'login']);
     Route::post('otp/enviar', [AuthController::class, 'enviarOtp']);
     Route::post('otp/verificar', [AuthController::class, 'verificarOtp']);
+    Route::get('google', [GoogleAuthController::class, 'redirect']);
+    Route::get('google/callback', [GoogleAuthController::class, 'callback']);
 });
 
 // Anunciante — autenticação separada (guard anunciante via sanctum)
