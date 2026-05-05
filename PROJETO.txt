@@ -1,0 +1,955 @@
+================================================================================
+  BOVINO — PLATAFORMA AGRO: MARKETPLACE + GESTÃO PECUÁRIA
+  Estrutura Técnica Completa e Contexto do Projeto
+  Atualizado: 2026-04-22
+================================================================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  1. VISÃO GERAL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Plataforma SaaS com dois eixos principais:
+
+  A) MARKETPLACE — compra e venda de gado no Brasil, com chat de negociação,
+     alertas de demanda, cotações @arroba em tempo real e inteligência de mercado.
+
+  B) GESTÃO PECUÁRIA — módulo completo para o produtor gerenciar sua fazenda:
+     rebanho, saúde, pesagens, financeiro, estoque, equipe, pasto e curral.
+
+  Perfis de usuário:
+    - Comprador       → busca, negocia, cria alertas de demanda
+    - Produtor        → anuncia, gerencia fazenda (Premium+)
+    - Anunciante B2B  → veiculação de banners/campanhas
+    - Admin           → painel interno com 5 roles (super/operador/ti/vendas/treinamento)
+
+  Repositório raiz: c:\laragon\www\bovino\
+  Ambiente local:   Laragon (Windows 11) + PHP 8.3.30 + MySQL
+
+  Submódulos:
+    /api    → Backend Laravel 11      (porta 8000)
+    /web    → Frontend Next.js 16     (porta 3000) — app usuário final
+    /admin  → Frontend Next.js 16     (porta 3001) — painel administrativo
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  2. STACK TECNOLÓGICO
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  BACKEND (api/)
+  ├── Laravel 11 + PHP 8.3
+  ├── Laravel Sanctum      — autenticação Bearer token (multi-guard)
+  ├── MySQL                — banco principal
+  ├── QUEUE_CONNECTION=database — fila assíncrona para webhooks
+  ├── MercadoPago (HTTP)   — gateway de pagamento (sem SDK, Http::post direto)
+  ├── Anthropic API (HTTP) — IA Gestor via Http::post (modelo: claude-haiku-4-5-20251001)
+  └── Laragon              — servidor local Windows
+
+  FRONTEND WEB (web/)
+  ├── Next.js 16.2 (App Router)
+  ├── React 19
+  ├── Tailwind CSS 4        — NOTA: usar bg-linear-to-r (não bg-gradient-to-r)
+  ├── Zustand              — estado global (auth store)
+  ├── Axios                — baseURL: http://localhost:8000/api/v1
+  ├── Web Speech API       — reconhecimento de voz (App Gestor, pt-BR)
+  ├── localStorage         — cache offline do App Curral
+  ├── next-pwa             — PWA manifest
+  └── TypeScript 5
+
+  FRONTEND ADMIN (admin/)
+  ├── Next.js 16.2 (App Router)
+  ├── React 19
+  ├── Tailwind CSS 4
+  ├── Recharts             — gráficos do dashboard
+  ├── Axios                — baseURL: http://localhost:8000/api (rotas /admin/* sem v1)
+  └── TypeScript 5
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  3. ARQUITETURA DA API
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  VERSIONAMENTO
+  ┌─────────────────────────────────────────────────────────────────────────┐
+  │ Todas as rotas públicas e autenticadas usam prefixo /api/v1/            │
+  │ Rotas admin usam /api/admin (prefixo fixo em bootstrap/app.php)        │
+  │ Webhook MercadoPago: /api/webhook/mercadopago (sem v1 — URL externa)   │
+  └─────────────────────────────────────────────────────────────────────────┘
+
+  CAMADAS
+  ├── Controllers     — "magros": recebem FormRequest, chamam lógica, retornam JSON
+  ├── FormRequests    — validação e autorização (app/Http/Requests/)
+  ├── Services        — lógica de negócio reutilizável (app/Services/)
+  ├── Events          — eventos de domínio (app/Events/)
+  ├── Listeners       — reações aos eventos (app/Listeners/)
+  ├── Jobs            — processamento assíncrono em fila (app/Jobs/)
+  └── Models          — Eloquent com casts, relations, accessors
+
+  PADRÕES ADOTADOS
+  - FormRequests com prepareForValidation() para normalizar CPF/celular
+  - withValidator() para regras de negócio cruzadas (unicidade CPF, negociação ativa)
+  - Events disparados após criação: NovoAnuncio, NovaNegociacao, TransacaoConfirmada
+  - Idempotência no webhook: checar gateway_id antes de atualizar assinatura
+  - Offline sync: campo coletado_em em pesagens e eventos_campo
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  4. ESTRUTURA DE ARQUIVOS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  bovino/
+  ├── api/                               ← Laravel 11
+  │   ├── app/
+  │   │   ├── Events/
+  │   │   │   ├── NovoAnuncio.php        ← dispara matchmaking com alertas_demanda
+  │   │   │   ├── NovaNegociacao.php     ← (listener futuro: notificar vendedor)
+  │   │   │   └── TransacaoConfirmada.php← (listener futuro: gerar comissão)
+  │   │   │
+  │   │   ├── Jobs/
+  │   │   │   └── ProcessarWebhookMercadoPago.php
+  │   │   │       ├── tries = 3, backoff = 30s
+  │   │   │       ├── implements ShouldQueue (driver: database)
+  │   │   │       └── failed() → log definitivo
+  │   │   │
+  │   │   ├── Listeners/
+  │   │   │   └── MatchingAlertasDemanda.php
+  │   │   │       ├── filtra alertas por raça, sexo, estado (JSON array), peso
+  │   │   │       ├── exclui o próprio vendedor
+  │   │   │       ├── insere em notificacoes em lote
+  │   │   │       └── atualiza alertas_demanda.ultimo_alerta_at
+  │   │   │
+  │   │   ├── Http/
+  │   │   │   ├── Controllers/Api/
+  │   │   │   │   ├── Admin/             ← painel admin (13 controllers)
+  │   │   │   │   │   ├── AdminAuthController.php
+  │   │   │   │   │   ├── AdminUsuarioController.php
+  │   │   │   │   │   ├── AdminAnuncioController.php
+  │   │   │   │   │   ├── AdminAnuncianteController.php
+  │   │   │   │   │   ├── AdminFinanceiroController.php
+  │   │   │   │   │   ├── AdminFazendaController.php
+  │   │   │   │   │   ├── AdminVisitaController.php
+  │   │   │   │   │   ├── AdminAvaliacaoController.php
+  │   │   │   │   │   ├── AdminIntelligenciaController.php
+  │   │   │   │   │   ├── AdminStatsController.php
+  │   │   │   │   │   ├── AdminCustoSaasController.php
+  │   │   │   │   │   └── AdminEquipeController.php
+  │   │   │   │   │
+  │   │   │   │   ├── AuthController.php          → usa CadastroRequest + LoginRequest
+  │   │   │   │   ├── AnuncioController.php       → dispatch(NovoAnuncio)
+  │   │   │   │   ├── NegociacaoController.php    → dispatch(NovaNegociacao, TransacaoConfirmada)
+  │   │   │   │   ├── WebhookController.php       → dispatch(ProcessarWebhookMercadoPago)
+  │   │   │   │   ├── AssinaturaController.php
+  │   │   │   │   ├── CheckoutSimuladoController.php
+  │   │   │   │   ├── FazendaController.php
+  │   │   │   │   ├── PlanoController.php
+  │   │   │   │   ├── AnunciantePainelController.php
+  │   │   │   │   ├── PerfilController.php
+  │   │   │   │   ├── CotacaoController.php
+  │   │   │   │   ├── BannerController.php
+  │   │   │   │   ├── MidiaController.php
+  │   │   │   │   ├── VisitaController.php
+  │   │   │   │   ├── AlertaDemandaController.php
+  │   │   │   │   ├── IntelligenciaController.php
+  │   │   │   │   │
+  │   │   │   │   ├── GestaoRebanhoController.php
+  │   │   │   │   ├── GestaoLoteController.php
+  │   │   │   │   ├── GestaoSaudeController.php
+  │   │   │   │   ├── GestaoPesagemController.php → usa StorePesagemRequest
+  │   │   │   │   ├── GestaoFinanceiroController.php       (custos por lote — legado)
+  │   │   │   │   ├── GestaoFinanceiroFazendaController.php(financeiro completo)
+  │   │   │   │   ├── GestaoFornecedorController.php
+  │   │   │   │   ├── GestaoInsumoController.php  → usa StoreCompraInsumoRequest
+  │   │   │   │   ├── GestaoFuncionarioController.php
+  │   │   │   │   ├── GestaoEventoCampoController.php
+  │   │   │   │   ├── GestaoCurralController.php  → aceita coletado_em
+  │   │   │   │   ├── GestaoPastoController.php
+  │   │   │   │   └── GestaoIAController.php      → Anthropic API + valor rebanho
+  │   │   │   │
+  │   │   │   └── Requests/
+  │   │   │       ├── Auth/
+  │   │   │       │   ├── CadastroRequest.php  ← normaliza CPF/celular, valida unicidade
+  │   │   │       │   └── LoginRequest.php     ← normaliza celular
+  │   │   │       ├── Negociacao/
+  │   │   │       │   └── StoreNegociacaoRequest.php ← valida não-próprio-anúncio
+  │   │   │       └── Gestao/
+  │   │   │           ├── StorePesagemRequest.php     ← exige animal OU lote
+  │   │   │           └── StoreCompraInsumoRequest.php← valida itens, forma pagamento
+  │   │   │
+  │   │   ├── Models/
+  │   │   │   ├── — MARKETPLACE —
+  │   │   │   ├── User.php               comprador/produtor/ambos
+  │   │   │   ├── Animal.php             animal do anúncio (tabela: animais)
+  │   │   │   ├── Anuncio.php
+  │   │   │   ├── Midia.php
+  │   │   │   ├── Negociacao.php
+  │   │   │   ├── Mensagem.php
+  │   │   │   ├── Plano.php
+  │   │   │   ├── Assinatura.php         morphTo: User | Anunciante
+  │   │   │   ├── Pagamento.php
+  │   │   │   ├── Cotacao.php
+  │   │   │   ├── Otp.php
+  │   │   │   ├── Visita.php
+  │   │   │   ├── Avaliacao.php
+  │   │   │   ├── BuscaLog.php           $timestamps=false, só created_at
+  │   │   │   ├── AlertaDemanda.php      estados cast array (JSON)
+  │   │   │   ├── Transacao.php
+  │   │   │   │
+  │   │   │   ├── — B2B —
+  │   │   │   ├── Anunciante.php
+  │   │   │   ├── Banner.php
+  │   │   │   │
+  │   │   │   ├── — ADMIN —
+  │   │   │   ├── Admin.php
+  │   │   │   ├── CustoSaas.php
+  │   │   │   │
+  │   │   │   ├── — GESTÃO PECUÁRIA —
+  │   │   │   ├── Fazenda.php
+  │   │   │   ├── Pastagem.php
+  │   │   │   ├── Rebanho.php            tabela: rebanho (≠ animais do marketplace)
+  │   │   │   ├── LoteGestao.php         tabela: lotes_gestao
+  │   │   │   ├── Pesagem.php            campo coletado_em (timestamp offline)
+  │   │   │   ├── EventoSaude.php
+  │   │   │   ├── EventoReproducao.php
+  │   │   │   ├── Custo.php              custo por lote
+  │   │   │   ├── Fornecedor.php
+  │   │   │   ├── Insumo.php
+  │   │   │   ├── EstoqueInsumo.php      getAbaixoMinimoAttribute
+  │   │   │   ├── CompraInsumo.php
+  │   │   │   ├── CompraItem.php         getSubtotalAttribute
+  │   │   │   ├── MovimentacaoEstoque.php $timestamps=false
+  │   │   │   ├── Funcionario.php
+  │   │   │   ├── PrestadorServico.php
+  │   │   │   ├── Tarefa.php             morphTo: responsavel (Funcionario|Prestador)
+  │   │   │   ├── EventoCampo.php        campo coletado_em (timestamp offline)
+  │   │   │   ├── ReceitaFazenda.php
+  │   │   │   ├── ContaPagar.php         getVencidaAttribute
+  │   │   │   ├── ContaReceber.php
+  │   │   │   ├── TrocaPiquete.php
+  │   │   │   ├── AplicacaoNutricional.php
+  │   │   │   ├── TemplateColeta.php     campos cast array (JSON)
+  │   │   │   ├── RegistroColeta.php     dados cast array (JSON)
+  │   │   │   ├── SessaoCurral.php       dados_offline cast array
+  │   │   │   └── ConversaIA.php         tabela: conversas_ia
+  │   │   │
+  │   │   ├── Services/
+  │   │   │   ├── MercadoPagoService.php  idempotência: checa gateway_id antes de atualizar
+  │   │   │   ├── OtpService.php
+  │   │   │   └── CpfService.php
+  │   │   │
+  │   │   └── Providers/
+  │   │       └── AppServiceProvider.php
+  │   │           └── boot(): Event::listen(NovoAnuncio → MatchingAlertasDemanda)
+  │   │
+  │   ├── database/migrations/           (ordenadas por timestamp)
+  │   │   ├── — CORE —
+  │   │   ├── 0001_01_01_000000  users, cache, jobs (tabela de fila)
+  │   │   ├── 2024_01_01_000010  otps
+  │   │   ├── 2024_01_01_000020  animais           (marketplace)
+  │   │   ├── 2024_01_01_000030  anuncios
+  │   │   ├── 2024_01_01_000040  midias
+  │   │   ├── 2024_01_01_000050  negociacoes
+  │   │   ├── 2024_01_01_000060  mensagens
+  │   │   ├── 2024_01_01_000070  cotacoes
+  │   │   ├── 2024_01_01_000080  anunciantes
+  │   │   ├── — EXPANSÃO 2026-04-21 —
+  │   │   ├── 2026_04_21_*       personal_access_tokens, endereco em users
+  │   │   ├── 2026_04_21_200000  planos
+  │   │   ├── 2026_04_21_200001  update anunciantes
+  │   │   ├── 2026_04_21_235257  admins
+  │   │   ├── 2026_04_21_300000  fazendas
+  │   │   ├── 2026_04_21_300001  pastagens
+  │   │   ├── 2026_04_21_300002  rebanho
+  │   │   ├── 2026_04_21_300003  lotes_gestao + rebanho_lote (pivot)
+  │   │   ├── 2026_04_21_300004  pesagens
+  │   │   ├── 2026_04_21_300005  eventos_saude
+  │   │   ├── 2026_04_21_300006  eventos_reproducao
+  │   │   ├── 2026_04_21_300007  custos (por lote)
+  │   │   ├── 2026_04_21_300008  visitas
+  │   │   ├── 2026_04_21_300009  avaliacoes
+  │   │   ├── 2026_04_21_300010  buscas_log (só created_at)
+  │   │   ├── 2026_04_21_300011  alertas_demanda
+  │   │   ├── 2026_04_21_300012  transacoes (+ índice raca/estado/created_at)
+  │   │   ├── 2026_04_21_400000  update admins (expand roles)
+  │   │   ├── — MÓDULO GESTÃO EXPANDIDO 2026-04-22 —
+  │   │   ├── 2026_04_22_100000  custos_saas
+  │   │   ├── 2026_04_22_200000  fornecedores
+  │   │   ├── 2026_04_22_200001  insumos + estoque_insumos
+  │   │   ├── 2026_04_22_200002  compras_insumos + compras_itens + movimentacoes_estoque
+  │   │   ├── 2026_04_22_200003  funcionarios + prestadores_servico
+  │   │   ├── 2026_04_22_200004  tarefas (morphTo responsavel)
+  │   │   ├── 2026_04_22_200005  eventos_campo
+  │   │   ├── 2026_04_22_200006  receitas_fazenda + contas_pagar + contas_receber
+  │   │   ├── 2026_04_22_200007  trocas_piquete + aplicacoes_nutricionais
+  │   │   │                      + templates_coleta + registros_coleta
+  │   │   ├── 2026_04_22_200008  sessoes_curral + conversas_ia
+  │   │   ├── — MELHORIAS DE QUALIDADE 2026-04-22 —
+  │   │   ├── 2026_04_22_900000  índices de performance (animais, anuncios, buscas_log, rebanho)
+  │   │   ├── 2026_04_22_900001  coletado_em em pesagens e eventos_campo (offline sync)
+  │   │   └── 2026_04_22_900002  notificacoes (matchmaking de alertas)
+  │   │
+  │   ├── database/seeders/
+  │   │   ├── DatabaseSeeder.php
+  │   │   ├── PlanoSeeder.php    ← 7 planos pré-configurados
+  │   │   └── AdminSeeder.php    ← admin padrão (super)
+  │   │
+  │   └── routes/
+  │       ├── api.php            ← prefixo v1/ para todas as rotas (exceto webhook e dev)
+  │       └── admin.php          ← prefixo /api/admin (via bootstrap/app.php)
+  │
+  ├── web/                               ← Next.js 16 — app usuário
+  │   ├── app/
+  │   │   ├── (auth)/
+  │   │   │   ├── login/page.tsx
+  │   │   │   └── cadastro/page.tsx
+  │   │   ├── (main)/
+  │   │   │   ├── layout.tsx
+  │   │   │   ├── page.tsx               homepage
+  │   │   │   ├── busca/page.tsx
+  │   │   │   ├── cotacoes/page.tsx
+  │   │   │   ├── chat/page.tsx
+  │   │   │   ├── perfil/page.tsx
+  │   │   │   ├── anuncios/
+  │   │   │   │   ├── [id]/page.tsx
+  │   │   │   │   ├── meus/page.tsx
+  │   │   │   │   └── novo/page.tsx
+  │   │   │   ├── planos/
+  │   │   │   │   ├── page.tsx
+  │   │   │   │   ├── checkout/page.tsx  pagamento simulado
+  │   │   │   │   ├── sucesso|falha|pendente/page.tsx
+  │   │   │   │   └── PlanoCardAction.tsx
+  │   │   │   ├── gestao/                ← Módulo Gestão Pecuária (12 abas)
+  │   │   │   │   ├── layout.tsx         subnav (12 itens)
+  │   │   │   │   ├── page.tsx           dashboard + card valor rebanho + setup fazenda
+  │   │   │   │   ├── animais/page.tsx   CRUD individual do rebanho
+  │   │   │   │   ├── lotes/page.tsx     lotes + "Publicar no marketplace"
+  │   │   │   │   ├── saude/page.tsx     eventos + alertas próximos 30 dias
+  │   │   │   │   ├── pesagens/page.tsx  tabela + GMD calculado
+  │   │   │   │   ├── financeiro/page.tsx dashboard + receitas + custos + contas
+  │   │   │   │   ├── insumos/page.tsx   estoque + compras + fornecedores
+  │   │   │   │   ├── funcionarios/page.tsx equipe CLT/PJ + prestadores + tarefas
+  │   │   │   │   ├── eventos/page.tsx   ocorrências de campo (vaqueiro mobile)
+  │   │   │   │   ├── pasto/page.tsx     mapa piquetes + rotação + nutrição + coletas
+  │   │   │   │   ├── curral/page.tsx    offline-first + sync batch
+  │   │   │   │   └── gestor/page.tsx    chat IA (Claude) texto + voz (Web Speech API)
+  │   │   │   ├── inteligencia/
+  │   │   │   │   ├── page.tsx
+  │   │   │   │   └── alertas/page.tsx
+  │   │   │   ├── visitas/page.tsx
+  │   │   │   └── fazenda/[slug]/page.tsx
+  │   │   └── anunciante/
+  │   │       ├── cadastro|interesse|login/page.tsx
+  │   │       └── painel/page.tsx
+  │   ├── components/
+  │   │   ├── layout/Header.tsx + BottomNav.tsx
+  │   │   ├── home/HeroSearch.tsx + CotacaoStrip.tsx + StatsBar.tsx + ComoFunciona.tsx
+  │   │   └── anuncio/AnuncioCard.tsx
+  │   └── lib/
+  │       ├── api.ts    baseURL → /api/v1, interceptor 401→refresh
+  │       ├── auth.ts   User type + temPlano()
+  │       ├── store.ts  Zustand auth store
+  │       └── types.ts  tipos compartilhados
+  │
+  └── admin/                             ← Next.js 16 — painel interno
+      ├── app/
+      │   ├── login/page.tsx
+      │   └── (admin)/
+      │       ├── layout.tsx             AdminProvider + Sidebar + TopBar
+      │       ├── dashboard/page.tsx     KPIs + gráficos Recharts
+      │       ├── usuarios/page.tsx      CRUD + "Simular plano"
+      │       ├── anuncios/page.tsx
+      │       ├── anunciantes/page.tsx
+      │       ├── assinaturas/page.tsx
+      │       ├── pagamentos/page.tsx
+      │       ├── fazendas/page.tsx
+      │       ├── visitas/page.tsx
+      │       ├── avaliacoes/page.tsx
+      │       ├── inteligencia/page.tsx  4 abas (resumo, buscas, transações, alertas)
+      │       ├── custos/page.tsx        custos operacionais do SaaS
+      │       └── equipe/page.tsx        CRUD admins (só role=super)
+      ├── components/Sidebar.tsx + TopBar.tsx
+      └── lib/
+          ├── api.ts           baseURL → /api/admin (sem v1)
+          ├── admin-context.tsx AdminProvider + useAdmin() + canAccess()
+          └── types.ts
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  5. BANCO DE DADOS — TABELAS COMPLETAS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  CORE DO MARKETPLACE
+  ┌──────────────────────┬──────────────────────────────────────────────────┐
+  │ users                │ nome, cpf, celular, email, password, tipo,       │
+  │                      │ plano (free|premium), estado, municipio,         │
+  │                      │ verificado_celular, verificado_cpf, bloqueado_ate│
+  ├──────────────────────┼──────────────────────────────────────────────────┤
+  │ animais              │ user_id, raca, sexo, idade_meses, peso_estimado, │
+  │                      │ quantidade, estado, municipio, status            │
+  │                      │ ÍNDICE: (estado, raca, status)                   │
+  ├──────────────────────┼──────────────────────────────────────────────────┤
+  │ anuncios             │ user_id, animal_id, titulo, preco_unitario,      │
+  │                      │ aceita_negociacao, destaque, views, expira_em    │
+  │                      │ ÍNDICES: preco_unitario, expira_em, destaque     │
+  ├──────────────────────┼──────────────────────────────────────────────────┤
+  │ midias               │ fotos e vídeos dos anúncios                      │
+  ├──────────────────────┼──────────────────────────────────────────────────┤
+  │ negociacoes          │ anuncio_id, comprador_id, vendedor_id,           │
+  │                      │ preco_proposto, status, mensagem_inicial         │
+  ├──────────────────────┼──────────────────────────────────────────────────┤
+  │ mensagens            │ negociacao_id, remetente_id, corpo, lido_em      │
+  ├──────────────────────┼──────────────────────────────────────────────────┤
+  │ cotacoes             │ tipo (boi_gordo|vaca_gorda|bezerro…), valor,     │
+  │                      │ estado, municipio, fonte, data_referencia        │
+  ├──────────────────────┼──────────────────────────────────────────────────┤
+  │ otps                 │ celular, codigo, finalidade, expira_em, usado    │
+  └──────────────────────┴──────────────────────────────────────────────────┘
+
+  PLANOS E FINANCEIRO
+  ┌──────────────────────┬──────────────────────────────────────────────────┐
+  │ planos               │ slug, nome, tipo, preco, recursos (JSON),        │
+  │                      │ max_anuncios, max_destaques, ver_contato_vendedor│
+  ├──────────────────────┼──────────────────────────────────────────────────┤
+  │ assinaturas          │ morphTo (User|Anunciante), plano_id, status,     │
+  │                      │ valor, gateway_id, inicia_em, expira_em,        │
+  │                      │ cancelada_em                                     │
+  ├──────────────────────┼──────────────────────────────────────────────────┤
+  │ pagamentos           │ assinatura_id, valor, status, gateway_id,        │
+  │                      │ metodo, gateway_response (JSON), pago_em         │
+  │                      │ IDEMPOTÊNCIA: gateway_id único por pagamento     │
+  ├──────────────────────┼──────────────────────────────────────────────────┤
+  │ jobs                 │ tabela da fila Laravel (driver: database)        │
+  └──────────────────────┴──────────────────────────────────────────────────┘
+
+  B2B — ANUNCIANTES
+  ┌──────────────────────┬──────────────────────────────────────────────────┐
+  │ anunciantes          │ empresa, cnpj, responsavel, celular, email,      │
+  │                      │ logo_url, site, estado, ativo                    │
+  ├──────────────────────┼──────────────────────────────────────────────────┤
+  │ banners              │ titulo, imagem_url, link_url, posicao, estado,   │
+  │                      │ impressoes, cliques, inicia_em, expira_em        │
+  └──────────────────────┴──────────────────────────────────────────────────┘
+
+  GESTÃO PECUÁRIA (Premium+)
+  ┌──────────────────────┬──────────────────────────────────────────────────┐
+  │ fazendas             │ user_id, nome, slug, estado, municipio,          │
+  │                      │ hectares, gta, sisbov, logo_url, ativo           │
+  ├──────────────────────┼──────────────────────────────────────────────────┤
+  │ pastagens            │ fazenda_id, nome, area_ha, tipo, capacidade      │
+  ├──────────────────────┼──────────────────────────────────────────────────┤
+  │ rebanho              │ fazenda_id, brinco, nome, raca, categoria, sexo, │
+  │  (≠ animais)         │ peso_atual, data_nascimento, status, pastagem_id │
+  │                      │ ÍNDICE: (fazenda_id, status)                     │
+  ├──────────────────────┼──────────────────────────────────────────────────┤
+  │ lotes_gestao         │ fazenda_id, nome, raca, qtd_cabecas, status,     │
+  │ rebanho_lote (pivot) │ objetivo, data_entrada                           │
+  ├──────────────────────┼──────────────────────────────────────────────────┤
+  │ pesagens             │ fazenda_id, animal_id, lote_id, peso,            │
+  │                      │ data_pesagem, gmd, observacao,                   │
+  │                      │ coletado_em (timestamp real — offline sync)      │
+  ├──────────────────────┼──────────────────────────────────────────────────┤
+  │ eventos_saude        │ tipo (vacina|vermifugacao|exame|tratamento),     │
+  │                      │ proxima_dose, animal_id ou lote_id               │
+  ├──────────────────────┼──────────────────────────────────────────────────┤
+  │ eventos_reproducao   │ tipo (cobertura|iatf|diagnostico|parto)          │
+  ├──────────────────────┼──────────────────────────────────────────────────┤
+  │ custos               │ lote_id, categoria, descricao, valor, data       │
+  └──────────────────────┴──────────────────────────────────────────────────┘
+
+  GESTÃO — INSUMOS E COMPRAS
+  ┌──────────────────────┬──────────────────────────────────────────────────┐
+  │ fornecedores         │ fazenda_id, nome, cnpj_cpf, telefone, email,     │
+  │                      │ categoria, estado, municipio, ativo              │
+  ├──────────────────────┼──────────────────────────────────────────────────┤
+  │ insumos              │ fazenda_id, nome, categoria, unidade,            │
+  │                      │ preco_unitario, fornecedor_padrao_id             │
+  ├──────────────────────┼──────────────────────────────────────────────────┤
+  │ estoque_insumos      │ insumo_id, fazenda_id, quantidade_atual,         │
+  │                      │ quantidade_minima, localizacao, validade         │
+  ├──────────────────────┼──────────────────────────────────────────────────┤
+  │ compras_insumos      │ fazenda_id, fornecedor_id, data_compra,          │
+  │                      │ valor_total, status, nota_fiscal, forma_pagamento│
+  ├──────────────────────┼──────────────────────────────────────────────────┤
+  │ compras_itens        │ compra_id, insumo_id, quantidade, valor_unitario │
+  ├──────────────────────┼──────────────────────────────────────────────────┤
+  │ movimentacoes_estoque│ insumo_id, tipo (entrada|saida|ajuste|perda),    │
+  │                      │ quantidade, custo_unitario, motivo               │
+  │                      │ NOTA: $timestamps=false, só created_at           │
+  └──────────────────────┴──────────────────────────────────────────────────┘
+
+  GESTÃO — EQUIPE E TAREFAS
+  ┌──────────────────────┬──────────────────────────────────────────────────┐
+  │ funcionarios         │ fazenda_id, nome, cpf, cargo, salario,           │
+  │                      │ tipo_contrato (clt|pj|temporario), ativo         │
+  ├──────────────────────┼──────────────────────────────────────────────────┤
+  │ prestadores_servico  │ fazenda_id, nome, especialidade, valor_hora,     │
+  │                      │ valor_diaria                                     │
+  ├──────────────────────┼──────────────────────────────────────────────────┤
+  │ tarefas              │ fazenda_id, titulo, tipo, prioridade, status,    │
+  │                      │ responsavel_type + responsavel_id (morphTo),     │
+  │                      │ data_prevista, data_conclusao                    │
+  └──────────────────────┴──────────────────────────────────────────────────┘
+
+  GESTÃO — FINANCEIRO FAZENDA
+  ┌──────────────────────┬──────────────────────────────────────────────────┐
+  │ receitas_fazenda     │ fazenda_id, descricao, categoria, valor, data    │
+  ├──────────────────────┼──────────────────────────────────────────────────┤
+  │ contas_pagar         │ fazenda_id, fornecedor_id, valor, vencimento,    │
+  │                      │ status (pendente|pago|vencido), pago_em          │
+  ├──────────────────────┼──────────────────────────────────────────────────┤
+  │ contas_receber       │ fazenda_id, cliente_nome, valor, vencimento,     │
+  │                      │ status, recebido_em                              │
+  └──────────────────────┴──────────────────────────────────────────────────┘
+
+  GESTÃO — PASTO E EVENTOS DE CAMPO
+  ┌──────────────────────┬──────────────────────────────────────────────────┐
+  │ trocas_piquete       │ fazenda_id, lote_id, pastagem_origem_id,         │
+  │                      │ pastagem_destino_id, data_troca, dias_descanso   │
+  ├──────────────────────┼──────────────────────────────────────────────────┤
+  │ aplicacoes_nutricionais│ fazenda_id, insumo_id, quantidade_total,       │
+  │                      │ custo_total, lote_id, pastagem_id               │
+  ├──────────────────────┼──────────────────────────────────────────────────┤
+  │ templates_coleta     │ fazenda_id, nome, campos (JSON array),           │
+  │                      │ tipos: numero|texto|opcao|escala|booleano        │
+  ├──────────────────────┼──────────────────────────────────────────────────┤
+  │ registros_coleta     │ template_id, dados (JSON), animal_id, lote_id,   │
+  │                      │ pastagem_id, data_coleta                         │
+  ├──────────────────────┼──────────────────────────────────────────────────┤
+  │ eventos_campo        │ fazenda_id, tipo (nascimento|morte|acidente|      │
+  │                      │ doença|fuga|cobertura|parto|cio|outros),         │
+  │                      │ animal_id, urgencia (baixa|media|alta|critica),  │
+  │                      │ latitude, longitude, resolvido,                  │
+  │                      │ coletado_em (timestamp real — offline sync)      │
+  └──────────────────────┴──────────────────────────────────────────────────┘
+
+  GESTÃO — APPS OFFLINE / IA
+  ┌──────────────────────┬──────────────────────────────────────────────────┐
+  │ sessoes_curral       │ fazenda_id, user_id, data_sessao, status,        │
+  │                      │ dados_offline (JSON), total_animais,             │
+  │                      │ sincronizado_em                                  │
+  ├──────────────────────┼──────────────────────────────────────────────────┤
+  │ conversas_ia         │ fazenda_id, user_id, mensagem, resposta, tipo,   │
+  │                      │ contexto (JSON)                                  │
+  └──────────────────────┴──────────────────────────────────────────────────┘
+
+  INTELIGÊNCIA DE MERCADO
+  ┌──────────────────────┬──────────────────────────────────────────────────┐
+  │ buscas_log           │ user_id (nullable), raca, estado, peso_min/max   │
+  │                      │ NOTA: $timestamps=false — só created_at          │
+  │                      │ ÍNDICE: (raca, estado)                           │
+  ├──────────────────────┼──────────────────────────────────────────────────┤
+  │ alertas_demanda      │ user_id, raca, estados (JSON), sexo,             │
+  │                      │ peso_min, peso_max, ativo, ultimo_alerta_at      │
+  ├──────────────────────┼──────────────────────────────────────────────────┤
+  │ transacoes           │ comprador_id, vendedor_id, raca, estado,         │
+  │                      │ qtd_cabecas, valor_total                         │
+  │                      │ ÍNDICE: (raca, estado, created_at)               │
+  └──────────────────────┴──────────────────────────────────────────────────┘
+
+  NOTIFICAÇÕES E ADMIN
+  ┌──────────────────────┬──────────────────────────────────────────────────┐
+  │ notificacoes         │ user_id, tipo, titulo, mensagem, dados (JSON),   │
+  │                      │ lida_em — geradas pelo matchmaking de alertas     │
+  │                      │ ÍNDICE: (user_id, lida_em)                       │
+  ├──────────────────────┼──────────────────────────────────────────────────┤
+  │ admins               │ nome, email, password, papel (enum), ativo,      │
+  │                      │ ultimo_acesso                                    │
+  │                      │ papel: super|operador|ti|vendas|treinamento      │
+  ├──────────────────────┼──────────────────────────────────────────────────┤
+  │ custos_saas          │ descricao, categoria, valor, recorrencia,        │
+  │                      │ data_vencimento, ativo                           │
+  └──────────────────────┴──────────────────────────────────────────────────┘
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  6. PLANOS DISPONÍVEIS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  COMPRADORES
+  ┌──────────────────────┬──────────┬──────────────────────────────────────┐
+  │ comprador-premium    │ R$ 30/mês│ Ver WhatsApp vendedor, alertas       │
+  └──────────────────────┴──────────┴──────────────────────────────────────┘
+
+  PRODUTORES
+  ┌──────────────────────┬──────────┬──────────────────────────────────────┐
+  │ produtor-basico      │ R$ 50/mês│ 15 anúncios, 2 destaques             │
+  │ produtor-premium     │ R$100/mês│ 50 anúncios, gestão rebanho, visitas │
+  │ produtor-elite       │ R$200/mês│ Ilimitado, elite completo            │
+  └──────────────────────┴──────────┴──────────────────────────────────────┘
+
+  ANUNCIANTES B2B
+  ┌──────────────────────┬──────────┬──────────────────────────────────────┐
+  │ anunciante-regional  │ R$ 500   │ 2 estados, 50k impressões/mês        │
+  │ anunciante-nacional  │ R$ 1.000 │ Nacional, 200k impressões/mês        │
+  │ anunciante-nacional-premium│R$2k│ Homepage + 500k impressões           │
+  └──────────────────────┴──────────┴──────────────────────────────────────┘
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  7. AUTENTICAÇÃO E GUARDS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Três identidades distintas via Laravel Sanctum (Bearer token):
+
+  ┌────────────────┬──────────────┬─────────────────────────────────────────┐
+  │ Guard          │ Modelo       │ Login endpoint                          │
+  ├────────────────┼──────────────┼─────────────────────────────────────────┤
+  │ sanctum        │ User         │ POST /api/v1/auth/login                 │
+  │ sanctum        │ Anunciante   │ POST /api/v1/anunciante/login           │
+  │ sanctum        │ Admin        │ POST /api/admin/login                   │
+  └────────────────┴──────────────┴─────────────────────────────────────────┘
+
+  - Token de User expira em 15 min → renovado via POST /api/v1/auth/refresh
+  - Token de Admin sem expiração (revogado no logout)
+  - Tokens armazenados em localStorage
+  - /auth/me retorna assinatura_ativa completa no payload
+
+  Verificação de acesso:
+  - Celular OTP obrigatório no cadastro
+  - users.plano = "free" | "premium" (campo simplificado)
+  - Plano real em assinaturas.plano_id → verificado via temPlano(user) em auth.ts
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  8. SISTEMA DE ROLES DO ADMIN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ┌─────────────┬────────────────────────────────────────────────────────────┐
+  │ super       │ Acesso total. Único que pode gerenciar /equipe             │
+  ├─────────────┼────────────────────────────────────────────────────────────┤
+  │ operador    │ Tudo exceto /equipe                                        │
+  ├─────────────┼────────────────────────────────────────────────────────────┤
+  │ ti          │ Dashboard, Usuários, Anúncios, Fazendas, Visitas, Avaliações│
+  ├─────────────┼────────────────────────────────────────────────────────────┤
+  │ vendas      │ Dashboard, Assinaturas, Pagamentos, Anunciantes            │
+  ├─────────────┼────────────────────────────────────────────────────────────┤
+  │ treinamento │ Dashboard, Usuários, Anúncios, Avaliações (leitura)       │
+  └─────────────┴────────────────────────────────────────────────────────────┘
+
+  Backend: AdminEquipeController.requireSuper() para /equipe
+  Frontend: admin-context.tsx → canAccess(papel, href)
+  Admin padrão: admin@bovino.com.br / admin@2026
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  9. ROTAS DA API — RESUMO
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  BASE URL (app): http://localhost:8000/api/v1
+  BASE URL (admin): http://localhost:8000/api/admin
+  WEBHOOK (externo): http://localhost:8000/api/webhook/mercadopago
+
+  PÚBLICO (sem autenticação)
+  ├── GET    /planos, /planos/{slug}
+  ├── GET    /anuncios, /anuncios/{id}
+  ├── GET    /cotacoes, /cotacoes/ultima
+  ├── GET    /fazendas/{slug}
+  ├── GET    /banners
+  ├── POST   /auth/cadastro            ← CadastroRequest (CPF/celular normalizados)
+  ├── POST   /auth/login               ← LoginRequest (celular normalizado)
+  ├── POST   /auth/otp/enviar|verificar
+  ├── POST   /inteligencia/busca       log de busca anônima
+  ├── GET    /inteligencia/cotacoes|demanda
+  └── POST   /banners/{id}/impressao|clique
+
+  AUTENTICADO (Bearer — User)
+  ├── POST   /auth/refresh             renovação token 15min
+  ├── GET/PUT /perfil, /perfil/senha
+  ├── GET/POST/DELETE /assinatura|assinar
+  ├── POST   /checkout/simular/iniciar + /{id}/confirmar
+  ├── GET/POST /anuncios/meus|novo
+  ├── PUT/DELETE /anuncios/{id}
+  ├── POST   /anuncios/{id}/midias
+  ├── GET/POST /negociacoes + /{id}/status|mensagens
+  ├── GET/POST/PUT /fazenda
+  ├── GET/POST /gestao/rebanho + CRUD
+  ├── GET/POST /gestao/lotes + /{id}/publicar
+  ├── GET/POST /gestao/saude + /alertas
+  ├── GET/POST /gestao/pesagens + /evolucao/{animalId}
+  ├── GET/POST /gestao/financeiro + /resumo       (custos por lote — legado)
+  ├── GET/POST /gestao/financeiro2/resumo         (financeiro completo)
+  │   /receitas, /contas-pagar, /contas-receber
+  ├── GET/POST /gestao/fornecedores
+  ├── GET/POST /gestao/insumos + /estoque/resumo + /{id}/movimentar
+  ├── GET/POST /gestao/compras
+  ├── GET/POST /gestao/funcionarios + /{id}/desligar
+  ├── GET/POST /gestao/prestadores
+  ├── GET/POST /gestao/tarefas
+  ├── GET/POST /gestao/eventos + /{id}/resolver
+  ├── GET/POST /gestao/pasto/mapa|trocas|aplicacoes|templates
+  ├── GET/POST /gestao/pasto/templates/{id}/registros
+  ├── GET/POST /gestao/curral/dados-offline|sessoes
+  ├── POST     /gestao/curral/sessoes/{id}/sincronizar  ← aceita coletado_em
+  ├── POST     /gestao/ia/chat         → Anthropic claude-haiku-4-5-20251001
+  ├── GET      /gestao/ia/historico
+  ├── GET      /gestao/ia/valor-rebanho
+  ├── GET/POST/PUT/DELETE /alertas-demanda
+  ├── GET/POST /visitas + responder|cancelar
+  └── GET      /inteligencia/match-lotes
+
+  ADMIN (Bearer — Admin, prefixo /admin — sem v1)
+  ├── POST   /login, GET /me, POST /logout
+  ├── GET    /stats/dashboard|crescimento|assinaturas-plano
+  ├── GET    /usuarios + /{id}/bloquear|desbloquear|reativar|simular-plano
+  ├── GET    /anuncios + /{id}/destacar|remover|restaurar
+  ├── CRUD   /anunciantes + reset-senha
+  ├── GET    /assinaturas + /{id}/cancelar|ativar
+  ├── GET    /pagamentos
+  ├── GET    /fazendas + /{id}/toggle-ativo
+  ├── GET    /visitas, /avaliacoes, /inteligencia/resumo|buscas|transacoes|alertas
+  ├── CRUD   /custos + /resumo
+  └── CRUD   /equipe (só role=super)
+
+  WEBHOOK (sem autenticação — sem v1)
+  └── POST   /webhook/mercadopago → dispatch(ProcessarWebhookMercadoPago)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  10. FLUXO DE PAGAMENTO
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  PRODUÇÃO (MercadoPago):
+  1. POST /v1/assinar {plano_slug}
+     → cria Assinatura(status: pendente)
+     → MercadoPagoService.criarPreference() → retorna init_point
+  2. Usuário paga no MercadoPago
+  3. MP chama POST /api/webhook/mercadopago
+     → dispatch(ProcessarWebhookMercadoPago) [job na fila, 3 tentativas]
+     → IDEMPOTÊNCIA: se gateway_id já existe com mesmo status → ignora
+     → aprova/rejeita assinatura
+  4. Redirect → /planos/sucesso|falha|pendente
+
+  TESTE (sem gateway):
+  1. POST /v1/checkout/simular/iniciar {plano_slug}
+  2. Formulário fictício em /planos/checkout
+  3. POST /v1/checkout/simular/{id}/confirmar
+     → Pagamento(gateway_id: SIM-xxxxx)
+     → Assinatura → ativa, +1 mês, users.plano → premium
+
+  ADMIN (ativação direta):
+  POST /admin/usuarios/{id}/simular-plano {plano_slug}
+     → Assinatura(ativa, expira +1 ano)
+     → Pagamento(gateway_id: ADM-xxxxx)
+     → users.plano → premium
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  11. MÓDULO DE GESTÃO PECUÁRIA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Disponível para: produtor-premium e produtor-elite
+
+  Fluxo de acesso:
+  1. /gestao → se sem Fazenda: formulário de setup inline (não redireciona para 403)
+  2. Após criar Fazenda → acesso total ao módulo
+
+  Subpáginas (12 abas no layout):
+  ┌─────────────────────┬──────────────────────────────────────────────────┐
+  │ /gestao             │ Dashboard: KPIs + card valor R$ rebanho +        │
+  │                     │ alertas saúde + link para IA Gestor              │
+  ├─────────────────────┼──────────────────────────────────────────────────┤
+  │ /gestao/animais     │ CRUD individual do rebanho                       │
+  ├─────────────────────┼──────────────────────────────────────────────────┤
+  │ /gestao/lotes       │ Lotes com status + "Publicar no marketplace"     │
+  ├─────────────────────┼──────────────────────────────────────────────────┤
+  │ /gestao/saude       │ Eventos de saúde + banner alertas 30 dias        │
+  ├─────────────────────┼──────────────────────────────────────────────────┤
+  │ /gestao/pesagens    │ Tabela + GMD calculado + evolução por animal      │
+  ├─────────────────────┼──────────────────────────────────────────────────┤
+  │ /gestao/financeiro  │ 5 abas: dashboard, receitas, custos,             │
+  │                     │ contas a pagar (+ "Pagar"), contas a receber     │
+  ├─────────────────────┼──────────────────────────────────────────────────┤
+  │ /gestao/insumos     │ 3 abas: estoque (alerta mínimo), compras,        │
+  │                     │ fornecedores — modal compra com múltiplos itens  │
+  ├─────────────────────┼──────────────────────────────────────────────────┤
+  │ /gestao/funcionarios│ 3 abas: funcionários CLT/PJ, prestadores,        │
+  │                     │ tarefas por prioridade + conclusão inline        │
+  ├─────────────────────┼──────────────────────────────────────────────────┤
+  │ /gestao/eventos     │ Ocorrências de campo (nascimento, morte, acidente │
+  │                     │ doença, fuga…) — otimizado para mobile           │
+  ├─────────────────────┼──────────────────────────────────────────────────┤
+  │ /gestao/pasto       │ 4 abas: mapa de piquetes (grid visual),          │
+  │                     │ rotação, nutrição, coletas customizadas          │
+  │                     │ (escore pasto, ECC, escore fezes, escore cocho…) │
+  ├─────────────────────┼──────────────────────────────────────────────────┤
+  │ /gestao/curral      │ Offline-first: cache localStorage → sync batch   │
+  │                     │ Envia coletado_em para cada pesagem/evento       │
+  ├─────────────────────┼──────────────────────────────────────────────────┤
+  │ /gestao/gestor      │ Chat IA (Claude Haiku) — texto + voz             │
+  │                     │ Web Speech API pt-BR, contexto da fazenda,       │
+  │                     │ sugestões rápidas + atalhos de relatório         │
+  └─────────────────────┴──────────────────────────────────────────────────┘
+
+  Valor do Rebanho:
+  GET /gestao/ia/valor-rebanho
+  → busca cotação mais recente (boi_gordo) da tabela cotacoes
+  → aplica fator por categoria: boi=1.0, touro=1.2, vaca=0.85, novilha=0.75, bezerro=0.45
+  → retorna valor_total + breakdown por categoria
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  12. SISTEMA DE MATCHMAKING DE ALERTAS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Fluxo automático ao criar anúncio:
+  1. POST /v1/anuncios → AnuncioController::store()
+  2. NovoAnuncio::dispatch($anuncio) → Event
+  3. MatchingAlertasDemanda::handle() → Listener
+     a. Filtra alertas_demanda ativos compatíveis:
+        - raca (nulo = qualquer)
+        - sexo (nulo = qualquer, misto = ambos)
+        - estado dentro do JSON array estados (vazio = todos)
+        - faixa de peso min/max
+        - exclui o próprio vendedor
+     b. Insere notificações em lote na tabela notificacoes
+     c. Atualiza alertas_demanda.ultimo_alerta_at
+
+  Registro no AppServiceProvider:
+  Event::listen(NovoAnuncio::class, MatchingAlertasDemanda::class)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  13. APP CURRAL — OFFLINE SYNC
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Fluxo offline-first:
+  1. GET /gestao/curral/dados-offline → retorna animais + lotes, salva em localStorage
+  2. App coleta pesagens e eventos SEM internet, armazena em:
+     curral_dados, curral_pesagens, curral_eventos, curral_sessao
+  3. Quando online: POST /gestao/curral/sessoes → cria sessão
+  4. POST /gestao/curral/sessoes/{id}/sincronizar
+     → envia { pesagens: [..., coletado_em], eventos: [..., coletado_em] }
+     → DB::transaction: cria Pesagem, atualiza peso_atual no Rebanho, cria EventoCampo
+     → marca sessao.sincronizado_em = now()
+
+  Campo coletado_em:
+  - Registra quando o dado foi coletado no campo (pode ser dias antes do sync)
+  - created_at = timestamp do sync (quando entrou no banco)
+  - coletado_em = timestamp real de coleta (enviado pelo app)
+  - Fallback: se não enviado, usa data_pesagem ou data_evento
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  14. INTELIGÊNCIA DE MERCADO
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Dados coletados passivamente:
+  - buscas_log: cada busca no marketplace gera registro (anônimo ou com user_id)
+  - transacoes: negócios confirmados por ambas as partes
+
+  Para o usuário:
+  - /inteligencia → cotações realizadas + heatmap de demanda por região
+  - /inteligencia/alertas → criar/gerenciar alertas de demanda
+  - GET /inteligencia/match-lotes → lotes do produtor com demanda ativa
+
+  Para o admin (4 abas):
+  - Resumo: KPIs (buscas hoje/mês, transações) + top raças/estados
+  - Buscas: tabela paginada de buscas_log
+  - Transações: tabela com confirmação C/V
+  - Alertas: alertas_demanda de todos os usuários
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  15. VARIÁVEIS DE AMBIENTE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  api/.env:
+    APP_URL=http://localhost:8000
+    FRONTEND_URL=http://localhost:3000
+    DB_CONNECTION=mysql
+    DB_DATABASE=bovino
+    QUEUE_CONNECTION=database          ← fila para webhook MP (jobs table)
+    SANCTUM_STATEFUL_DOMAINS=localhost:3000,localhost:3001
+    MERCADOPAGO_ACCESS_TOKEN=...
+    ANTHROPIC_API_KEY=sk-ant-...       ← necessário para IA Gestor
+    FILESYSTEM_DISK=public
+
+  web/.env.local:
+    NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1   ← com /v1
+
+  admin/.env.local:
+    NEXT_PUBLIC_API_URL=http://localhost:8000/api      ← sem /v1 (rotas /admin/*)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  16. COMANDOS ÚTEIS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  # API
+  php artisan migrate
+  php artisan db:seed
+  php artisan serve
+  php artisan queue:work          ← processa fila (webhooks, etc.)
+  php artisan route:list --path=v1
+
+  # Web (porta 3000)
+  cd web && npm run dev
+
+  # Admin (porta 3001)
+  cd admin && npm run dev -- -p 3001
+
+  # PHP local (Laragon — Windows)
+  C:\laragon\bin\php\php-8.3.30-Win32-vs16-x64\php.exe artisan migrate
+
+  # Buscar PHP pelo bash (Git Bash / WSL)
+  /c/laragon/bin/php/php-8.3.30-Win32-vs16-x64/php.exe artisan migrate
+
+  # Dev helpers (somente environment=local)
+  GET /api/dev/otp/{celular}      ← busca OTP ativo sem WhatsApp
+
+  # TypeScript
+  cd web && node node_modules/typescript/bin/tsc --noEmit
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  17. DECISÕES TÉCNICAS IMPORTANTES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  1. CONFLITO: tabela "animais" já existia para o marketplace.
+     Gestão pecuária usa tabela "rebanho" (Model: Rebanho, $table='rebanho').
+     Nunca renomear — quebra o marketplace.
+
+  2. CONFLITO: tabela "negociacoes" já existia para o chat comprador-vendedor.
+     Negócios confirmados ficam em "transacoes" (Model: Transacao).
+
+  3. ROTAS: todas em /api/v1/* exceto:
+     - /api/webhook/mercadopago — URL cadastrada externamente no gateway
+     - /api/admin/* — prefixo fixo em bootstrap/app.php (arquivo admin.php separado)
+     - /api/dev/otp/* — helper local apenas
+
+  4. TAILWIND CSS 4: usar bg-linear-to-r (deprecated: bg-gradient-to-r).
+
+  5. useSearchParams() no Next.js 15/16 exige <Suspense> no componente pai.
+
+  6. users.plano é campo simplificado ("free"|"premium"). Plano real em
+     assinaturas.plano_id. Ao ativar qualquer assinatura, atualizar AMBOS.
+
+  7. Token User expira em 15 min. O interceptor em web/lib/api.ts faz refresh
+     automático via POST /v1/auth/refresh no 401.
+
+  8. buscas_log e movimentacoes_estoque: $timestamps=false, só created_at.
+
+  9. Assinatura é morphTo (User | Anunciante). Usar get_class($assinante).
+
+  10. PAGAMENTO IDEMPOTÊNCIA: MercadoPagoService verifica se gateway_id já
+      existe com mesmo status antes de processar. Evita dupla extensão de
+      assinatura em reenvio de webhook.
+
+  11. FILA DE WEBHOOK: WebhookController retorna 200 imediatamente e despacha
+      ProcessarWebhookMercadoPago (Job, tries=3, backoff=30s). Para rodar:
+      php artisan queue:work
+      Em testes: QUEUE_CONNECTION=sync no .env executa na mesma requisição.
+
+  12. FORMREQUESTS: normalizar CPF e celular em prepareForValidation() antes
+      das regras de validação. Regras de unicidade e negócio em withValidator().
+
+  13. EVENTOS DE DOMÍNIO: AppServiceProvider.boot() registra os listeners.
+      Não usar EventServiceProvider (removido no Laravel 11).
+
+  14. IA GESTOR: chamada direta à Anthropic REST API via Http::post() do Laravel.
+      Sem SDK PHP. Modelo: claude-haiku-4-5-20251001. Contexto da fazenda
+      (total animais, alertas saúde, eventos abertos) injetado no system prompt.
+
+  15. MIGRAÇÃO 300003 (lotes_gestao): tabela rebanho_lote (pivot) está
+      NESTA migration, não na 300002, pois depende de FK para lotes_gestao.
+
+================================================================================

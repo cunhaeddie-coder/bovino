@@ -1,0 +1,27 @@
+# Dependências
+node_modules/
+vendor/
+
+# Variáveis de ambiente
+.env
+.env.local
+.env.*.local
+
+# Build Next.js
+web/.next/
+admin/.next/
+
+# Logs
+*.log
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+.cursor/
+
+# Claude Code
+.claude/
