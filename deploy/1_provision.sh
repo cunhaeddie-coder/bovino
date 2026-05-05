@@ -6,6 +6,7 @@
 # =============================================================
 
 set -e
+export DEBIAN_FRONTEND=noninteractive
 
 echo ""
 echo "=========================================="
@@ -17,8 +18,8 @@ echo ""
 # 1. Atualizar sistema
 # ------------------------------
 echo "[1/9] Atualizando sistema..."
-apt update && apt upgrade -y
-apt install -y git curl wget unzip software-properties-common ufw
+apt-get update && apt-get upgrade -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold"
+apt-get install -y git curl wget unzip software-properties-common ufw
 
 # ------------------------------
 # 2. PHP 8.3 + extensões Laravel
