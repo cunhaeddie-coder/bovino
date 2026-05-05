@@ -6,6 +6,9 @@ return [
     'allowed_methods' => ['*'],
 
     'allowed_origins' => [
+        'https://bovino.agr.br',
+        'https://www.bovino.agr.br',
+        'https://admin.bovino.agr.br',
         'http://localhost:3000',
         'http://127.0.0.1:3000',
         'http://localhost:3001',
