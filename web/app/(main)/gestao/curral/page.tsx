@@ -12,7 +12,7 @@ type Sessao = { id: number; data_sessao: string; descricao: string; status: stri
 const TIPOS_EVENTO = ["nascimento","morte","acidente","doença","fuga","cobertura","parto","cio","outros"];
 
 export default function CurralPage() {
-  const [online, setOnline]           = useState(navigator.onLine);
+  const [online, setOnline]           = useState(true);
   const [animais, setAnimais]         = useState<Animal[]>([]);
   const [lotes, setLotes]             = useState<Lote[]>([]);
   const [sessoes, setSessoes]         = useState<Sessao[]>([]);
