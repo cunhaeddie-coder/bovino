@@ -6,7 +6,7 @@
 
 set -e
 
-REPO_URL="https://github.com/SEU_USUARIO/bovino.git"  # <-- ALTERE AQUI
+REPO_URL="https://github.com/cunhaeddie-coder/bovino.git"
 APP_DIR="/var/www/bovino"
 
 echo ""
