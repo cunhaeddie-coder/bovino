@@ -16,12 +16,17 @@ echo "=========================================="
 echo ""
 
 # ------------------------------
-# Clonar repositório
+# Clonar ou atualizar repositório
 # ------------------------------
-echo "[1/8] Clonando repositório..."
-cd /var/www
-git clone $REPO_URL bovino
-cd $APP_DIR
+echo "[1/8] Verificando repositório..."
+if [ -d "$APP_DIR/.git" ]; then
+  echo "Repositório já existe, atualizando..."
+  cd $APP_DIR && git pull
+else
+  cd /var/www
+  git clone $REPO_URL bovino
+  cd $APP_DIR
+fi
 
 # ------------------------------
 # Laravel API
