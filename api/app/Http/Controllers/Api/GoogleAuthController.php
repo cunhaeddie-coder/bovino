@@ -21,8 +21,7 @@ class GoogleAuthController extends Controller
         try {
             $googleUser = Socialite::driver('google')->stateless()->user();
         } catch (\Exception $e) {
-            $msg = urlencode($e->getMessage());
-            return redirect("{$frontendUrl}/login?error=google_falhou&detail={$msg}");
+            return response('GOOGLE OAUTH ERRO: ' . $e->getMessage(), 500);
         }
 
         // Busca por google_id primeiro
