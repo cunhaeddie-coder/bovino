@@ -23,23 +23,21 @@ function GoogleCallback() {
 
   useEffect(() => {
     const token = params.get("token");
+    const userEncoded = params.get("user");
     const error = params.get("error");
 
-    if (error || !token) {
+    if (error || !token || !userEncoded) {
       router.replace("/login?error=google_falhou");
       return;
     }
 
-    api.get("/auth/me", {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then(({ data }) => {
-        setAuth(data, token);
-        router.replace("/");
-      })
-      .catch(() => {
-        router.replace("/login?error=google_falhou");
-      });
+    try {
+      const userData = JSON.parse(atob(userEncoded));
+      setAuth(userData, token);
+      router.replace("/");
+    } catch {
+      router.replace("/login?error=google_falhou");
+    }
   }, []);
 
   return <Spinner />;

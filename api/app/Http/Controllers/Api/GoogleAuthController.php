@@ -52,6 +52,10 @@ class GoogleAuthController extends Controller
         $user->tokens()->where('name', 'access')->delete();
         $token = $user->createToken('access', ['*'], now()->addMinutes(15))->plainTextToken;
 
-        return redirect("{$frontendUrl}/auth/google/callback?token={$token}");
+        $userData = urlencode(base64_encode(json_encode($user->only([
+            'id', 'nome', 'email', 'tipo', 'plano', 'verificado_celular', 'verificado_cpf', 'avatar_url',
+        ]))));
+
+        return redirect("{$frontendUrl}/auth/google/callback?token=" . urlencode($token) . "&user={$userData}");
     }
 }
