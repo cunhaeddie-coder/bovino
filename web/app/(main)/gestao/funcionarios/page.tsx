@@ -69,6 +69,7 @@ export default function FuncionariosPage() {
   const [aba, setAba]                   = useState<"funcionarios"|"prestadores"|"tarefas">("funcionarios");
   const [loading, setLoading]           = useState(true);
   const [showFun, setShowFun]           = useState(false);
+  const [editandoFun, setEditandoFun]   = useState<Funcionario | null>(null);
   const [showPrest, setShowPrest]       = useState(false);
   const [showTarefa, setShowTarefa]     = useState(false);
 
@@ -193,6 +194,47 @@ export default function FuncionariosPage() {
                       Ativar no app
                     </button>
                   )}
+
+                  {/* Editar / Desligar */}
+                  <div className="flex gap-1 mt-1">
+                    <button
+                      onClick={() => setEditandoFun(f)}
+                      className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                      title="Editar funcionário"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                      </svg>
+                    </button>
+                    {f.ativo ? (
+                      <button
+                        onClick={async () => {
+                          if (!confirm(`Desligar ${f.nome}?`)) return;
+                          await api.post(`/gestao/funcionarios/${f.id}/desligar`);
+                          carregar();
+                        }}
+                        className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                        title="Desligar funcionário"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+                        </svg>
+                      </button>
+                    ) : (
+                      <button
+                        onClick={async () => {
+                          await api.put(`/gestao/funcionarios/${f.id}`, { ativo: true });
+                          carregar();
+                        }}
+                        className="p-1.5 rounded-lg text-gray-400 hover:text-green-600 hover:bg-green-50 transition-colors"
+                        title="Reativar funcionário"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -253,26 +295,40 @@ export default function FuncionariosPage() {
         </div>
       )}
 
-      {showFun    && <FuncionarioModal onClose={() => setShowFun(false)} onDone={carregar} />}
-      {showPrest  && <PrestadorModal  onClose={() => setShowPrest(false)} onDone={carregar} />}
-      {showTarefa && <TarefaModal funcionarios={funcionarios} prestadores={prestadores} onClose={() => setShowTarefa(false)} onDone={carregar} />}
+      {showFun      && <FuncionarioModal onClose={() => setShowFun(false)} onDone={carregar} />}
+      {editandoFun  && <FuncionarioModal funcionario={editandoFun} onClose={() => setEditandoFun(null)} onDone={carregar} />}
+      {showPrest    && <PrestadorModal  onClose={() => setShowPrest(false)} onDone={carregar} />}
+      {showTarefa   && <TarefaModal funcionarios={funcionarios} prestadores={prestadores} onClose={() => setShowTarefa(false)} onDone={carregar} />}
 
       <TourButton tourKey="gestao-funcionarios" steps={TOUR_STEPS} />
     </div>
   );
 }
 
-function FuncionarioModal({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
+function FuncionarioModal({ onClose, onDone, funcionario }: {
+  onClose: () => void; onDone: () => void; funcionario?: Funcionario;
+}) {
+  const editando = !!funcionario;
   const [form, setForm] = useState({
-    nome: "", cargo: "", tipo_contrato: "clt", papel: "outro",
-    salario: "", telefone: "", data_admissao: new Date().toISOString().split("T")[0],
+    nome:          funcionario?.nome ?? "",
+    cargo:         funcionario?.cargo ?? "",
+    tipo_contrato: funcionario?.tipo_contrato ?? "clt",
+    papel:         funcionario?.papel ?? "outro",
+    salario:       funcionario?.salario ? String(funcionario.salario) : "",
+    telefone:      funcionario?.telefone ?? "",
+    data_admissao: funcionario?.data_admissao ?? new Date().toISOString().split("T")[0],
   });
   const [saving, setSaving] = useState(false);
   const [erro, setErro]     = useState("");
+
   async function submit(e: React.FormEvent) {
     e.preventDefault(); setSaving(true); setErro("");
     try {
-      await api.post("/gestao/funcionarios", { ...form, salario: form.salario || null });
+      if (editando) {
+        await api.put(`/gestao/funcionarios/${funcionario.id}`, { ...form, salario: form.salario || null });
+      } else {
+        await api.post("/gestao/funcionarios", { ...form, salario: form.salario || null });
+      }
       onDone(); onClose();
     } catch (e: unknown) {
       const err = e as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } };
@@ -286,11 +342,16 @@ function FuncionarioModal({ onClose, onDone }: { onClose: () => void; onDone: ()
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4">
         <div className="flex items-center justify-between px-6 py-4 border-b">
-          <h2 className="font-bold text-gray-800">Novo Funcionário</h2>
+          <h2 className="font-bold text-gray-800">{editando ? `Editar — ${funcionario.nome.split(" ")[0]}` : "Novo Funcionário"}</h2>
           <button onClick={onClose} className="text-gray-400 text-xl">×</button>
         </div>
         <form onSubmit={submit} className="p-6 space-y-3">
           {erro && <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl px-3 py-2">{erro}</div>}
+          {editando && funcionario.papel === "vaqueiro" && !funcionario.user_id && (
+            <div className="bg-amber-50 border border-amber-200 text-amber-700 text-xs rounded-xl px-3 py-2">
+              Após editar, clique em "Ativar no app" no card para enviar o acesso.
+            </div>
+          )}
           <input required value={form.nome} onChange={e => setForm({...form, nome: e.target.value})} placeholder="Nome completo"
             className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400" />
           <div className="grid grid-cols-2 gap-3">
@@ -333,7 +394,9 @@ function FuncionarioModal({ onClose, onDone }: { onClose: () => void; onDone: ()
           )}
           <div className="flex gap-2 pt-1">
             <button type="button" onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 font-semibold">Cancelar</button>
-            <button type="submit" disabled={saving} className="flex-1 py-2.5 rounded-xl bg-green-600 hover:bg-green-700 text-white text-sm font-semibold disabled:opacity-50">{saving ? "Salvando..." : "Salvar"}</button>
+            <button type="submit" disabled={saving} className="flex-1 py-2.5 rounded-xl bg-green-600 hover:bg-green-700 text-white text-sm font-semibold disabled:opacity-50">
+              {saving ? "Salvando..." : editando ? "Salvar alterações" : "Cadastrar"}
+            </button>
           </div>
         </form>
       </div>
