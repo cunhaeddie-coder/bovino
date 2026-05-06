@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { serverFetch } from "@/lib/api-server";
 import { AnuncioGallery } from "@/components/anuncio/AnuncioGallery";
+import { AnuncioOwnerActions } from "@/components/anuncio/AnuncioOwnerActions";
 import type { Anuncio } from "@/lib/types";
 
 type Props = { params: Promise<{ id: string }> };
@@ -96,6 +97,8 @@ export default async function AnuncioPage({ params }: Props) {
               {anuncio.aceita_negociacao ? "Negociar / Contato" : "Entrar em contato"}
             </Link>
           )}
+
+          <AnuncioOwnerActions anuncioId={anuncio.id} ownerId={anuncio.user_id} />
         </div>
 
         {anuncio.user && (

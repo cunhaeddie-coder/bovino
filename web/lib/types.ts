@@ -7,6 +7,7 @@ export interface Animal {
   quantidade: number;
   estado: string;
   municipio: string;
+  propriedade: string | null;
   status: "disponivel" | "vendido" | "reservado";
 }
 

@@ -113,16 +113,33 @@ class AnuncioController extends Controller
         }
 
         $data = $request->validate([
-            'titulo' => ['sometimes', 'string', 'max:255'],
-            'descricao' => ['nullable', 'string'],
-            'preco_unitario' => ['sometimes', 'numeric', 'min:0'],
+            'titulo'            => ['sometimes', 'string', 'max:255'],
+            'descricao'         => ['nullable', 'string'],
+            'preco_unitario'    => ['sometimes', 'numeric', 'min:0'],
             'aceita_negociacao' => ['boolean'],
-            'expira_em' => ['nullable', 'date', 'after:today'],
+            'expira_em'         => ['nullable', 'date', 'after:today'],
+            'raca'              => ['sometimes', 'string'],
+            'sexo'              => ['sometimes', 'in:macho,femea,misto'],
+            'quantidade'        => ['sometimes', 'integer', 'min:1'],
+            'idade_meses'       => ['nullable', 'integer', 'min:1'],
+            'peso_estimado'     => ['nullable', 'numeric', 'min:0'],
+            'estado'            => ['sometimes', 'string', 'size:2'],
+            'municipio'         => ['sometimes', 'string', 'max:255'],
+            'propriedade'       => ['nullable', 'string', 'max:255'],
         ]);
 
-        $anuncio->update($data);
+        $anuncioFields = array_intersect_key($data, array_flip([
+            'titulo', 'descricao', 'preco_unitario', 'aceita_negociacao', 'expira_em',
+        ]));
+        $animalFields = array_intersect_key($data, array_flip([
+            'raca', 'sexo', 'quantidade', 'idade_meses', 'peso_estimado',
+            'estado', 'municipio', 'propriedade',
+        ]));
 
-        return response()->json($anuncio->load('animal'));
+        if ($anuncioFields) $anuncio->update($anuncioFields);
+        if ($animalFields && $anuncio->animal) $anuncio->animal->update($animalFields);
+
+        return response()->json($anuncio->fresh()->load(['animal', 'midias']));
     }
 
     public function destroy(Request $request, Anuncio $anuncio): JsonResponse

@@ -124,6 +124,10 @@ export default function MeusAnunciosPage() {
                   className="text-xs text-green-700 border border-green-200 px-3 py-1 rounded-full hover:bg-green-50 text-center">
                   Ver
                 </Link>
+                <Link href={`/anuncios/${a.id}/editar`}
+                  className="text-xs text-blue-600 border border-blue-200 px-3 py-1 rounded-full hover:bg-blue-50 text-center">
+                  Editar
+                </Link>
                 <button onClick={() => encerrar(a.id)}
                   className="text-xs text-red-500 border border-red-200 px-3 py-1 rounded-full hover:bg-red-50">
                   Encerrar
