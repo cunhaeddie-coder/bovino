@@ -29,6 +29,7 @@ use App\Http\Controllers\Api\PlanoController;
 use App\Http\Controllers\Api\FazendaController;
 use App\Http\Controllers\Api\VisitaController;
 use App\Http\Controllers\Api\GestaoSugestaoController;
+use App\Http\Controllers\Api\ArrendamentoController;
 use App\Http\Controllers\Api\GoogleAuthController;
 use App\Http\Controllers\Api\WebhookController;
 use Illuminate\Support\Facades\Route;
@@ -327,6 +328,15 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/historico', [GestaoIAController::class, 'historico']);
         Route::get('/valor-rebanho', [GestaoIAController::class, 'valorRebanho']);
     });
+
+    // Arrendamentos (tomador e cedente)
+    Route::prefix('gestao/arrendamentos')->group(function () {
+        Route::get('/', [ArrendamentoController::class, 'index']);
+        Route::post('/', [ArrendamentoController::class, 'store']);
+        Route::put('/{arrendamento}', [ArrendamentoController::class, 'update']);
+        Route::delete('/{arrendamento}', [ArrendamentoController::class, 'destroy']);
+    });
+
     }); // fazenda.context
 
 }); // auth:sanctum

@@ -294,18 +294,19 @@ export default function GestaoDashboard() {
         <h2 className="text-sm font-semibold text-gray-700 mb-3">Módulos</h2>
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
           {[
-            { href: "/gestao/animais",      icon: "🐄", label: "Rebanho" },
-            { href: "/gestao/lotes",        icon: "🗂️", label: "Lotes" },
-            { href: "/gestao/saude",        icon: "💉", label: "Saúde" },
-            { href: "/gestao/pesagens",     icon: "⚖️", label: "Pesagens" },
-            { href: "/gestao/financeiro",   icon: "💰", label: "Financeiro" },
-            { href: "/gestao/insumos",      icon: "📦", label: "Estoque" },
-            { href: "/gestao/funcionarios", icon: "👷", label: "Equipe" },
-            { href: "/gestao/eventos",      icon: "📣", label: "Ocorrências" },
-            { href: "/gestao/pasto",        icon: "🌿", label: "App Pasto" },
-            { href: "/gestao/curral",       icon: "🔒", label: "App Curral" },
-            { href: "/gestao/gestor",       icon: "🤖", label: "IA Gestor" },
-            { href: "/inteligencia",        icon: "📊", label: "Inteligência" },
+            { href: "/gestao/animais",        icon: "🐄",  label: "Rebanho" },
+            { href: "/gestao/lotes",          icon: "🗂️", label: "Lotes" },
+            { href: "/gestao/saude",          icon: "💉",  label: "Saúde" },
+            { href: "/gestao/pesagens",       icon: "⚖️",  label: "Pesagens" },
+            { href: "/gestao/financeiro",     icon: "💰",  label: "Financeiro" },
+            { href: "/gestao/insumos",        icon: "📦",  label: "Estoque" },
+            { href: "/gestao/funcionarios",   icon: "👷",  label: "Equipe" },
+            { href: "/gestao/eventos",        icon: "📣",  label: "Ocorrências" },
+            { href: "/gestao/arrendamentos",  icon: "🏡",  label: "Arrendamentos" },
+            { href: "/gestao/pasto",          icon: "🌿",  label: "App Pasto" },
+            { href: "/gestao/curral",         icon: "🔒",  label: "App Curral" },
+            { href: "/gestao/gestor",         icon: "🤖",  label: "IA Gestor" },
+            { href: "/inteligencia",          icon: "📊",  label: "Inteligência" },
           ].map((item) => (
             <Link key={item.href} href={item.href}
               className="bg-white border border-gray-100 rounded-xl p-4 text-center hover:border-green-300 hover:shadow-sm transition-all">
