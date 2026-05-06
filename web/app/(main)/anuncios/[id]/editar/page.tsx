@@ -51,8 +51,9 @@ export default function EditarAnuncioPage() {
   const [deletando, setDeletando]   = useState<number[]>([]);
 
   // Novas mídias a adicionar
-  const [newFiles, setNewFiles]     = useState<File[]>([]);
+  const [newFiles, setNewFiles]       = useState<File[]>([]);
   const [newPreviews, setNewPreviews] = useState<string[]>([]);
+  const [uploading, setUploading]     = useState<number[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
   function set(field: keyof Form, value: string | boolean) {
@@ -116,6 +117,24 @@ export default function EditarAnuncioPage() {
   function onDrop(e: React.DragEvent) {
     e.preventDefault();
     addFiles(e.dataTransfer.files);
+  }
+
+  // ── Upload imediato de arquivo individual ────────────────────────────────
+
+  async function uploadArquivo(index: number) {
+    setUploading(prev => [...prev, index]);
+    try {
+      const fd = new FormData();
+      fd.append("arquivo", newFiles[index]);
+      fd.append("ordem", String(midias.length));
+      const { data: nova } = await api.post(`/anuncios/${id}/midias`, fd);
+      setMidias(prev => [...prev, nova]);
+      removeNew(index);
+    } catch {
+      setError("Erro ao enviar arquivo. Tente novamente.");
+    } finally {
+      setUploading(prev => prev.filter(i => i !== index));
+    }
   }
 
   // ── Deletar mídia existente ───────────────────────────────────────────────
@@ -353,25 +372,62 @@ export default function EditarAnuncioPage() {
             <span className="text-gray-400 font-normal">(opcional)</span>
           </h2>
 
-          {newFiles.length > 0 && (
+          {/* Fotos novas — grid */}
+          {newFiles.some((_, i) => newPreviews[i] !== "video") && (
             <div className="grid grid-cols-3 gap-2">
-              {newFiles.map((f, i) => (
+              {newFiles.map((f, i) => newPreviews[i] !== "video" && (
                 <div key={i} className="relative aspect-square rounded-xl overflow-hidden bg-gray-100 border border-gray-200 group">
-                  {newPreviews[i] !== "video" ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={newPreviews[i]} alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center text-gray-400 p-2">
-                      <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-                          d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M4 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H6a2 2 0 01-2-2V8z" />
-                      </svg>
-                      <span className="text-xs mt-1 truncate w-full text-center px-1">{f.name}</span>
-                    </div>
-                  )}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={newPreviews[i]} alt="" className="w-full h-full object-cover" />
                   <button type="button" onClick={() => removeNew(i)}
                     className="absolute top-1.5 right-1.5 bg-black/60 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity">
                     ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Vídeos novos — lista com botão de envio imediato */}
+          {newFiles.some((_, i) => newPreviews[i] === "video") && (
+            <div className="space-y-2">
+              {newFiles.map((f, i) => newPreviews[i] === "video" && (
+                <div key={i} className="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3">
+                  <div className="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center shrink-0 text-gray-400">
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                        d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M4 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H6a2 2 0 01-2-2V8z" />
+                    </svg>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-700 truncate">{f.name}</p>
+                    <p className="text-xs text-gray-400">{(f.size / 1024 / 1024).toFixed(1)} MB</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => uploadArquivo(i)}
+                    disabled={uploading.includes(i)}
+                    className="bg-green-600 hover:bg-green-700 text-white text-xs font-semibold px-4 py-2 rounded-lg transition-colors disabled:opacity-60 shrink-0 flex items-center gap-1.5"
+                  >
+                    {uploading.includes(i) ? (
+                      <>
+                        <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        Enviando...
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                        </svg>
+                        Enviar vídeo
+                      </>
+                    )}
+                  </button>
+                  <button type="button" onClick={() => removeNew(i)}
+                    className="text-gray-300 hover:text-red-400 transition-colors shrink-0">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
                   </button>
                 </div>
               ))}
