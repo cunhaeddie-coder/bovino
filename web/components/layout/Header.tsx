@@ -148,7 +148,7 @@ export function Header() {
             </>
           ) : (
             <>
-              <Link href="/login" className="text-green-100 hover:text-white text-sm">Entrar</Link>
+              <Link href="/login" className="hidden sm:block text-green-100 hover:text-white text-sm">Entrar</Link>
               <Link
                 href="/cadastro"
                 className="bg-white text-green-700 font-semibold text-sm px-4 py-1.5 rounded-full hover:bg-green-50 transition-colors"
