@@ -74,13 +74,18 @@ export default function FuncionariosPage() {
 
   async function carregar() {
     setLoading(true);
-    const [funs, prests, tarefasData] = await Promise.all([
-      api.get("/gestao/funcionarios").then(r => r.data),
-      api.get("/gestao/prestadores").then(r => r.data),
-      api.get("/gestao/tarefas").then(r => r.data),
-    ]);
-    setFuncionarios(funs); setPrestadores(prests); setTarefas(tarefasData);
-    setLoading(false);
+    try {
+      const [funs, prests, tarefasData] = await Promise.all([
+        api.get("/gestao/funcionarios").then(r => r.data).catch(() => []),
+        api.get("/gestao/prestadores").then(r => r.data).catch(() => []),
+        api.get("/gestao/tarefas").then(r => r.data).catch(() => []),
+      ]);
+      setFuncionarios(Array.isArray(funs) ? funs : (funs.data ?? []));
+      setPrestadores(Array.isArray(prests) ? prests : (prests.data ?? []));
+      setTarefas(Array.isArray(tarefasData) ? tarefasData : (tarefasData.data ?? []));
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => { carregar(); }, []);
