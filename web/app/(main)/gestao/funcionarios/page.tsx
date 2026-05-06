@@ -263,10 +263,19 @@ function FuncionarioModal({ onClose, onDone }: { onClose: () => void; onDone: ()
     salario: "", telefone: "", data_admissao: new Date().toISOString().split("T")[0],
   });
   const [saving, setSaving] = useState(false);
+  const [erro, setErro]     = useState("");
   async function submit(e: React.FormEvent) {
-    e.preventDefault(); setSaving(true);
-    try { await api.post("/gestao/funcionarios", { ...form, salario: form.salario || null }); onDone(); onClose(); }
-    catch { setSaving(false); }
+    e.preventDefault(); setSaving(true); setErro("");
+    try {
+      await api.post("/gestao/funcionarios", { ...form, salario: form.salario || null });
+      onDone(); onClose();
+    } catch (e: unknown) {
+      const err = e as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } };
+      const msg = err.response?.data?.errors
+        ? Object.values(err.response.data.errors).flat()[0]
+        : (err.response?.data?.message ?? "Erro ao salvar funcionário.");
+      setErro(msg);
+    } finally { setSaving(false); }
   }
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
@@ -276,6 +285,7 @@ function FuncionarioModal({ onClose, onDone }: { onClose: () => void; onDone: ()
           <button onClick={onClose} className="text-gray-400 text-xl">×</button>
         </div>
         <form onSubmit={submit} className="p-6 space-y-3">
+          {erro && <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl px-3 py-2">{erro}</div>}
           <input required value={form.nome} onChange={e => setForm({...form, nome: e.target.value})} placeholder="Nome completo"
             className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400" />
           <div className="grid grid-cols-2 gap-3">
