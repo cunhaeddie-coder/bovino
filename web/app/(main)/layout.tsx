@@ -2,6 +2,7 @@ import { Header } from "@/components/layout/Header";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { CotacaoStrip } from "@/components/home/CotacaoStrip";
 import { AuthHydrator } from "@/components/layout/AuthHydrator";
+import { ThemePicker } from "@/components/ui/ThemePicker";
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -13,6 +14,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         {children}
       </main>
       <BottomNav />
+      <ThemePicker />
     </>
   );
 }

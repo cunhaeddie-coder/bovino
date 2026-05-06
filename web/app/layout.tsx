@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
+import { ThemeProvider } from "@/components/ui/ThemeProvider";
 
 const geist = Geist({ variable: "--font-geist", subsets: ["latin"] });
 
@@ -23,7 +24,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="pt-BR" className={`${geist.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col bg-gray-50 text-gray-900">
-        <Providers>{children}</Providers>
+        <Providers>
+          <ThemeProvider />
+          {children}
+        </Providers>
       </body>
     </html>
   );
