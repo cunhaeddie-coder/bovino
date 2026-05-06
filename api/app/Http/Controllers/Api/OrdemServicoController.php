@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\EventoReproducao;
 use App\Models\EventoSaude;
+use App\Models\Funcionario;
 use App\Models\OrdemServico;
 use App\Models\OrdemServicoAnimal;
 use App\Models\Pesagem;
@@ -331,6 +332,62 @@ class OrdemServicoController extends Controller
         if ($os->status === 'aguardando') $novoStatus = 'em_andamento';
 
         $os->update(['status' => $novoStatus]);
+    }
+
+    // ── VAQUEIRO: OS atribuídas ao usuário logado ─────────────────────────────
+
+    public function minhasOrdens(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $funcionario = Funcionario::where('user_id', $user->id)->first();
+
+        if (!$funcionario) {
+            return response()->json([]);
+        }
+
+        $ordens = OrdemServico::where('atribuido_a', $funcionario->id)
+            ->whereIn('status', ['aguardando', 'em_andamento', 'parcial'])
+            ->with([
+                'pastagemDestino:id,nome',
+                'animais.animal:id,brinco,nome,raca,sexo,categoria,peso_atual,data_nascimento',
+                'animais.pastagemDestino:id,nome',
+            ])
+            ->withCount(['animais', 'animais as feitos_count' => fn($q) => $q->where('status', 'feito')])
+            ->orderByDesc('publicado_em')
+            ->get();
+
+        return response()->json($ordens);
+    }
+
+    public function vaqueirAtualizarAnimal(Request $request, int $osId, int $animalId): JsonResponse
+    {
+        $user = $request->user();
+        $funcionario = Funcionario::where('user_id', $user->id)->first();
+        abort_if(!$funcionario, 403, 'Acesso negado.');
+
+        $os = OrdemServico::where('atribuido_a', $funcionario->id)->findOrFail($osId);
+        abort_if(in_array($os->status, ['concluido', 'cancelado']), 422, 'OS encerrada.');
+
+        $item = OrdemServicoAnimal::where('ordem_servico_id', $osId)
+            ->where('animal_id', $animalId)
+            ->firstOrFail();
+
+        $data = $request->validate([
+            'status'              => ['required', 'in:pendente,feito,nao_realizado'],
+            'pastagem_destino_id' => ['nullable', 'exists:pastagens,id'],
+            'peso_execucao'       => ['nullable', 'numeric', 'min:0'],
+            'observacao'          => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $item->update([
+            ...$data,
+            'executado_por' => $data['status'] === 'feito' ? $user->id : null,
+            'executado_em'  => $data['status'] === 'feito' ? now() : null,
+        ]);
+
+        $this->recalcularStatus($os);
+
+        return response()->json($item->fresh());
     }
 
     public function estatisticas(Request $request): JsonResponse

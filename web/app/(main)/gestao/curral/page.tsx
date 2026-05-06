@@ -11,6 +11,180 @@ type Sessao = { id: number; data_sessao: string; descricao: string; status: stri
 
 const TIPOS_EVENTO = ["nascimento","morte","acidente","doença","fuga","cobertura","parto","cio","outros"];
 
+type OrdemAnimal = {
+  id: number; animal_id: number; status: string;
+  peso_execucao: number | null; observacao: string | null;
+  animal: { id: number; brinco: string | null; nome: string | null; raca: string; categoria: string; sexo: string; peso_atual: number | null; data_nascimento: string | null };
+};
+type MinhaOS = {
+  id: number; nome: string; finalidade: string; instrucoes: string | null;
+  animais_count: number; feitos_count: number;
+  pastagem_destino?: { nome: string } | null;
+  animais: OrdemAnimal[];
+};
+
+const FINALIDADE_ICON: Record<string, string> = {
+  desmama:"🍼", vacinacao:"💉", pesagem:"⚖️", transferencia_pasto:"🌿",
+  engorda:"📈", iatf:"🧬", cobertura:"🐂", diagnostico_prenhez:"🔬",
+  descarte:"🗑️", venda_marketplace:"🛒", venda_direta:"🤝",
+  frigorifico:"🥩", marcacao_brinco:"🏷️", outro:"📌",
+};
+
+function MinhasOrdensServico() {
+  const [ordens, setOrdens]     = useState<MinhaOS[]>([]);
+  const [loading, setLoading]   = useState(true);
+  const [aberta, setAberta]     = useState<number | null>(null);
+  const [salvando, setSalvando] = useState<number | null>(null);
+  const [localStatus, setLocalStatus] = useState<Record<string, { status: string; peso: string }>>({});
+
+  useEffect(() => {
+    api.get("/minhas-ordens")
+      .then(r => {
+        const lista: MinhaOS[] = r.data;
+        setOrdens(lista);
+        const map: Record<string, { status: string; peso: string }> = {};
+        lista.forEach(os => os.animais?.forEach(i => {
+          map[`${os.id}-${i.animal_id}`] = { status: i.status, peso: "" };
+        }));
+        setLocalStatus(map);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  async function salvarAnimal(osId: number, animalId: number) {
+    const key = `${osId}-${animalId}`;
+    const s = localStatus[key];
+    if (!s) return;
+    setSalvando(animalId);
+    try {
+      await api.put(`/minhas-ordens/${osId}/animais/${animalId}`, {
+        status: s.status,
+        peso_execucao: s.peso ? parseFloat(s.peso) : null,
+      });
+      setOrdens(prev => prev.map(os => {
+        if (os.id !== osId) return os;
+        return {
+          ...os,
+          feitos_count: os.animais.filter(a => (a.animal_id === animalId ? s.status : a.status) === "feito").length,
+          animais: os.animais.map(a => a.animal_id === animalId ? { ...a, status: s.status } : a),
+        };
+      }));
+    } catch { alert("Erro ao salvar. Verifique a conexão."); }
+    finally { setSalvando(null); }
+  }
+
+  if (loading) return (
+    <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
+      <p className="text-sm text-amber-600 animate-pulse">Carregando suas ordens...</p>
+    </div>
+  );
+
+  if (ordens.length === 0) return null;
+
+  return (
+    <div className="space-y-3">
+      <h2 className="text-sm font-bold text-gray-700 flex items-center gap-2">
+        <span className="w-2 h-2 bg-amber-400 rounded-full animate-pulse"/>
+        Minhas Ordens de Serviço ({ordens.length})
+      </h2>
+      {ordens.map(os => {
+        const pct = os.animais_count > 0 ? Math.round(os.feitos_count / os.animais_count * 100) : 0;
+        const isAberta = aberta === os.id;
+        const needsPeso = ["pesagem","frigorifico"].includes(os.finalidade);
+
+        return (
+          <div key={os.id} className="bg-white rounded-2xl border border-amber-200 shadow-sm overflow-hidden">
+            <button onClick={() => setAberta(isAberta ? null : os.id)}
+              className="w-full flex items-center gap-3 p-4 text-left hover:bg-amber-50 transition-colors">
+              <span className="text-xl">{FINALIDADE_ICON[os.finalidade] ?? "📋"}</span>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-gray-800 truncate text-sm">{os.nome}</p>
+                <div className="flex items-center gap-2 mt-1">
+                  <div className="flex-1 bg-gray-100 rounded-full h-1.5">
+                    <div className="bg-green-500 h-full rounded-full" style={{ width: `${pct}%` }}/>
+                  </div>
+                  <span className="text-xs text-gray-400 shrink-0">{os.feitos_count}/{os.animais_count}</span>
+                </div>
+              </div>
+              <svg className={`w-4 h-4 text-gray-400 shrink-0 transition-transform ${isAberta ? "rotate-180" : ""}`}
+                fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"/>
+              </svg>
+            </button>
+
+            {isAberta && (
+              <div className="border-t border-amber-100">
+                {os.instrucoes && (
+                  <div className="px-4 py-2 bg-amber-50 border-b border-amber-100">
+                    <p className="text-xs text-amber-700">{os.instrucoes}</p>
+                  </div>
+                )}
+                {os.pastagem_destino && (
+                  <div className="px-4 py-2 bg-green-50 border-b border-green-100">
+                    <p className="text-xs text-green-700 font-semibold">Destino: {os.pastagem_destino.nome}</p>
+                  </div>
+                )}
+                <div className="divide-y divide-gray-50">
+                  {os.animais.map(item => {
+                    const key = `${os.id}-${item.animal_id}`;
+                    const local = localStatus[key] ?? { status: item.status, peso: "" };
+                    const isDone = local.status === "feito";
+
+                    return (
+                      <div key={item.id} className={`p-3 ${isDone ? "bg-green-50" : ""}`}>
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-800">
+                              {item.animal?.brinco ?? "Sem brinco"}{item.animal?.nome ? ` — ${item.animal.nome}` : ""}
+                            </p>
+                            <p className="text-xs text-gray-400">
+                              {item.animal?.raca} · {item.animal?.categoria} ·{" "}
+                              {item.animal?.peso_atual ? `${item.animal.peso_atual}kg` : "sem peso"}
+                            </p>
+                          </div>
+                          <select
+                            value={local.status}
+                            onChange={e => setLocalStatus(prev => ({ ...prev, [key]: { ...local, status: e.target.value } }))}
+                            className={`text-xs font-semibold px-2 py-1 rounded-lg border-0 ${
+                              local.status === "feito" ? "bg-green-100 text-green-700" :
+                              local.status === "nao_realizado" ? "bg-red-100 text-red-600" :
+                              "bg-gray-100 text-gray-600"
+                            }`}>
+                            <option value="pendente">Pendente</option>
+                            <option value="feito">Feito ✓</option>
+                            <option value="nao_realizado">Não realizado</option>
+                          </select>
+                        </div>
+
+                        {isDone && needsPeso && (
+                          <div className="mt-2 flex gap-2">
+                            <input type="number" value={local.peso}
+                              onChange={e => setLocalStatus(prev => ({ ...prev, [key]: { ...local, peso: e.target.value } }))}
+                              placeholder="Peso (kg)" className="flex-1 border border-gray-200 rounded-lg px-2 py-1.5 text-xs"/>
+                          </div>
+                        )}
+
+                        {local.status !== item.status && (
+                          <button onClick={() => salvarAnimal(os.id, item.animal_id)}
+                            disabled={salvando === item.animal_id}
+                            className="mt-2 w-full bg-green-600 text-white text-xs font-semibold py-1.5 rounded-lg hover:bg-green-700 disabled:opacity-60">
+                            {salvando === item.animal_id ? "Salvando..." : "Confirmar"}
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function CurralPage() {
   const [online, setOnline]           = useState(true);
   const [animais, setAnimais]         = useState<Animal[]>([]);
@@ -157,6 +331,9 @@ export default function CurralPage() {
           )}
         </div>
       </div>
+
+      {/* Minhas OS atribuídas */}
+      <MinhasOrdensServico />
 
       {/* Pendentes + Sincronizar */}
       {totalPendentes > 0 && (

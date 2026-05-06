@@ -7,6 +7,8 @@ use App\Models\Fazenda;
 use App\Models\Funcionario;
 use App\Models\PrestadorServico;
 use App\Models\Tarefa;
+use App\Models\User;
+use App\Services\OtpService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -37,6 +39,7 @@ class GestaoFuncionarioController extends Controller
             'cpf'            => ['nullable','string'],
             'telefone'       => ['nullable','string'],
             'cargo'          => ['required','string'],
+            'papel'          => ['nullable','in:vaqueiro,veterinario,gerente,outro'],
             'salario'        => ['nullable','numeric'],
             'data_admissao'  => ['required','date'],
             'tipo_contrato'  => ['required','in:clt,pj,temporario,diarista'],
@@ -44,6 +47,50 @@ class GestaoFuncionarioController extends Controller
         ]);
         $f = Funcionario::create(['fazenda_id' => $fazenda->id] + $data);
         return response()->json($f, 201);
+    }
+
+    public function ativarApp(Request $request, int $id): JsonResponse
+    {
+        $fazenda = $this->fazenda($request);
+        $funcionario = Funcionario::where('fazenda_id', $fazenda->id)->findOrFail($id);
+
+        if ($funcionario->user_id) {
+            return response()->json(['message' => 'Funcionário já tem acesso ao app.', 'ja_ativo' => true]);
+        }
+
+        abort_if(!$funcionario->telefone, 422, 'Cadastre o telefone do funcionário primeiro.');
+
+        $celular = preg_replace('/\D/', '', $funcionario->telefone);
+
+        $user = User::firstOrCreate(
+            ['celular' => $celular],
+            ['nome' => $funcionario->nome, 'verificado_celular' => false]
+        );
+
+        $funcionario->update(['user_id' => $user->id]);
+
+        // Envia OTP de ativação via WhatsApp
+        try {
+            $otpService = app(OtpService::class);
+            $codigo = $otpService->gerar($celular, 'cadastro');
+            $otpService->enviarWhatsApp($celular, $codigo);
+        } catch (\Exception $e) {
+            // Não bloqueia se o WhatsApp falhar — gestor pode informar manualmente
+        }
+
+        return response()->json([
+            'message' => 'Acesso ativado. Código de primeiro acesso enviado via WhatsApp.',
+            'celular'  => $celular,
+            'user_id'  => $user->id,
+        ]);
+    }
+
+    public function revogarApp(Request $request, int $id): JsonResponse
+    {
+        $fazenda = $this->fazenda($request);
+        $funcionario = Funcionario::where('fazenda_id', $fazenda->id)->findOrFail($id);
+        $funcionario->update(['user_id' => null]);
+        return response()->json(['message' => 'Acesso ao app revogado.']);
     }
 
     public function updateFuncionario(Request $request, int $id): JsonResponse

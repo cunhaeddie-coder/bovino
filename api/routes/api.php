@@ -264,6 +264,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/', [GestaoFuncionarioController::class, 'storeFuncionario']);
         Route::put('/{id}', [GestaoFuncionarioController::class, 'updateFuncionario']);
         Route::post('/{id}/desligar', [GestaoFuncionarioController::class, 'desligarFuncionario']);
+        Route::post('/{id}/ativar-app', [GestaoFuncionarioController::class, 'ativarApp']);
+        Route::post('/{id}/revogar-app', [GestaoFuncionarioController::class, 'revogarApp']);
     });
 
     Route::prefix('gestao/prestadores')->group(function () {
@@ -330,6 +332,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/historico', [GestaoIAController::class, 'historico']);
         Route::get('/valor-rebanho', [GestaoIAController::class, 'valorRebanho']);
     });
+
+    // Minhas OS (vaqueiro — fora de fazenda.context)
+    Route::get('minhas-ordens', [OrdemServicoController::class, 'minhasOrdens']);
+    Route::put('minhas-ordens/{osId}/animais/{animalId}', [OrdemServicoController::class, 'vaqueirAtualizarAnimal']);
 
     // Ordens de Serviço
     Route::prefix('gestao/ordens')->group(function () {

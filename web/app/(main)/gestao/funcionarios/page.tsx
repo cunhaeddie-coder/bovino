@@ -30,11 +30,26 @@ const TOUR_STEPS: DriveStep[] = [
   },
 ];
 
-type Funcionario = { id: number; nome: string; cargo: string; tipo_contrato: string; salario: number | null; telefone: string | null; data_admissao: string; ativo: boolean };
+type Funcionario = {
+  id: number; nome: string; cargo: string; tipo_contrato: string;
+  salario: number | null; telefone: string | null; data_admissao: string;
+  ativo: boolean; papel: string | null; user_id: number | null;
+};
 type Prestador   = { id: number; nome: string; especialidade: string; telefone: string | null; valor_hora: number | null; valor_diaria: number | null; ativo: boolean };
 type Tarefa      = {
   id: number; titulo: string; tipo: string; prioridade: string; status: string;
   data_prevista: string | null; responsavel: { nome: string } | null; lote: { nome: string } | null;
+};
+
+const PAPEL_LABEL: Record<string, string> = {
+  vaqueiro: "Vaqueiro", veterinario: "Veterinário",
+  gerente: "Gerente", outro: "Outro",
+};
+const PAPEL_COR: Record<string, string> = {
+  vaqueiro: "bg-amber-100 text-amber-700",
+  veterinario: "bg-blue-100 text-blue-700",
+  gerente: "bg-purple-100 text-purple-700",
+  outro: "bg-gray-100 text-gray-500",
 };
 
 const PRIORIDADE_COR: Record<string, string> = {
@@ -121,23 +136,59 @@ export default function FuncionariosPage() {
           {loading ? <p className="text-gray-400 text-sm text-center py-10">Carregando...</p>
           : funcionarios.length === 0 ? <p className="text-gray-400 text-sm text-center py-10">Nenhum funcionário cadastrado</p>
           : funcionarios.map(f => (
-            <div key={f.id} className={`bg-white rounded-2xl border shadow-sm p-5 flex items-center justify-between ${!f.ativo ? "opacity-50" : "border-gray-100"}`}>
+            <div key={f.id} className={`bg-white rounded-2xl border shadow-sm p-4 ${!f.ativo ? "opacity-50" : "border-gray-100"}`}>
               <div className="flex items-center gap-4">
-                <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center font-bold text-green-700">
+                <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center font-bold text-green-700 shrink-0">
                   {f.nome[0]}
                 </div>
-                <div>
-                  <p className="font-semibold text-gray-800">{f.nome}</p>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <p className="font-semibold text-gray-800">{f.nome}</p>
+                    {f.papel && f.papel !== "outro" && (
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${PAPEL_COR[f.papel]}`}>
+                        {PAPEL_LABEL[f.papel]}
+                      </span>
+                    )}
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${f.ativo ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
+                      {f.ativo ? "Ativo" : "Inativo"}
+                    </span>
+                  </div>
                   <p className="text-xs text-gray-400">{f.cargo} · {f.tipo_contrato.toUpperCase()}</p>
                   {f.telefone && <p className="text-xs text-gray-400">{f.telefone}</p>}
+                  {f.salario && <p className="text-xs text-gray-500">{fmt(f.salario)}/mês · desde {new Date(f.data_admissao).toLocaleDateString("pt-BR")}</p>}
                 </div>
-              </div>
-              <div className="text-right">
-                {f.salario && <p className="font-semibold text-gray-800">{fmt(f.salario)}/mês</p>}
-                <p className="text-xs text-gray-400">desde {new Date(f.data_admissao).toLocaleDateString("pt-BR")}</p>
-                <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${f.ativo ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
-                  {f.ativo ? "Ativo" : "Inativo"}
-                </span>
+                <div className="shrink-0 flex flex-col items-end gap-1.5">
+                  {f.user_id ? (
+                    <span className="flex items-center gap-1 text-[10px] font-bold text-green-600 bg-green-50 px-2 py-1 rounded-full border border-green-200">
+                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7"/>
+                      </svg>
+                      Com acesso ao app
+                    </span>
+                  ) : (
+                    <button
+                      disabled={!f.telefone}
+                      onClick={async () => {
+                        if (!confirm(`Ativar acesso ao app para ${f.nome}?\nUm código será enviado para ${f.telefone}`)) return;
+                        try {
+                          await api.post(`/gestao/funcionarios/${f.id}/ativar-app`);
+                          alert(`Acesso ativado! Código enviado para ${f.telefone}`);
+                          carregar();
+                        } catch (e: unknown) {
+                          const err = e as { response?: { data?: { message?: string } } };
+                          alert(err.response?.data?.message ?? "Erro ao ativar.");
+                        }
+                      }}
+                      className="flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-1 rounded-full border border-amber-200 hover:bg-amber-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                      title={!f.telefone ? "Cadastre o telefone primeiro" : "Ativar acesso ao app"}
+                    >
+                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                      </svg>
+                      Ativar no app
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           ))}
@@ -207,7 +258,10 @@ export default function FuncionariosPage() {
 }
 
 function FuncionarioModal({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
-  const [form, setForm] = useState({ nome: "", cargo: "", tipo_contrato: "clt", salario: "", telefone: "", data_admissao: new Date().toISOString().split("T")[0] });
+  const [form, setForm] = useState({
+    nome: "", cargo: "", tipo_contrato: "clt", papel: "outro",
+    salario: "", telefone: "", data_admissao: new Date().toISOString().split("T")[0],
+  });
   const [saving, setSaving] = useState(false);
   async function submit(e: React.FormEvent) {
     e.preventDefault(); setSaving(true);
@@ -227,23 +281,41 @@ function FuncionarioModal({ onClose, onDone }: { onClose: () => void; onDone: ()
           <div className="grid grid-cols-2 gap-3">
             <input required value={form.cargo} onChange={e => setForm({...form, cargo: e.target.value})} placeholder="Cargo / função"
               className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400" />
-            <select value={form.tipo_contrato} onChange={e => setForm({...form, tipo_contrato: e.target.value})}
-              className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400">
-              <option value="clt">CLT</option><option value="pj">PJ</option>
-              <option value="temporario">Temporário</option><option value="diarista">Diarista</option>
+            <select value={form.papel} onChange={e => setForm({...form, papel: e.target.value})}
+              className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 bg-white">
+              <option value="vaqueiro">🤠 Vaqueiro</option>
+              <option value="veterinario">🩺 Veterinário</option>
+              <option value="gerente">👔 Gerente</option>
+              <option value="outro">Outro</option>
             </select>
           </div>
           <div className="grid grid-cols-2 gap-3">
+            <select value={form.tipo_contrato} onChange={e => setForm({...form, tipo_contrato: e.target.value})}
+              className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 bg-white">
+              <option value="clt">CLT</option><option value="pj">PJ</option>
+              <option value="temporario">Temporário</option><option value="diarista">Diarista</option>
+            </select>
             <input type="number" value={form.salario} onChange={e => setForm({...form, salario: e.target.value})} placeholder="Salário (R$)" step="0.01" min="0"
               className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400" />
-            <input value={form.telefone} onChange={e => setForm({...form, telefone: e.target.value})} placeholder="Telefone"
-              className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400" />
+          </div>
+          <div>
+            <label className="text-xs text-gray-500 block mb-1">
+              Celular / WhatsApp <span className="text-amber-600 font-semibold">(necessário para acesso ao app)</span>
+            </label>
+            <input value={form.telefone} onChange={e => setForm({...form, telefone: e.target.value})}
+              placeholder="(xx) 9xxxx-xxxx"
+              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400" />
           </div>
           <div>
             <label className="text-xs text-gray-500 block mb-1">Data de admissão</label>
             <input type="date" required value={form.data_admissao} onChange={e => setForm({...form, data_admissao: e.target.value})}
               className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400" />
           </div>
+          {form.papel === "vaqueiro" && form.telefone && (
+            <p className="text-xs text-amber-700 bg-amber-50 rounded-lg px-3 py-2">
+              Após salvar, clique em "Ativar no app" para enviar o código de acesso via WhatsApp.
+            </p>
+          )}
           <div className="flex gap-2 pt-1">
             <button type="button" onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 font-semibold">Cancelar</button>
             <button type="submit" disabled={saving} className="flex-1 py-2.5 rounded-xl bg-green-600 hover:bg-green-700 text-white text-sm font-semibold disabled:opacity-50">{saving ? "Salvando..." : "Salvar"}</button>
