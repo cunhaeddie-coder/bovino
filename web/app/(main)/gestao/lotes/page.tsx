@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { TourButton } from "@/components/ui/TourButton";
 import type { DriveStep } from "driver.js";
@@ -106,6 +107,7 @@ function UnitToggle({ value, options, onChange }: {
 }
 
 export default function LotesPage() {
+  const router = useRouter();
   const [lotes, setLotes]               = useState<Lote[]>([]);
   const [loading, setLoading]           = useState(true);
   const [filtroStatus, setFiltroStatus] = useState("");
@@ -196,7 +198,7 @@ export default function LotesPage() {
     });
     if (lote.peso_medio)   params.set("peso_medio",   String(lote.peso_medio));
     if (lote.preco_arroba) params.set("preco_arroba", String(lote.preco_arroba));
-    window.location.href = `/anuncios/novo?${params}`;
+    router.push(`/anuncios/novo?${params}`);
   }
 
   const precoLabel = form.unidade_preco === "arroba" ? "Preço/@" : "Preço/kg";
