@@ -12,6 +12,7 @@ const NAV = [
   { href: "/gestao/financeiro",  label: "Financeiro",  icon: "💰" },
   { href: "/gestao/insumos",     label: "Estoque",     icon: "📦" },
   { href: "/gestao/funcionarios",label: "Equipe",      icon: "👷" },
+  { href: "/gestao/ordens",      label: "OS",          icon: "📋" },
   { href: "/gestao/eventos",     label: "Ocorrências", icon: "📣" },
   { href: "/gestao/pasto",       label: "App Pasto",   icon: "🌿" },
   { href: "/gestao/curral",      label: "App Curral",  icon: "🔒" },

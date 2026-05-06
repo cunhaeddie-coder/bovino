@@ -30,6 +30,7 @@ use App\Http\Controllers\Api\FazendaController;
 use App\Http\Controllers\Api\VisitaController;
 use App\Http\Controllers\Api\GestaoSugestaoController;
 use App\Http\Controllers\Api\ArrendamentoController;
+use App\Http\Controllers\Api\OrdemServicoController;
 use App\Http\Controllers\Api\GoogleAuthController;
 use App\Http\Controllers\Api\WebhookController;
 use Illuminate\Support\Facades\Route;
@@ -328,6 +329,19 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/chat', [GestaoIAController::class, 'chat']);
         Route::get('/historico', [GestaoIAController::class, 'historico']);
         Route::get('/valor-rebanho', [GestaoIAController::class, 'valorRebanho']);
+    });
+
+    // Ordens de Serviço
+    Route::prefix('gestao/ordens')->group(function () {
+        Route::get('/estatisticas', [OrdemServicoController::class, 'estatisticas']);
+        Route::get('/', [OrdemServicoController::class, 'index']);
+        Route::post('/', [OrdemServicoController::class, 'store']);
+        Route::get('/{id}', [OrdemServicoController::class, 'show']);
+        Route::put('/{id}', [OrdemServicoController::class, 'update']);
+        Route::delete('/{id}', [OrdemServicoController::class, 'destroy']);
+        Route::post('/{id}/publicar', [OrdemServicoController::class, 'publicar']);
+        Route::post('/{id}/executar', [OrdemServicoController::class, 'executar']);
+        Route::put('/{osId}/animais/{animalId}', [OrdemServicoController::class, 'atualizarAnimal']);
     });
 
     // Arrendamentos (tomador e cedente)
