@@ -1,14 +1,14 @@
 import Link from "next/link";
 import { Plano } from "@/lib/types";
 import PlanoCardAction from "./PlanoCardAction";
+import { serverFetch } from "@/lib/api-server";
 
 async function getPlanos(): Promise<Record<string, Plano[]>> {
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api"}/planos`,
-    { cache: "no-store" }
-  );
-  if (!res.ok) return {};
-  return res.json();
+  try {
+    return await serverFetch<Record<string, Plano[]>>("/planos", { revalidate: 3600 });
+  } catch {
+    return {};
+  }
 }
 
 function formatPreco(preco: number) {
