@@ -383,7 +383,7 @@ export default function LotesPage() {
                     ✏️ Editar
                   </button>
                   {lote.status === "disponivel" && (
-                    <button onClick={() => { setErroPublicar(""); setConfirmarPublicar(lote); }}
+                    <button onClick={() => setConfirmarPublicar(lote)}
                       className="flex-1 border border-green-700 text-green-700 text-xs font-semibold py-2 rounded-full hover:bg-green-50 transition">
                       📢 Publicar
                     </button>
