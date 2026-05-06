@@ -265,6 +265,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/{id}', [GestaoFuncionarioController::class, 'updateFuncionario']);
         Route::post('/{id}/desligar', [GestaoFuncionarioController::class, 'desligarFuncionario']);
         Route::post('/{id}/ativar-app', [GestaoFuncionarioController::class, 'ativarApp']);
+        Route::post('/{id}/reenviar-codigo', [GestaoFuncionarioController::class, 'reenviarCodigo']);
         Route::post('/{id}/revogar-app', [GestaoFuncionarioController::class, 'revogarApp']);
     });
 

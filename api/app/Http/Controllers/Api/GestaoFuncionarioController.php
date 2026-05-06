@@ -69,20 +69,75 @@ class GestaoFuncionarioController extends Controller
 
         $funcionario->update(['user_id' => $user->id]);
 
-        // Envia OTP de ativação via WhatsApp
+        $otpService = app(OtpService::class);
+        $codigo     = $otpService->gerar($celular, 'cadastro');
+
+        $whatsappEnviado = false;
+        $whatsappErro    = null;
+
         try {
-            $otpService = app(OtpService::class);
-            $codigo = $otpService->gerar($celular, 'cadastro');
-            $otpService->enviarWhatsApp($celular, $codigo);
+            $whatsappEnviado = $otpService->enviarWhatsApp($celular, $codigo);
         } catch (\Exception $e) {
-            // Não bloqueia se o WhatsApp falhar — gestor pode informar manualmente
+            $whatsappErro = $e->getMessage();
+            \Illuminate\Support\Facades\Log::error('ativarApp: falha WhatsApp', [
+                'funcionario_id' => $id,
+                'celular'        => $celular,
+                'erro'           => $whatsappErro,
+            ]);
         }
 
-        return response()->json([
-            'message' => 'Acesso ativado. Código de primeiro acesso enviado via WhatsApp.',
-            'celular'  => $celular,
-            'user_id'  => $user->id,
-        ]);
+        $response = [
+            'message'          => 'Acesso ativado.',
+            'celular'          => $celular,
+            'user_id'          => $user->id,
+            'whatsapp_enviado' => $whatsappEnviado,
+        ];
+
+        // Se WhatsApp não foi enviado (sem credenciais ou erro), devolve o código
+        // para que o gestor passe manualmente ao vaqueiro.
+        if (!$whatsappEnviado) {
+            $response['codigo_manual'] = $codigo;
+            $response['aviso'] = $whatsappErro
+                ? 'Falha ao enviar WhatsApp. Passe o código abaixo manualmente ao vaqueiro.'
+                : 'WhatsApp não configurado. Passe o código abaixo manualmente ao vaqueiro.';
+        }
+
+        return response()->json($response);
+    }
+
+    public function reenviarCodigo(Request $request, int $id): JsonResponse
+    {
+        $fazenda     = $this->fazenda($request);
+        $funcionario = Funcionario::where('fazenda_id', $fazenda->id)->findOrFail($id);
+
+        abort_if(!$funcionario->user_id, 422, 'Funcionário ainda não tem acesso ao app.');
+        abort_if(!$funcionario->telefone, 422, 'Cadastre o telefone do funcionário primeiro.');
+
+        $celular    = preg_replace('/\D/', '', $funcionario->telefone);
+        $otpService = app(OtpService::class);
+        $codigo     = $otpService->gerar($celular, 'cadastro');
+
+        $whatsappEnviado = false;
+        try {
+            $whatsappEnviado = $otpService->enviarWhatsApp($celular, $codigo);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('reenviarCodigo: falha WhatsApp', [
+                'funcionario_id' => $id, 'celular' => $celular, 'erro' => $e->getMessage(),
+            ]);
+        }
+
+        $response = [
+            'message'          => 'Novo código gerado.',
+            'celular'          => $celular,
+            'whatsapp_enviado' => $whatsappEnviado,
+        ];
+
+        if (!$whatsappEnviado) {
+            $response['codigo_manual'] = $codigo;
+            $response['aviso'] = 'WhatsApp não configurado. Passe o código abaixo manualmente ao vaqueiro.';
+        }
+
+        return response()->json($response);
     }
 
     public function revogarApp(Request $request, int $id): JsonResponse

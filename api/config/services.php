@@ -49,4 +49,16 @@ return [
         ],
     ],
 
+    'zapi' => [
+        'instance_id'  => env('ZAPI_INSTANCE_ID'),
+        'token'        => env('ZAPI_TOKEN'),
+        'client_token' => env('ZAPI_CLIENT_TOKEN'),
+    ],
+
+    'twilio' => [
+        'sid'   => env('TWILIO_SID'),
+        'token' => env('TWILIO_TOKEN'),
+        'from'  => env('TWILIO_FROM'),
+    ],
+
 ];
