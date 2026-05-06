@@ -114,8 +114,6 @@ export default function LotesPage() {
   const [form, setForm]                 = useState<FormState>(FORM_VAZIO);
   const [salvando, setSalvando]         = useState(false);
   const [confirmarPublicar, setConfirmarPublicar] = useState<Lote | null>(null);
-  const [publicando, setPublicando]     = useState(false);
-  const [erroPublicar, setErroPublicar] = useState("");
 
   async function carregar() {
     setLoading(true);
@@ -189,25 +187,16 @@ export default function LotesPage() {
     }
   }
 
-  async function publicar(lote: Lote) {
-    setPublicando(true);
-    setErroPublicar("");
-    try {
-      const { data } = await api.get(`/gestao/lotes/${lote.id}/publicar`);
-      const params = new URLSearchParams({
-        raca:        data.raca        ?? "",
-        quantidade:  String(data.quantidade ?? ""),
-        estado:      data.estado      ?? "",
-        municipio:   data.municipio   ?? "",
-        propriedade: data.propriedade ?? "",
-        lote_id:     String(data.lote_id),
-      });
-      window.location.href = `/anuncios/novo?${params}`;
-    } catch (err: any) {
-      const msg = err.response?.data?.message ?? "Erro ao publicar. Verifique sua conexão e tente novamente.";
-      setErroPublicar(msg);
-      setPublicando(false);
-    }
+  function publicar(lote: Lote) {
+    const params = new URLSearchParams({
+      raca:       lote.raca       ?? "",
+      quantidade: String(lote.qtd_cabecas),
+      lote_id:    String(lote.id),
+      categoria:  lote.categoria  ?? "",
+    });
+    if (lote.peso_medio)   params.set("peso_medio",   String(lote.peso_medio));
+    if (lote.preco_arroba) params.set("preco_arroba", String(lote.preco_arroba));
+    window.location.href = `/anuncios/novo?${params}`;
   }
 
   const precoLabel = form.unidade_preco === "arroba" ? "Preço/@" : "Preço/kg";
@@ -429,23 +418,14 @@ export default function LotesPage() {
               )}
             </div>
 
-            {erroPublicar && (
-              <p className="text-xs text-red-600 bg-red-50 rounded-xl px-3 py-2">{erroPublicar}</p>
-            )}
-
             <div className="flex gap-2">
-              <button onClick={() => { setConfirmarPublicar(null); setErroPublicar(""); }}
-                disabled={publicando}
-                className="flex-1 border border-gray-200 text-gray-700 font-semibold py-2.5 rounded-full text-sm hover:bg-gray-50 disabled:opacity-50">
+              <button onClick={() => setConfirmarPublicar(null)}
+                className="flex-1 border border-gray-200 text-gray-700 font-semibold py-2.5 rounded-full text-sm hover:bg-gray-50">
                 Cancelar
               </button>
               <button onClick={() => publicar(confirmarPublicar)}
-                disabled={publicando}
-                className="flex-1 bg-green-700 text-white font-semibold py-2.5 rounded-full text-sm hover:bg-green-800 disabled:opacity-60 flex items-center justify-center gap-2">
-                {publicando
-                  ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Publicando...</>
-                  : "📢 Confirmar publicação"
-                }
+                className="flex-1 bg-green-700 text-white font-semibold py-2.5 rounded-full text-sm hover:bg-green-800">
+                📢 Confirmar publicação
               </button>
             </div>
           </div>
