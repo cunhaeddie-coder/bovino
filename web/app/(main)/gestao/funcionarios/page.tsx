@@ -72,6 +72,61 @@ export default function FuncionariosPage() {
   const [editandoFun, setEditandoFun]   = useState<Funcionario | null>(null);
   const [showPrest, setShowPrest]       = useState(false);
   const [showTarefa, setShowTarefa]     = useState(false);
+  const [codigoModal, setCodigoModal]   = useState<{ nome: string; celular: string; codigo: string; aviso: string } | null>(null);
+
+  async function ativarApp(f: Funcionario) {
+    if (!confirm(`Ativar acesso ao app para ${f.nome}?\n\nUm código de 6 dígitos será gerado.\nVocê vai enviá-lo manualmente para: ${f.telefone}`)) return;
+    try {
+      const res = await api.post(`/gestao/funcionarios/${f.id}/ativar-app`);
+      const data = res.data as {
+        whatsapp_enviado: boolean;
+        codigo_manual?: string;
+        aviso?: string;
+        celular: string;
+      };
+      if (data.whatsapp_enviado) {
+        alert(`Código enviado via WhatsApp para ${data.celular}!\nO vaqueiro pode entrar no app agora.`);
+      } else if (data.codigo_manual) {
+        setCodigoModal({
+          nome:   f.nome,
+          celular: data.celular,
+          codigo: data.codigo_manual,
+          aviso:  data.aviso ?? "Passe este código ao vaqueiro.",
+        });
+      } else {
+        alert("Acesso ativado.");
+      }
+      carregar();
+    } catch (e: unknown) {
+      const err = e as { response?: { data?: { message?: string } } };
+      alert(err.response?.data?.message ?? "Erro ao ativar.");
+    }
+  }
+
+  async function reenviarCodigo(f: Funcionario) {
+    try {
+      const res = await api.post(`/gestao/funcionarios/${f.id}/reenviar-codigo`);
+      const data = res.data as {
+        whatsapp_enviado: boolean;
+        codigo_manual?: string;
+        aviso?: string;
+        celular: string;
+      };
+      if (data.whatsapp_enviado) {
+        alert(`Novo código enviado via WhatsApp para ${data.celular}!`);
+      } else if (data.codigo_manual) {
+        setCodigoModal({
+          nome:    f.nome,
+          celular: data.celular,
+          codigo:  data.codigo_manual,
+          aviso:   data.aviso ?? "Passe este código ao vaqueiro.",
+        });
+      }
+    } catch (e: unknown) {
+      const err = e as { response?: { data?: { message?: string } } };
+      alert(err.response?.data?.message ?? "Erro ao gerar código.");
+    }
+  }
 
   async function carregar() {
     setLoading(true);
@@ -91,7 +146,7 @@ export default function FuncionariosPage() {
 
   useEffect(() => { carregar(); }, []);
 
-  const totalFolha = funcionarios.filter(f => f.ativo).reduce((s, f) => s + (f.salario ?? 0), 0);
+  const totalFolha = funcionarios.filter(f => f.ativo).reduce((s, f) => s + (Number(f.salario) || 0), 0);
 
   return (
     <div className="space-y-5">
@@ -161,30 +216,32 @@ export default function FuncionariosPage() {
                   </div>
                   <p className="text-xs text-gray-400">{f.cargo} · {f.tipo_contrato.toUpperCase()}</p>
                   {f.telefone && <p className="text-xs text-gray-400">{f.telefone}</p>}
-                  {f.salario && <p className="text-xs text-gray-500">{fmt(f.salario)}/mês · desde {new Date(f.data_admissao).toLocaleDateString("pt-BR")}</p>}
+                  {f.salario && <p className="text-xs text-gray-500">{fmt(Number(f.salario))}/mês · desde {new Date(f.data_admissao).toLocaleDateString("pt-BR")}</p>}
                 </div>
                 <div className="shrink-0 flex flex-col items-end gap-1.5">
                   {f.user_id ? (
-                    <span className="flex items-center gap-1 text-[10px] font-bold text-green-600 bg-green-50 px-2 py-1 rounded-full border border-green-200">
-                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7"/>
-                      </svg>
-                      Com acesso ao app
-                    </span>
+                    <div className="flex flex-col items-end gap-1">
+                      <span className="flex items-center gap-1 text-[10px] font-bold text-green-600 bg-green-50 px-2 py-1 rounded-full border border-green-200">
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7"/>
+                        </svg>
+                        Com acesso ao app
+                      </span>
+                      <button
+                        onClick={() => reenviarCodigo(f)}
+                        className="flex items-center gap-1 text-[10px] font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded-full border border-blue-200 hover:bg-blue-100 transition-colors"
+                        title="Gerar novo código de acesso"
+                      >
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                        </svg>
+                        Reenviar código
+                      </button>
+                    </div>
                   ) : (
                     <button
                       disabled={!f.telefone}
-                      onClick={async () => {
-                        if (!confirm(`Ativar acesso ao app para ${f.nome}?\nUm código será enviado para ${f.telefone}`)) return;
-                        try {
-                          await api.post(`/gestao/funcionarios/${f.id}/ativar-app`);
-                          alert(`Acesso ativado! Código enviado para ${f.telefone}`);
-                          carregar();
-                        } catch (e: unknown) {
-                          const err = e as { response?: { data?: { message?: string } } };
-                          alert(err.response?.data?.message ?? "Erro ao ativar.");
-                        }
-                      }}
+                      onClick={() => ativarApp(f)}
                       className="flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-1 rounded-full border border-amber-200 hover:bg-amber-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                       title={!f.telefone ? "Cadastre o telefone primeiro" : "Ativar acesso ao app"}
                     >
@@ -299,6 +356,51 @@ export default function FuncionariosPage() {
       {editandoFun  && <FuncionarioModal funcionario={editandoFun} onClose={() => setEditandoFun(null)} onDone={carregar} />}
       {showPrest    && <PrestadorModal  onClose={() => setShowPrest(false)} onDone={carregar} />}
       {showTarefa   && <TarefaModal funcionarios={funcionarios} prestadores={prestadores} onClose={() => setShowTarefa(false)} onDone={carregar} />}
+
+      {codigoModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden">
+            <div className="bg-amber-50 border-b border-amber-100 px-6 py-4">
+              <h2 className="font-bold text-amber-800">Código de acesso manual</h2>
+              <p className="text-xs text-amber-600 mt-0.5">{codigoModal.aviso}</p>
+            </div>
+            <div className="px-6 py-5 space-y-4">
+              <div>
+                <p className="text-xs text-gray-500 mb-1">Funcionário</p>
+                <p className="font-semibold text-gray-800">{codigoModal.nome}</p>
+                <p className="text-xs text-gray-400">{codigoModal.celular}</p>
+              </div>
+              <div className="bg-gray-900 rounded-xl p-4 text-center">
+                <p className="text-xs text-gray-400 mb-1">Código de primeiro acesso</p>
+                <p className="text-3xl font-mono font-bold tracking-[0.3em] text-white select-all">{codigoModal.codigo}</p>
+                <p className="text-xs text-gray-500 mt-1">Válido por 10 minutos</p>
+              </div>
+              <p className="text-xs text-gray-500 bg-gray-50 rounded-xl px-3 py-2">
+                Envie este código pelo WhatsApp para <strong>{codigoModal.celular}</strong>.
+                O vaqueiro usa este código no primeiro login do app.
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    const texto = `Seu código de acesso ao app Bovino é: ${codigoModal.codigo}\nVálido por 10 minutos.`;
+                    navigator.clipboard?.writeText(texto);
+                    alert("Copiado!");
+                  }}
+                  className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 font-semibold hover:bg-gray-50"
+                >
+                  Copiar código
+                </button>
+                <button
+                  onClick={() => setCodigoModal(null)}
+                  className="flex-1 py-2.5 rounded-xl bg-green-600 hover:bg-green-700 text-white text-sm font-semibold"
+                >
+                  Entendi
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <TourButton tourKey="gestao-funcionarios" steps={TOUR_STEPS} />
     </div>
