@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { api } from "@/lib/api";
+import { serverFetch } from "@/lib/api-server";
 import { AnuncioCard } from "@/components/anuncio/AnuncioCard";
 import { BuscaEstadoCidade } from "@/components/ui/BuscaEstadoCidade";
 import { RACAS_GRUPOS } from "@/lib/racas";
@@ -13,8 +13,7 @@ type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 async function buscar(params: Record<string, string>): Promise<PaginatedResponse<Anuncio>> {
   try {
     const query = new URLSearchParams(params).toString();
-    const { data } = await api.get(`/anuncios?${query}`);
-    return data;
+    return await serverFetch<PaginatedResponse<Anuncio>>(`/anuncios?${query}`, { revalidate: 0 });
   } catch {
     return { data: [], current_page: 1, last_page: 1, per_page: 20, total: 0 };
   }

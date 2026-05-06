@@ -14,9 +14,10 @@ class AnuncioController extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = Anuncio::with(['animal', 'fotos', 'user:id,nome,estado,municipio'])
-            ->whereNull('deleted_at')
-            ->whereNull('anuncios.expira_em')
-            ->orWhere('anuncios.expira_em', '>', now());
+            ->where(function ($q) {
+                $q->whereNull('expira_em')
+                  ->orWhere('expira_em', '>', now());
+            });
 
         if ($request->filled('raca')) {
             $query->whereHas('animal', fn($q) => $q->where('raca', 'like', '%' . $request->raca . '%'));

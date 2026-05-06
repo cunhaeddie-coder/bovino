@@ -4,7 +4,7 @@ import { HeroSearch } from "@/components/home/HeroSearch";
 import { StatsBar } from "@/components/home/StatsBar";
 import { ComoFunciona } from "@/components/home/ComoFunciona";
 import { AnuncioCard } from "@/components/anuncio/AnuncioCard";
-import { api } from "@/lib/api";
+import { serverFetch } from "@/lib/api-server";
 import type { Anuncio, PaginatedResponse } from "@/lib/types";
 import { HomeTour } from "@/components/home/HomeTour";
 
@@ -14,8 +14,8 @@ export const metadata: Metadata = {
 
 async function getAnuncios(): Promise<Anuncio[]> {
   try {
-    const { data } = await api.get<PaginatedResponse<Anuncio>>("/anuncios");
-    return data.data;
+    const res = await serverFetch<PaginatedResponse<Anuncio>>("/anuncios", { revalidate: 30 });
+    return res.data;
   } catch {
     return [];
   }

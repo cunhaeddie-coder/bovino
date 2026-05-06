@@ -2,22 +2,14 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { serverFetch } from "@/lib/api-server";
 import type { Anuncio } from "@/lib/types";
 
 type Props = { params: Promise<{ id: string }> };
 
 async function getAnuncio(id: string): Promise<Anuncio | null> {
-  const base =
-    process.env.INTERNAL_API_URL ??
-    (process.env.NODE_ENV === "production"
-      ? "https://api.bovino.agr.br"
-      : "http://localhost:8000");
   try {
-    const res = await fetch(`${base}/api/v1/anuncios/${id}`, {
-      next: { revalidate: 60 },
-    });
-    if (!res.ok) return null;
-    return res.json();
+    return await serverFetch<Anuncio>(`/anuncios/${id}`, { revalidate: 60 });
   } catch {
     return null;
   }
