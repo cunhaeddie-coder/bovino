@@ -28,7 +28,7 @@ class MidiaController extends Controller
 
         $midia = $anuncio->midias()->create([
             'tipo' => $tipo,
-            'url' => Storage::url($path),
+            'url' => url("/storage/{$path}"),
             'ordem' => $request->input('ordem', 0),
         ]);
 
@@ -43,7 +43,7 @@ class MidiaController extends Controller
             return response()->json(['message' => 'Não autorizado.'], 403);
         }
 
-        $path = str_replace('/storage/', '', $midia->url);
+        $path = preg_replace('#.*/storage/#', '', $midia->url);
         Storage::disk('public')->delete($path);
 
         $midia->delete();

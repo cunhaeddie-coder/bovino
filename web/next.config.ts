@@ -4,6 +4,7 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
       { protocol: "http",  hostname: "localhost" },
+      { protocol: "https", hostname: "api.bovino.agr.br" },
       { protocol: "https", hostname: "**.r2.cloudflarestorage.com" },
       { protocol: "https", hostname: "*.ngrok-free.app" },
       { protocol: "https", hostname: "*.ngrok.io" },
