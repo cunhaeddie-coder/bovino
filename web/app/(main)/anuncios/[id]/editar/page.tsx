@@ -123,6 +123,7 @@ export default function EditarAnuncioPage() {
 
   async function uploadArquivo(index: number) {
     setUploading(prev => [...prev, index]);
+    setError("");
     try {
       const fd = new FormData();
       fd.append("arquivo", newFiles[index]);
@@ -130,8 +131,12 @@ export default function EditarAnuncioPage() {
       const { data: nova } = await api.post(`/anuncios/${id}/midias`, fd);
       setMidias(prev => [...prev, nova]);
       removeNew(index);
-    } catch {
-      setError("Erro ao enviar arquivo. Tente novamente.");
+    } catch (e: unknown) {
+      const err = e as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } };
+      const msg = err.response?.data?.errors
+        ? Object.values(err.response.data.errors).flat()[0]
+        : (err.response?.data?.message ?? "Erro ao enviar o vídeo. Verifique formato e tamanho.");
+      setError(msg);
     } finally {
       setUploading(prev => prev.filter(i => i !== index));
     }

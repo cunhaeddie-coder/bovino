@@ -10,6 +10,10 @@ api.interceptors.request.use((config) => {
     const token = localStorage.getItem("bovino_token");
     if (token) config.headers.Authorization = `Bearer ${token}`;
   }
+  // Para FormData o browser deve definir o Content-Type com boundary automaticamente
+  if (config.data instanceof FormData) {
+    delete config.headers["Content-Type"];
+  }
   return config;
 });
 
