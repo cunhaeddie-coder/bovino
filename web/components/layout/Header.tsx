@@ -111,6 +111,9 @@ export function Header() {
                           <Link href="/gestao" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-50">
                             <span>🌾</span> Gestão da fazenda
                           </Link>
+                          <Link href="/gestao/arrendamentos" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-50">
+                            <span>🏡</span> Arrendamentos
+                          </Link>
                           <Link href="/inteligencia" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-50">
                             <span>📊</span> Inteligência de mercado
                           </Link>
