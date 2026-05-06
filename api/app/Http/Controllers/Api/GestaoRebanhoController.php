@@ -19,14 +19,27 @@ class GestaoRebanhoController extends Controller
     public function index(Request $request)
     {
         $fazenda = $this->fazenda($request);
+        $hoje = now();
         $animais = $fazenda->rebanho()
             ->with('pastagem:id,nome')
             ->when($request->categoria, fn($q) => $q->where('categoria', $request->categoria))
-            ->when($request->sexo, fn($q) => $q->where('sexo', $request->sexo))
-            ->when($request->status, fn($q) => $q->where('status', $request->status))
-            ->when($request->raca, fn($q) => $q->where('raca', $request->raca))
+            ->when($request->sexo,      fn($q) => $q->where('sexo', $request->sexo))
+            ->when($request->status,    fn($q) => $q->where('status', $request->status))
+            ->when($request->raca,      fn($q) => $q->where('raca', 'like', '%'.$request->raca.'%'))
+            ->when($request->brinco,    fn($q) => $q->where('brinco', 'like', '%'.$request->brinco.'%'))
+            ->when($request->peso_min,  fn($q) => $q->where('peso_atual', '>=', $request->peso_min))
+            ->when($request->peso_max,  fn($q) => $q->where('peso_atual', '<=', $request->peso_max))
+            ->when($request->faixa_etaria, function ($q) use ($request, $hoje) {
+                return match ($request->faixa_etaria) {
+                    'ate_6m'    => $q->whereNotNull('data_nascimento')->whereDate('data_nascimento', '>=', $hoje->copy()->subMonths(6)),
+                    '6_12m'     => $q->whereNotNull('data_nascimento')->whereDate('data_nascimento', '<', $hoje->copy()->subMonths(6))->whereDate('data_nascimento', '>=', $hoje->copy()->subMonths(12)),
+                    '12_24m'    => $q->whereNotNull('data_nascimento')->whereDate('data_nascimento', '<', $hoje->copy()->subMonths(12))->whereDate('data_nascimento', '>=', $hoje->copy()->subMonths(24)),
+                    'acima_24m' => $q->whereNotNull('data_nascimento')->whereDate('data_nascimento', '<', $hoje->copy()->subMonths(24)),
+                    default     => $q,
+                };
+            })
             ->orderBy('created_at', 'desc')
-            ->paginate(30);
+            ->paginate(50);
 
         return response()->json($animais);
     }

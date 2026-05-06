@@ -86,17 +86,24 @@ function SecaoAlerta<T>({ titulo, subtitulo, icone, cor, itens, vazio, renderIte
   );
 }
 
+const FORM_VAZIO = { brinco:"", nome:"", raca:"", sexo:"macho", categoria:"bezerro", data_nascimento:"", peso_atual:"", mae:"", pai:"", observacao:"" };
+
 export default function AnimaisPage() {
   const [aba, setAba] = useState<"dashboard"|"rebanho"|"alertas">("dashboard");
-  const [dash, setDash]       = useState<Dashboard|null>(null);
-  const [animais, setAnimais] = useState<Animal[]>([]);
+  const [dash, setDash]         = useState<Dashboard|null>(null);
+  const [animais, setAnimais]   = useState<Animal[]>([]);
   const [loadDash, setLoadDash] = useState(true);
   const [loadList, setLoadList] = useState(false);
-  const [filtro, setFiltro]   = useState({ categoria:"", sexo:"", status:"ativo" });
+  const [filtro, setFiltro]     = useState({
+    categoria:"", sexo:"", status:"ativo",
+    raca:"", brinco:"", faixa_etaria:"", peso_min:"", peso_max:"",
+  });
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ brinco:"", nome:"", raca:"", sexo:"macho", categoria:"bezerro", data_nascimento:"", peso_atual:"", mae:"", pai:"", observacao:"" });
+  const [editando, setEditando] = useState<Animal|null>(null);
+  const [form, setForm]         = useState(FORM_VAZIO);
   const [salvando, setSalvando] = useState(false);
-  const [erro, setErro] = useState("");
+  const [erro, setErro]         = useState("");
+  const [totalResultados, setTotalResultados] = useState<number|null>(null);
 
   const carregarDash = useCallback(() => {
     setLoadDash(true);
@@ -106,18 +113,45 @@ export default function AnimaisPage() {
   const carregarLista = useCallback(() => {
     setLoadList(true);
     const p = new URLSearchParams(Object.fromEntries(Object.entries(filtro).filter(([,v])=>v)));
-    api.get(`/gestao/rebanho?${p}`).then(r=>setAnimais(r.data.data??r.data)).finally(()=>setLoadList(false));
+    api.get(`/gestao/rebanho?${p}`)
+      .then(r => { setAnimais(r.data.data??r.data); setTotalResultados(r.data.total??null); })
+      .finally(()=>setLoadList(false));
   }, [filtro]);
 
   useEffect(() => { carregarDash(); }, [carregarDash]);
   useEffect(() => { if (aba==="rebanho"||aba==="alertas") carregarLista(); }, [aba, filtro, carregarLista]);
 
+  function abrirEdicao(a: Animal) {
+    setEditando(a);
+    setForm({
+      brinco: a.brinco??"", nome: a.nome??"", raca: a.raca, sexo: a.sexo,
+      categoria: a.categoria, data_nascimento: a.data_nascimento??"",
+      peso_atual: a.peso_atual ? String(a.peso_atual) : "",
+      mae: a.mae??"", pai: "", observacao: "",
+    });
+    setErro("");
+    setShowForm(true);
+  }
+
+  function fecharForm() {
+    setShowForm(false); setEditando(null); setForm(FORM_VAZIO); setErro("");
+  }
+
+  function limparFiltros() {
+    setFiltro({ categoria:"", sexo:"", status:"ativo", raca:"", brinco:"", faixa_etaria:"", peso_min:"", peso_max:"" });
+  }
+
+  const filtrosAtivos = Object.entries(filtro).filter(([k,v]) => v && !(k==="status" && v==="ativo")).length;
+
   async function salvar(e: React.FormEvent) {
     e.preventDefault(); setErro(""); setSalvando(true);
     try {
-      await api.post("/gestao/rebanho", form);
-      setShowForm(false);
-      setForm({ brinco:"", nome:"", raca:"", sexo:"macho", categoria:"bezerro", data_nascimento:"", peso_atual:"", mae:"", pai:"", observacao:"" });
+      if (editando) {
+        await api.put(`/gestao/rebanho/${editando.id}`, form);
+      } else {
+        await api.post("/gestao/rebanho", form);
+      }
+      fecharForm();
       carregarDash(); carregarLista();
     } catch { setErro("Erro ao salvar. Verifique os dados."); }
     finally { setSalvando(false); }
@@ -252,22 +286,65 @@ export default function AnimaisPage() {
       {/* ── REBANHO ────────────────────────────────────────────────────────── */}
       {aba==="rebanho" && (
         <div className="space-y-3">
-          <div className="flex gap-2 flex-wrap">
-            <select value={filtro.categoria} onChange={e=>setFiltro(f=>({...f,categoria:e.target.value}))} className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm bg-white">
-              <option value="">Todas categorias</option>
-              {CATEGORIAS.map(c=><option key={c} value={c}>{CAT_LABEL[c]}</option>)}
-            </select>
-            <select value={filtro.sexo} onChange={e=>setFiltro(f=>({...f,sexo:e.target.value}))} className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm bg-white">
-              <option value="">Ambos sexos</option>
-              <option value="macho">Machos</option>
-              <option value="femea">Fêmeas</option>
-            </select>
-            <select value={filtro.status} onChange={e=>setFiltro(f=>({...f,status:e.target.value}))} className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm bg-white">
-              <option value="ativo">Ativos</option>
-              <option value="vendido">Vendidos</option>
-              <option value="morto">Mortos</option>
-              <option value="transferido">Transferidos</option>
-            </select>
+          {/* Filtros avançados */}
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">Pesquisar</span>
+              {filtrosAtivos > 0 && (
+                <button onClick={limparFiltros} className="text-xs text-red-500 hover:underline">
+                  Limpar filtros ({filtrosAtivos})
+                </button>
+              )}
+            </div>
+
+            {/* Linha 1: busca rápida */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              <input value={filtro.brinco} onChange={e=>setFiltro(f=>({...f,brinco:e.target.value}))}
+                placeholder="Brinco" className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"/>
+              <input value={filtro.raca} onChange={e=>setFiltro(f=>({...f,raca:e.target.value}))}
+                placeholder="Raça (ex: Nelore)" className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"/>
+              <select value={filtro.categoria} onChange={e=>setFiltro(f=>({...f,categoria:e.target.value}))}
+                className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-500">
+                <option value="">Todas categorias</option>
+                {CATEGORIAS.map(c=><option key={c} value={c}>{CAT_LABEL[c]}</option>)}
+              </select>
+            </div>
+
+            {/* Linha 2: filtros adicionais */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <select value={filtro.sexo} onChange={e=>setFiltro(f=>({...f,sexo:e.target.value}))}
+                className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-500">
+                <option value="">Ambos sexos</option>
+                <option value="macho">Machos</option>
+                <option value="femea">Fêmeas</option>
+              </select>
+              <select value={filtro.faixa_etaria} onChange={e=>setFiltro(f=>({...f,faixa_etaria:e.target.value}))}
+                className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-500">
+                <option value="">Qualquer idade</option>
+                <option value="ate_6m">Até 6 meses</option>
+                <option value="6_12m">6 – 12 meses</option>
+                <option value="12_24m">12 – 24 meses</option>
+                <option value="acima_24m">Acima de 2 anos</option>
+              </select>
+              <div className="flex gap-1">
+                <input type="number" value={filtro.peso_min} onChange={e=>setFiltro(f=>({...f,peso_min:e.target.value}))}
+                  placeholder="Peso mín" className="w-full border border-gray-200 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"/>
+                <input type="number" value={filtro.peso_max} onChange={e=>setFiltro(f=>({...f,peso_max:e.target.value}))}
+                  placeholder="Máx" className="w-full border border-gray-200 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"/>
+              </div>
+              <select value={filtro.status} onChange={e=>setFiltro(f=>({...f,status:e.target.value}))}
+                className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-500">
+                <option value="ativo">Ativos</option>
+                <option value="vendido">Vendidos</option>
+                <option value="morto">Mortos</option>
+                <option value="transferido">Transferidos</option>
+                <option value="">Todos status</option>
+              </select>
+            </div>
+
+            {totalResultados !== null && (
+              <p className="text-xs text-gray-400">{totalResultados} animal{totalResultados!==1?"is":""} encontrado{totalResultados!==1?"s":""}</p>
+            )}
           </div>
           {loadList ? <Skeleton/> : animais.length===0 ? (
             <div className="text-center py-12 border-2 border-dashed border-gray-200 rounded-2xl">
@@ -286,11 +363,12 @@ export default function AnimaisPage() {
                       <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 hidden sm:table-cell">Idade</th>
                       <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 hidden sm:table-cell">Peso</th>
                       <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 hidden md:table-cell">Pastagem</th>
+                      <th className="px-3 py-3 text-xs font-semibold text-gray-500 w-10"/>
                     </tr>
                   </thead>
                   <tbody>
                     {animais.map(a=>(
-                      <tr key={a.id} className="border-b border-gray-50 hover:bg-gray-50">
+                      <tr key={a.id} className="border-b border-gray-50 hover:bg-gray-50 group">
                         <td className="px-4 py-3">
                           <p className="font-medium text-gray-800">{a.brinco||"—"}</p>
                           {a.nome && <p className="text-xs text-gray-400">{a.nome}</p>}
@@ -302,8 +380,20 @@ export default function AnimaisPage() {
                           </span>
                         </td>
                         <td className="px-4 py-3 text-gray-500 text-xs hidden sm:table-cell">{idadeTexto(a.data_nascimento)}</td>
-                        <td className="px-4 py-3 text-gray-700 hidden sm:table-cell">{a.peso_atual?`${a.peso_atual} kg`:"—"}</td>
+                        <td className="px-4 py-3 hidden sm:table-cell">
+                          {a.peso_atual ? (
+                            <span className="text-gray-700 text-sm">{a.peso_atual} kg</span>
+                          ) : <span className="text-gray-300">—</span>}
+                        </td>
                         <td className="px-4 py-3 text-gray-400 text-xs hidden md:table-cell">{a.pastagem?.nome??"—"}</td>
+                        <td className="px-3 py-3">
+                          <button onClick={()=>abrirEdicao(a)}
+                            className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700">
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                            </svg>
+                          </button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -400,7 +490,16 @@ export default function AnimaisPage() {
         <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-4">
           <div className="bg-white rounded-2xl w-full max-w-lg shadow-xl max-h-[90vh] overflow-y-auto">
             <div className="p-6">
-              <h2 className="text-lg font-bold text-gray-900 mb-4">Novo animal</h2>
+                      <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-bold text-gray-900">
+                  {editando ? `Editar — ${editando.brinco ?? editando.nome ?? "Animal"}` : "Novo animal"}
+                </h2>
+                <button onClick={fecharForm} className="text-gray-400 hover:text-gray-600">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/>
+                  </svg>
+                </button>
+              </div>
               {erro && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2 mb-3">{erro}</p>}
               <form onSubmit={salvar} className="space-y-3">
                 <div className="grid grid-cols-2 gap-3">
@@ -433,9 +532,9 @@ export default function AnimaisPage() {
                   </div>
                 </div>
                 <div className="flex gap-2 pt-1">
-                  <button type="button" onClick={()=>setShowForm(false)} className="flex-1 border border-gray-200 text-gray-700 font-semibold py-2.5 rounded-full text-sm hover:bg-gray-50">Cancelar</button>
+                  <button type="button" onClick={fecharForm} className="flex-1 border border-gray-200 text-gray-700 font-semibold py-2.5 rounded-full text-sm hover:bg-gray-50">Cancelar</button>
                   <button type="submit" disabled={salvando} className="flex-1 bg-green-700 text-white font-semibold py-2.5 rounded-full text-sm hover:bg-green-800 disabled:opacity-60">
-                    {salvando?"Salvando...":"Salvar"}
+                    {salvando ? "Salvando..." : editando ? "Salvar alterações" : "Cadastrar"}
                   </button>
                 </div>
               </form>
