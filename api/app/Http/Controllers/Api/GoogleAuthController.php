@@ -50,7 +50,7 @@ class GoogleAuthController extends Controller
         }
 
         $user->tokens()->where('name', 'access')->delete();
-        $token = $user->createToken('access', ['*'], now()->addMinutes(15))->plainTextToken;
+        $token = $user->createToken('access', ['*'], now()->addHours(8))->plainTextToken;
 
         $userData = urlencode(base64_encode(json_encode($user->only([
             'id', 'nome', 'email', 'tipo', 'plano', 'verificado_celular', 'verificado_cpf', 'avatar_url',

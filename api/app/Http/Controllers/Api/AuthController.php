@@ -80,7 +80,7 @@ class AuthController extends Controller
         RateLimiter::clear($key);
 
         $user->tokens()->where('name', 'access')->delete();
-        $token = $user->createToken('access', ['*'], now()->addMinutes(15))->plainTextToken;
+        $token = $user->createToken('access', ['*'], now()->addHours(8))->plainTextToken;
 
         $this->registrarAcesso($request, $user->id);
 
@@ -152,7 +152,7 @@ class AuthController extends Controller
     {
         $user = $request->user();
         $user->currentAccessToken()->delete();
-        $token = $user->createToken('access', ['*'], now()->addMinutes(15))->plainTextToken;
+        $token = $user->createToken('access', ['*'], now()->addHours(8))->plainTextToken;
 
         return response()->json(['token' => $token]);
     }
