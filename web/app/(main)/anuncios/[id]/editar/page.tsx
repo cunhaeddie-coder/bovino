@@ -132,11 +132,16 @@ export default function EditarAnuncioPage() {
       setMidias(prev => [...prev, nova]);
       removeNew(index);
     } catch (e: unknown) {
-      const err = e as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } };
-      const msg = err.response?.data?.errors
-        ? Object.values(err.response.data.errors).flat()[0]
-        : (err.response?.data?.message ?? "Erro ao enviar o vídeo. Verifique formato e tamanho.");
-      setError(msg);
+      const err = e as { response?: { status?: number; data?: { message?: string; errors?: Record<string, string[]> } } };
+      if (!err.response) {
+        setError("Sem resposta do servidor. Verifique sua conexão.");
+      } else if (err.response.data?.errors) {
+        setError(Object.values(err.response.data.errors).flat()[0]);
+      } else if (err.response.data?.message) {
+        setError(`[${err.response.status}] ${err.response.data.message}`);
+      } else {
+        setError(`Erro HTTP ${err.response.status} ao enviar o vídeo.`);
+      }
     } finally {
       setUploading(prev => prev.filter(i => i !== index));
     }
