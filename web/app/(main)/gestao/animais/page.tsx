@@ -2,6 +2,35 @@
 
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
+import { TourButton } from "@/components/ui/TourButton";
+import type { DriveStep } from "driver.js";
+
+const TOUR_STEPS: DriveStep[] = [
+  {
+    element: "#btn-add-animal",
+    popover: {
+      title: "➕ Adicionar animal",
+      description: "Clique aqui para cadastrar um novo animal no rebanho. Informe brinco, raça, categoria, sexo, peso e data de nascimento.",
+      side: "bottom",
+    },
+  },
+  {
+    element: "#filtros-animais",
+    popover: {
+      title: "🔍 Filtros",
+      description: "Filtre os animais por categoria (bezerro, novilho, vaca...), sexo (macho/fêmea) e status (ativo, vendido, morto).",
+      side: "bottom",
+    },
+  },
+  {
+    element: "#tabela-animais",
+    popover: {
+      title: "📋 Lista do rebanho",
+      description: "Todos os animais cadastrados aparecem aqui com brinco, raça, categoria, peso atual e pastagem. Clique em um animal para ver detalhes.",
+      side: "top",
+    },
+  },
+];
 
 type Animal = {
   id: number;
@@ -51,13 +80,13 @@ export default function AnimaisPage() {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-gray-900">🐄 Rebanho</h1>
-        <button onClick={() => setShowForm(true)} className="bg-green-700 text-white text-sm font-semibold px-4 py-2 rounded-full hover:bg-green-800 transition">
+        <button id="btn-add-animal" onClick={() => setShowForm(true)} className="bg-green-700 text-white text-sm font-semibold px-4 py-2 rounded-full hover:bg-green-800 transition">
           + Adicionar animal
         </button>
       </div>
 
       {/* Filtros */}
-      <div className="flex gap-2 flex-wrap">
+      <div id="filtros-animais" className="flex gap-2 flex-wrap">
         <select value={filtro.categoria} onChange={e => setFiltro(f => ({ ...f, categoria: e.target.value }))}
           className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm bg-white">
           <option value="">Todas categorias</option>
@@ -154,7 +183,7 @@ export default function AnimaisPage() {
           </button>
         </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div id="tabela-animais" className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-100">
@@ -186,6 +215,8 @@ export default function AnimaisPage() {
           </table>
         </div>
       )}
+
+      <TourButton tourKey="gestao-animais" steps={TOUR_STEPS} />
     </div>
   );
 }

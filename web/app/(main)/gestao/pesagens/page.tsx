@@ -2,6 +2,27 @@
 
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
+import { TourButton } from "@/components/ui/TourButton";
+import type { DriveStep } from "driver.js";
+
+const TOUR_STEPS: DriveStep[] = [
+  {
+    element: "#btn-pesagem",
+    popover: {
+      title: "⚖️ Registrar pesagem",
+      description: "Registre o peso de um animal ou lote informando o peso em kg e a data. O sistema calcula automaticamente o GMD (Ganho Médio Diário).",
+      side: "bottom",
+    },
+  },
+  {
+    element: "#tabela-pesagens",
+    popover: {
+      title: "📊 Histórico de pesagens",
+      description: "Veja o histórico completo com data, animal/lote, peso e GMD. O GMD mostra quantos kg o animal ganhou por dia desde a última pesagem.",
+      side: "top",
+    },
+  },
+];
 
 type Pesagem = {
   id: number;
@@ -50,7 +71,7 @@ export default function PesagensPage() {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-gray-900">⚖️ Pesagens</h1>
-        <button onClick={() => setShowForm(true)} className="bg-green-700 text-white text-sm font-semibold px-4 py-2 rounded-full hover:bg-green-800 transition">
+        <button id="btn-pesagem" onClick={() => setShowForm(true)} className="bg-green-700 text-white text-sm font-semibold px-4 py-2 rounded-full hover:bg-green-800 transition">
           + Registrar pesagem
         </button>
       </div>
@@ -98,7 +119,7 @@ export default function PesagensPage() {
           <p className="text-gray-500 font-medium">Nenhuma pesagem registrada</p>
         </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div id="tabela-pesagens" className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-100">
@@ -137,6 +158,8 @@ export default function PesagensPage() {
           </table>
         </div>
       )}
+
+      <TourButton tourKey="gestao-pesagens" steps={TOUR_STEPS} />
     </div>
   );
 }

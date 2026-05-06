@@ -2,6 +2,35 @@
 
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
+import { TourButton } from "@/components/ui/TourButton";
+import type { DriveStep } from "driver.js";
+
+const TOUR_STEPS: DriveStep[] = [
+  {
+    element: "#btn-evento-saude",
+    popover: {
+      title: "💉 Registrar evento de saúde",
+      description: "Registre vacinas, vermífugos, tratamentos, exames e cirurgias. Informe o animal ou lote, data de aplicação e próxima dose.",
+      side: "bottom",
+    },
+  },
+  {
+    element: "#banner-alertas-saude",
+    popover: {
+      title: "⚠️ Alertas de vencimento",
+      description: "Quando uma dose estiver próxima do vencimento (30 dias), aparece aqui um alerta em vermelho para você não perder a aplicação.",
+      side: "bottom",
+    },
+  },
+  {
+    element: "#lista-saude",
+    popover: {
+      title: "📋 Histórico de saúde",
+      description: "Todos os eventos registrados aparecem aqui. Eventos com próxima dose vencida ficam destacados em vermelho. Clique no lixo para excluir.",
+      side: "top",
+    },
+  },
+];
 
 type EventoSaude = {
   id: number;
@@ -70,14 +99,14 @@ export default function SaudePage() {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-gray-900">💉 Saúde do rebanho</h1>
-        <button onClick={() => setShowForm(true)} className="bg-green-700 text-white text-sm font-semibold px-4 py-2 rounded-full hover:bg-green-800 transition">
+        <button id="btn-evento-saude" onClick={() => setShowForm(true)} className="bg-green-700 text-white text-sm font-semibold px-4 py-2 rounded-full hover:bg-green-800 transition">
           + Registrar evento
         </button>
       </div>
 
       {/* Banner de alertas */}
       {alertas.length > 0 && (
-        <div className="bg-red-50 border border-red-200 rounded-2xl p-4">
+        <div id="banner-alertas-saude" className="bg-red-50 border border-red-200 rounded-2xl p-4">
           <p className="text-red-700 font-semibold text-sm mb-2">⚠️ {alertas.length} vencimento(s) nos próximos 30 dias</p>
           <div className="space-y-1">
             {alertas.map(a => (
@@ -167,7 +196,7 @@ export default function SaudePage() {
           <p className="text-gray-500 font-medium">Nenhum evento registrado</p>
         </div>
       ) : (
-        <div className="space-y-2">
+        <div id="lista-saude" className="space-y-2">
           {eventos.map(ev => {
             const vencido = ev.proxima_dose && ev.proxima_dose < hoje;
             const vencendoBreve = ev.proxima_dose && ev.proxima_dose >= hoje;
@@ -197,6 +226,8 @@ export default function SaudePage() {
           })}
         </div>
       )}
+
+      <TourButton tourKey="gestao-saude" steps={TOUR_STEPS} />
     </div>
   );
 }

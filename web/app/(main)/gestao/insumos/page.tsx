@@ -2,6 +2,33 @@
 
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
+import { TourButton } from "@/components/ui/TourButton";
+import type { DriveStep } from "driver.js";
+
+const TOUR_STEPS: DriveStep[] = [
+  {
+    element: "#insumos-kpis",
+    popover: {
+      title: "📦 Resumo do estoque",
+      description: "Valor total em estoque, total de compras no mês e quantos insumos estão abaixo do estoque mínimo. Vermelho = alerta de reposição.",
+      side: "bottom",
+    },
+  },
+  {
+    element: "#insumos-abas",
+    popover: {
+      title: "📑 Módulos de estoque",
+      description: "Estoque: produtos cadastrados e quantidades · Compras: histórico de compras por fornecedor · Fornecedores: cadastro de parceiros.",
+      side: "bottom",
+    },
+  },
+  {
+    popover: {
+      title: "🔄 Movimentar estoque",
+      description: "Na aba Estoque, clique em 'Movimentar' em qualquer insumo para registrar uma entrada ou saída manual do estoque sem associar a uma compra.",
+    },
+  },
+];
 
 type Fornecedor = { id: number; nome: string; categoria: string };
 type Estoque = { quantidade_atual: number; quantidade_minima: number; localizacao: string | null };
@@ -70,7 +97,7 @@ export default function InsumosPage() {
 
       {/* KPIs */}
       {resumo && (
-        <div className="grid grid-cols-3 gap-4">
+        <div id="insumos-kpis" className="grid grid-cols-3 gap-4">
           {[
             { label: "Valor em estoque", value: fmt(resumo.valor_estoque), icon: "📦", color: "text-blue-700" },
             { label: "Compras no mês",   value: fmt(resumo.compras_mes),   icon: "🛒", color: "text-green-700" },
@@ -86,7 +113,7 @@ export default function InsumosPage() {
       )}
 
       {/* Abas */}
-      <div className="flex gap-2 border-b border-gray-200">
+      <div id="insumos-abas" className="flex gap-2 border-b border-gray-200">
         {(["estoque","compras","fornecedores"] as const).map(a => (
           <button key={a} onClick={() => setAba(a)}
             className={`px-4 py-2 text-sm font-medium capitalize transition ${aba === a ? "border-b-2 border-green-600 text-green-700" : "text-gray-500 hover:text-gray-700"}`}>
@@ -209,6 +236,8 @@ export default function InsumosPage() {
       {showCompra && <NovaCompraModal insumos={insumos} fornecedores={fornecedores} onClose={() => setShowCompra(false)} onDone={carregar} />}
       {showForn && <NovoFornecedorModal onClose={() => setShowForn(false)} onDone={carregar} />}
       {movModal && <MovimentacaoModal insumo={movModal} onClose={() => setMovModal(null)} onDone={carregar} />}
+
+      <TourButton tourKey="gestao-insumos" steps={TOUR_STEPS} />
     </div>
   );
 }

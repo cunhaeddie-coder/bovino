@@ -2,6 +2,35 @@
 
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
+import { TourButton } from "@/components/ui/TourButton";
+import type { DriveStep } from "driver.js";
+
+const TOUR_STEPS: DriveStep[] = [
+  {
+    element: "#btn-reportar",
+    popover: {
+      title: "📣 Reportar ocorrência",
+      description: "Registre qualquer evento de campo: nascimento, morte, acidente, doença, fuga, cobertura, parto, cio. Informe urgência e o animal/lote/pasto envolvido.",
+      side: "bottom",
+    },
+  },
+  {
+    element: "#filtros-eventos",
+    popover: {
+      title: "🔍 Filtros de ocorrências",
+      description: "Filtre por tipo de evento (nascimento, morte, doença...) e por status (não resolvidos, resolvidos ou todos).",
+      side: "bottom",
+    },
+  },
+  {
+    element: "#lista-eventos",
+    popover: {
+      title: "📋 Ocorrências registradas",
+      description: "Cada card mostra o tipo, descrição, urgência e quem reportou. Clique em 'Resolver' para marcar a ocorrência como resolvida e registrar a resolução.",
+      side: "top",
+    },
+  },
+];
 
 type Evento = {
   id: number; tipo: string; descricao: string; urgencia: string; resolvido: boolean;
@@ -49,14 +78,14 @@ export default function EventosCampoPage() {
           <h1 className="text-2xl font-bold text-gray-900">Ocorrências de Campo</h1>
           <p className="text-gray-500 text-sm">Eventos reportados pelo vaqueiro e equipe</p>
         </div>
-        <button onClick={() => setShowModal(true)}
+        <button id="btn-reportar" onClick={() => setShowModal(true)}
           className="bg-green-700 text-white text-sm font-semibold px-4 py-2 rounded-full hover:bg-green-800">
           + Reportar ocorrência
         </button>
       </div>
 
       {/* Filtros */}
-      <div className="flex gap-3 flex-wrap">
+      <div id="filtros-eventos" className="flex gap-3 flex-wrap">
         <select value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)}
           className="border border-gray-200 rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-400">
           <option value="">Todos os tipos</option>
@@ -84,7 +113,7 @@ export default function EventosCampoPage() {
           <p className="text-gray-400 text-sm mt-1">Use o botão acima para reportar um evento de campo</p>
         </div>
       ) : (
-        <div className="grid gap-3">
+        <div id="lista-eventos" className="grid gap-3">
           {eventos.map(ev => (
             <div key={ev.id} className={`bg-white rounded-2xl border shadow-sm p-5 ${ev.resolvido ? "opacity-60" : ""}`}>
               <div className="flex items-start gap-4">
@@ -121,6 +150,8 @@ export default function EventosCampoPage() {
 
       {showModal && <ReportarModal onClose={() => setShowModal(false)} onDone={carregar} />}
       {resolverEvento && <ResolverModal evento={resolverEvento} onClose={() => setResolverEvento(null)} onDone={carregar} />}
+
+      <TourButton tourKey="gestao-eventos" steps={TOUR_STEPS} />
     </div>
   );
 }

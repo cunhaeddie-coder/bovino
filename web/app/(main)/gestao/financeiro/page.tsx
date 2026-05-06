@@ -2,6 +2,33 @@
 
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
+import { TourButton } from "@/components/ui/TourButton";
+import type { DriveStep } from "driver.js";
+
+const TOUR_STEPS: DriveStep[] = [
+  {
+    element: "#fin-header",
+    popover: {
+      title: "📅 Período financeiro",
+      description: "Selecione o mês e ano para ver o resumo financeiro do período. Os dados de receitas, custos e contas são filtrados automaticamente.",
+      side: "bottom",
+    },
+  },
+  {
+    element: "#fin-abas",
+    popover: {
+      title: "📑 Módulos financeiros",
+      description: "Dashboard: resumo geral · Receitas: entradas de dinheiro · Custos: gastos da fazenda · A Pagar: contas em aberto · A Receber: valores a cobrar.",
+      side: "bottom",
+    },
+  },
+  {
+    popover: {
+      title: "💡 Dica",
+      description: "No Dashboard você vê o gráfico de custos por categoria do ano inteiro. Use as abas A Pagar e A Receber para controlar vencimentos e fluxo de caixa.",
+    },
+  },
+];
 
 type Custo = { id: number; categoria: string; descricao: string; valor: number; data: string; lote?: { nome: string } | null };
 type ResumoAntigo = { por_categoria: Record<string, number>; total_ano: number };
@@ -58,7 +85,7 @@ export default function FinanceiroPage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
+      <div id="fin-header" className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Financeiro da Fazenda</h1>
           <p className="text-gray-500 text-sm">Receitas, custos, contas a pagar e receber</p>
@@ -76,7 +103,7 @@ export default function FinanceiroPage() {
       </div>
 
       {/* Abas */}
-      <div className="flex gap-1 border-b border-gray-200 overflow-x-auto">
+      <div id="fin-abas" className="flex gap-1 border-b border-gray-200 overflow-x-auto">
         {([
           { k: "dashboard", label: "📊 Dashboard" },
           { k: "receitas",  label: "💚 Receitas" },
@@ -450,6 +477,7 @@ function ModalBase({ title, onClose, children }: { title: string; onClose: () =>
         </div>
         <div className="p-6">{children}</div>
       </div>
+      <TourButton tourKey="gestao-financeiro" steps={TOUR_STEPS} />
     </div>
   );
 }

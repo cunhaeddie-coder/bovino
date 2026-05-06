@@ -3,6 +3,35 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { api } from "@/lib/api";
+import { TourButton } from "@/components/ui/TourButton";
+import type { DriveStep } from "driver.js";
+
+const TOUR_STEPS: DriveStep[] = [
+  {
+    element: "#btn-novo-lote",
+    popover: {
+      title: "🗂️ Criar lote",
+      description: "Agrupe animais em lotes para facilitar o manejo e a venda. Defina nome, raça, categoria, quantidade, peso médio e preço por arroba.",
+      side: "bottom",
+    },
+  },
+  {
+    element: "#filtros-lotes",
+    popover: {
+      title: "🔍 Filtrar por status",
+      description: "Filtre os lotes por status: Disponível (à venda), Reservado (negociação em andamento), Vendido ou Interno (uso próprio).",
+      side: "bottom",
+    },
+  },
+  {
+    element: "#grid-lotes",
+    popover: {
+      title: "📦 Seus lotes",
+      description: "Cada card mostra o resumo do lote. Clique em '📢 Publicar como anúncio' para colocar o lote à venda no marketplace automaticamente.",
+      side: "top",
+    },
+  },
+];
 
 type Lote = {
   id: number;
@@ -76,13 +105,13 @@ export default function LotesPage() {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-gray-900">🗂️ Lotes</h1>
-        <button onClick={() => setShowForm(true)} className="bg-green-700 text-white text-sm font-semibold px-4 py-2 rounded-full hover:bg-green-800 transition">
+        <button id="btn-novo-lote" onClick={() => setShowForm(true)} className="bg-green-700 text-white text-sm font-semibold px-4 py-2 rounded-full hover:bg-green-800 transition">
           + Novo lote
         </button>
       </div>
 
       {/* Filtros */}
-      <div className="flex gap-2">
+      <div id="filtros-lotes" className="flex gap-2">
         {["", "disponivel", "reservado", "vendido", "interno"].map(s => (
           <button key={s} onClick={() => setFiltroStatus(s)}
             className={`px-3 py-1.5 rounded-full text-xs font-semibold transition ${filtroStatus === s ? "bg-green-700 text-white" : "bg-white border border-gray-200 text-gray-600 hover:border-green-400"}`}>
@@ -165,7 +194,7 @@ export default function LotesPage() {
           <button onClick={() => setShowForm(true)} className="mt-4 text-green-700 text-sm font-semibold hover:underline">Criar o primeiro lote →</button>
         </div>
       ) : (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div id="grid-lotes" className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {lotes.map(lote => {
             const st = STATUS_LABEL[lote.status];
             return (
@@ -194,6 +223,8 @@ export default function LotesPage() {
           })}
         </div>
       )}
+
+      <TourButton tourKey="gestao-lotes" steps={TOUR_STEPS} />
     </div>
   );
 }
