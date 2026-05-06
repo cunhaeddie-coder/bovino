@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\EventoReproducao;
 use App\Models\Rebanho;
 use Illuminate\Http\Request;
 
@@ -58,7 +59,9 @@ class GestaoRebanhoController extends Controller
     public function show(Request $request, int $id)
     {
         $fazenda = $this->fazenda($request);
-        $animal = $fazenda->rebanho()->with(['pastagem', 'pesagens', 'eventosSaude', 'eventosReproducao'])->findOrFail($id);
+        $animal = $fazenda->rebanho()
+            ->with(['pastagem', 'pesagens', 'eventosSaude', 'eventosReproducao'])
+            ->findOrFail($id);
         return response()->json($animal);
     }
 
@@ -78,6 +81,8 @@ class GestaoRebanhoController extends Controller
             'peso_atual'      => 'nullable|numeric|min:0',
             'pastagem_id'     => 'nullable|exists:pastagens,id',
             'status'          => 'sometimes|in:ativo,vendido,morto,transferido',
+            'pai'             => 'nullable|string|max:60',
+            'mae'             => 'nullable|string|max:60',
             'observacao'      => 'nullable|string|max:500',
         ]);
 
@@ -98,11 +103,140 @@ class GestaoRebanhoController extends Controller
         $q = $fazenda->rebanho()->where('status', 'ativo');
 
         return response()->json([
-            'total'     => $q->count(),
-            'machos'    => (clone $q)->where('sexo', 'macho')->count(),
-            'femeas'    => (clone $q)->where('sexo', 'femea')->count(),
-            'por_categoria' => (clone $q)->selectRaw('categoria, count(*) as total')
+            'total'          => $q->count(),
+            'machos'         => (clone $q)->where('sexo', 'macho')->count(),
+            'femeas'         => (clone $q)->where('sexo', 'femea')->count(),
+            'por_categoria'  => (clone $q)->selectRaw('categoria, count(*) as total')
                 ->groupBy('categoria')->pluck('total', 'categoria'),
+        ]);
+    }
+
+    public function dashboard(Request $request)
+    {
+        $fazenda = $this->fazenda($request);
+        $hoje    = now();
+        $base    = $fazenda->rebanho();
+        $ativos  = fn() => (clone $base)->where('status', 'ativo');
+
+        // ── KPIs principais ────────────────────────────────────────────────
+        $total    = $ativos()->count();
+        $machos   = $ativos()->where('sexo', 'macho')->count();
+        $femeas   = $ativos()->where('sexo', 'femea')->count();
+        $pesoMedio = $ativos()->whereNotNull('peso_atual')->avg('peso_atual');
+
+        // ── Por categoria ──────────────────────────────────────────────────
+        $porCategoria = $ativos()
+            ->selectRaw('categoria, COUNT(*) as total, ROUND(AVG(peso_atual), 1) as peso_medio')
+            ->groupBy('categoria')
+            ->orderByRaw("FIELD(categoria, 'vaca','novilha','bezerra','touro','boi','novilho','bezerro')")
+            ->get();
+
+        // ── Por faixa etária ───────────────────────────────────────────────
+        $porIdade = [
+            'ate_6m'    => $ativos()->whereNotNull('data_nascimento')
+                            ->whereDate('data_nascimento', '>=', $hoje->copy()->subMonths(6))->count(),
+            '6_12m'     => $ativos()->whereNotNull('data_nascimento')
+                            ->whereDate('data_nascimento', '<', $hoje->copy()->subMonths(6))
+                            ->whereDate('data_nascimento', '>=', $hoje->copy()->subMonths(12))->count(),
+            '12_24m'    => $ativos()->whereNotNull('data_nascimento')
+                            ->whereDate('data_nascimento', '<', $hoje->copy()->subMonths(12))
+                            ->whereDate('data_nascimento', '>=', $hoje->copy()->subMonths(24))->count(),
+            'acima_24m' => $ativos()->whereNotNull('data_nascimento')
+                            ->whereDate('data_nascimento', '<', $hoje->copy()->subMonths(24))->count(),
+            'sem_data'  => $ativos()->whereNull('data_nascimento')->count(),
+        ];
+
+        // ── Nascimentos e mortes do mês ────────────────────────────────────
+        $nascimentosMes = EventoReproducao::where('fazenda_id', $fazenda->id)
+            ->where('tipo', 'parto')
+            ->where('resultado', true)
+            ->whereMonth('data_evento', $hoje->month)
+            ->whereYear('data_evento', $hoje->year)
+            ->count();
+
+        $mortesMes = (clone $base)->where('status', 'morto')
+            ->whereMonth('updated_at', $hoje->month)
+            ->whereYear('updated_at', $hoje->year)
+            ->count();
+
+        // ── Prenhas (diagnóstico positivo nos últimos 90 dias) ─────────────
+        $prenhas = EventoReproducao::where('fazenda_id', $fazenda->id)
+            ->where('tipo', 'diagnostico_prenhez')
+            ->where('resultado', true)
+            ->whereDate('data_evento', '>=', $hoje->copy()->subDays(90))
+            ->count();
+
+        // ── Alerta: para desmama (bezerros/bezeras 6–8 meses) ─────────────
+        $paraDesmama = $ativos()
+            ->whereIn('categoria', ['bezerro', 'bezerra'])
+            ->whereNotNull('data_nascimento')
+            ->whereDate('data_nascimento', '<=', $hoje->copy()->subMonths(6))
+            ->whereDate('data_nascimento', '>=', $hoje->copy()->subMonths(8))
+            ->orderBy('data_nascimento')
+            ->get(['id', 'brinco', 'nome', 'raca', 'sexo', 'categoria', 'data_nascimento', 'peso_atual', 'mae']);
+
+        // ── Alerta: vaca sem cria (sem parto exitoso no último ano) ────────
+        $vacasSemCria = $ativos()
+            ->where('categoria', 'vaca')
+            ->whereDoesntHave('eventosReproducao', function ($q) use ($hoje) {
+                $q->where('tipo', 'parto')
+                  ->where('resultado', true)
+                  ->whereDate('data_evento', '>=', $hoje->copy()->subYear());
+            })
+            ->orderBy('data_nascimento')
+            ->get(['id', 'brinco', 'nome', 'raca', 'data_nascimento', 'peso_atual']);
+
+        // ── Alerta: natimortos recentes (últimos 30 dias) ──────────────────
+        $natimortos = EventoReproducao::where('fazenda_id', $fazenda->id)
+            ->where('tipo', 'parto')
+            ->where('resultado', false)
+            ->whereDate('data_evento', '>=', $hoje->copy()->subDays(30))
+            ->with('animal:id,brinco,nome,raca')
+            ->orderByDesc('data_evento')
+            ->get(['id', 'animal_id', 'data_evento', 'peso_bezerro', 'sexo_bezerro', 'observacao']);
+
+        // ── Alerta: baixo peso para categoria ─────────────────────────────
+        // Benchmarks mínimos por categoria (kg)
+        $benchmarks = [
+            'bezerro'  => 80,
+            'bezerra'  => 70,
+            'novilho'  => 200,
+            'novilha'  => 180,
+            'boi'      => 350,
+            'vaca'     => 280,
+            'touro'    => 450,
+        ];
+
+        $baixoPeso = [];
+        foreach ($benchmarks as $cat => $minPeso) {
+            $animaisBaixoPeso = $ativos()
+                ->where('categoria', $cat)
+                ->whereNotNull('peso_atual')
+                ->where('peso_atual', '<', $minPeso)
+                ->get(['id', 'brinco', 'nome', 'raca', 'sexo', 'categoria', 'peso_atual', 'data_nascimento']);
+
+            foreach ($animaisBaixoPeso as $a) {
+                $a->benchmark = $minPeso;
+                $baixoPeso[] = $a;
+            }
+        }
+
+        return response()->json([
+            'total'            => $total,
+            'machos'           => $machos,
+            'femeas'           => $femeas,
+            'peso_medio'       => round($pesoMedio ?? 0, 1),
+            'por_categoria'    => $porCategoria,
+            'por_idade'        => $porIdade,
+            'nascimentos_mes'  => $nascimentosMes,
+            'mortes_mes'       => $mortesMes,
+            'prenhas'          => $prenhas,
+            'alertas' => [
+                'desmama'       => $paraDesmama,
+                'vaca_sem_cria' => $vacasSemCria,
+                'natimortos'    => $natimortos,
+                'baixo_peso'    => $baixoPeso,
+            ],
         ]);
     }
 }
