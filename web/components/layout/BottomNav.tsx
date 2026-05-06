@@ -24,7 +24,7 @@ export function BottomNav() {
         { href: "/perfil", icon: "👤", label: "Perfil", auth: true },
       ]
     : [
-        { href: "/chat", icon: "💬", label: "Chat", auth: true },
+        { href: "/planos", icon: "⭐", label: "Planos" },
         { href: "/perfil", icon: "👤", label: "Perfil", auth: true },
       ];
 

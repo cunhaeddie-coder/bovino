@@ -3,12 +3,11 @@ import { Plano } from "@/lib/types";
 import PlanoCardAction from "./PlanoCardAction";
 import { serverFetch } from "@/lib/api-server";
 
-async function getPlanos(): Promise<{ grupos: Record<string, Plano[]>; erro?: string }> {
+async function getPlanos(): Promise<Record<string, Plano[]>> {
   try {
-    const grupos = await serverFetch<Record<string, Plano[]>>("/planos", { revalidate: 0 });
-    return { grupos };
-  } catch (e) {
-    return { grupos: {}, erro: String(e) };
+    return await serverFetch<Record<string, Plano[]>>("/planos", { revalidate: 3600 });
+  } catch {
+    return {};
   }
 }
 
@@ -59,7 +58,7 @@ function PlanoCard({ plano, destaque }: { plano: Plano; destaque?: boolean }) {
 }
 
 export default async function PlanosPage() {
-  const { grupos, erro } = await getPlanos();
+  const grupos = await getPlanos();
 
   const compradores = grupos["comprador"] ?? [];
   const produtores = grupos["produtor"] ?? [];
@@ -78,11 +77,6 @@ export default async function PlanosPage() {
       </section>
 
       <div className="max-w-7xl mx-auto px-4 py-16 space-y-20">
-        {erro && (
-          <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl p-4">
-            Erro ao carregar planos: {erro}
-          </div>
-        )}
 
         {/* PRODUTORES */}
         {produtores.length > 0 && (
