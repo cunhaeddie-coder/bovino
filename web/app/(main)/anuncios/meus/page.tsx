@@ -6,6 +6,27 @@ import Link from "next/link";
 import { useAuthStore } from "@/lib/store";
 import { api } from "@/lib/api";
 import type { Anuncio, PaginatedResponse } from "@/lib/types";
+import { TourButton } from "@/components/ui/TourButton";
+import type { DriveStep } from "driver.js";
+
+const TOUR_STEPS: DriveStep[] = [
+  {
+    element: "#btn-novo-anuncio",
+    popover: {
+      title: "➕ Criar anúncio",
+      description: "Clique aqui para publicar um novo anúncio de gado. É grátis! Adicione fotos, descrição, raça, quantidade e preço.",
+      side: "bottom",
+    },
+  },
+  {
+    element: "#lista-anuncios",
+    popover: {
+      title: "📋 Seus anúncios",
+      description: "Aqui ficam todos os anúncios publicados. Veja visualizações, status (disponível, vendido, reservado) e encerre quando quiser.",
+      side: "top",
+    },
+  },
+];
 
 const STATUS_LABEL: Record<string, string> = {
   disponivel: "Disponível",
@@ -47,7 +68,7 @@ export default function MeusAnunciosPage() {
           <h1 className="text-2xl font-bold text-gray-900">Meus anúncios</h1>
           <p className="text-sm text-gray-500 mt-0.5">{anuncios.length} anúncio{anuncios.length !== 1 ? "s" : ""}</p>
         </div>
-        <Link href="/anuncios/novo"
+        <Link id="btn-novo-anuncio" href="/anuncios/novo"
           className="bg-green-700 text-white text-sm font-semibold px-4 py-2 rounded-full hover:bg-green-800 transition-colors">
           + Novo anúncio
         </Link>
@@ -70,7 +91,7 @@ export default function MeusAnunciosPage() {
           </Link>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div id="lista-anuncios" className="space-y-3">
           {anuncios.map((a) => (
             <div key={a.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex gap-4 items-start">
               {/* Thumb */}
@@ -112,6 +133,7 @@ export default function MeusAnunciosPage() {
           ))}
         </div>
       )}
+      <TourButton tourKey="meus-anuncios" steps={TOUR_STEPS} />
     </div>
   );
 }

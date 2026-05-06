@@ -3,6 +3,59 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { api } from "@/lib/api";
+import { TourButton } from "@/components/ui/TourButton";
+import type { DriveStep } from "driver.js";
+
+const TOUR_STEPS: DriveStep[] = [
+  {
+    element: "#gestao-kpis",
+    popover: {
+      title: "📊 Resumo do rebanho",
+      description: "Aqui você vê em tempo real o total de animais, quantos são machos, fêmeas e quantos alertas de saúde estão pendentes.",
+      side: "bottom",
+    },
+  },
+  {
+    element: "#gestao-valor",
+    popover: {
+      title: "💰 Valor estimado",
+      description: "A IA calcula automaticamente o valor estimado do seu rebanho com base na cotação atual da arroba. Atualizado diariamente.",
+      side: "bottom",
+    },
+  },
+  {
+    element: "#gestao-alertas",
+    popover: {
+      title: "💉 Alertas de saúde",
+      description: "Vacinas e doses próximas do vencimento aparecem aqui para você não perder nenhuma aplicação no rebanho.",
+      side: "top",
+    },
+  },
+  {
+    element: "#gestao-modulos",
+    popover: {
+      title: "🗂️ Módulos da gestão",
+      description: "Acesse todos os módulos: rebanho, lotes, saúde, pesagens, financeiro, estoque, equipe, ocorrências, app pasto e app curral.",
+      side: "top",
+    },
+  },
+  {
+    element: "#btn-ia-gestor",
+    popover: {
+      title: "🤖 IA Gestor",
+      description: "Converse com a inteligência artificial para obter insights sobre seu rebanho, sugestões de manejo e análises de produtividade.",
+      side: "bottom",
+    },
+  },
+  {
+    element: "#btn-add-animal",
+    popover: {
+      title: "➕ Adicionar animal",
+      description: "Clique aqui para cadastrar um novo animal no seu rebanho com todas as informações: brinco, raça, categoria, peso e muito mais.",
+      side: "bottom",
+    },
+  },
+];
 
 type Resumo = {
   total: number; machos: number; femeas: number;
@@ -123,17 +176,17 @@ export default function GestaoDashboard() {
           <p className="text-gray-500 text-sm mt-0.5">Controle total da sua propriedade</p>
         </div>
         <div className="flex gap-2">
-          <Link href="/gestao/gestor" className="bg-violet-600 text-white text-sm font-semibold px-4 py-2 rounded-full hover:bg-violet-700 transition">
+          <Link id="btn-ia-gestor" href="/gestao/gestor" className="bg-violet-600 text-white text-sm font-semibold px-4 py-2 rounded-full hover:bg-violet-700 transition">
             🤖 IA Gestor
           </Link>
-          <Link href="/gestao/animais" className="bg-green-700 text-white text-sm font-semibold px-4 py-2 rounded-full hover:bg-green-800 transition">
+          <Link id="btn-add-animal" href="/gestao/animais" className="bg-green-700 text-white text-sm font-semibold px-4 py-2 rounded-full hover:bg-green-800 transition">
             + Animal
           </Link>
         </div>
       </div>
 
       {/* KPIs principais */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div id="gestao-kpis" className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
           { label: "Total rebanho",    value: resumo?.total ?? "—",    icon: "🐄" },
           { label: "Machos",           value: resumo?.machos ?? "—",   icon: "🐂" },
@@ -150,7 +203,7 @@ export default function GestaoDashboard() {
 
       {/* Card valor do rebanho */}
       {valorRebanho && valorRebanho.total_animais > 0 && (
-        <div className="bg-linear-to-r from-green-700 to-emerald-600 rounded-2xl p-6 text-white shadow-lg">
+        <div id="gestao-valor" className="bg-linear-to-r from-green-700 to-emerald-600 rounded-2xl p-6 text-white shadow-lg">
           <div className="flex items-start justify-between">
             <div>
               <p className="text-green-200 text-sm font-medium mb-1">💰 Valor estimado do rebanho</p>
@@ -189,7 +242,7 @@ export default function GestaoDashboard() {
 
       <div className="grid md:grid-cols-2 gap-4">
         {/* Alertas saúde */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+        <div id="gestao-alertas" className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-semibold text-gray-700">💉 Próximas doses / vacinas</h2>
             <Link href="/gestao/saude" className="text-xs text-green-700 hover:underline">Ver tudo →</Link>
@@ -237,7 +290,7 @@ export default function GestaoDashboard() {
       </div>
 
       {/* Atalhos para todos os módulos */}
-      <div>
+      <div id="gestao-modulos">
         <h2 className="text-sm font-semibold text-gray-700 mb-3">Módulos</h2>
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
           {[
@@ -262,6 +315,8 @@ export default function GestaoDashboard() {
           ))}
         </div>
       </div>
+
+      <TourButton tourKey="gestao" steps={TOUR_STEPS} />
     </div>
   );
 }

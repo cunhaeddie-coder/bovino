@@ -6,6 +6,31 @@ import Link from "next/link";
 import { useAuthStore } from "@/lib/store";
 import { api } from "@/lib/api";
 import type { Negociacao, PaginatedResponse } from "@/lib/types";
+import { TourButton } from "@/components/ui/TourButton";
+import type { DriveStep } from "driver.js";
+
+const TOUR_STEPS: DriveStep[] = [
+  {
+    element: "#lista-negociacoes",
+    popover: {
+      title: "💬 Suas negociações",
+      description: "Aqui ficam todas as conversas abertas com compradores ou vendedores. Clique em uma conversa para continuar a negociação.",
+      side: "top",
+    },
+  },
+  {
+    popover: {
+      title: "📌 Status das negociações",
+      description: "Aberta: aguardando resposta · Aceita: ambos concordaram · Concluída: negócio fechado · Recusada: proposta não aceita.",
+    },
+  },
+  {
+    popover: {
+      title: "🔍 Como iniciar uma negociação?",
+      description: "Encontre um anúncio na busca, clique em 'Entrar em contato' e envie sua proposta. A conversa aparecerá automaticamente aqui.",
+    },
+  },
+];
 
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
   aberta:    { label: "Aberta",    color: "bg-blue-100 text-blue-700" },
@@ -50,7 +75,7 @@ export default function ChatPage() {
           </Link>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div id="lista-negociacoes" className="space-y-3">
           {negociacoes.map((n) => {
             const { label, color } = STATUS_CONFIG[n.status] ?? STATUS_CONFIG.aberta;
             const isVendedor = n.vendedor?.id === user.id;
@@ -87,6 +112,7 @@ export default function ChatPage() {
           })}
         </div>
       )}
+      <TourButton tourKey="chat" steps={TOUR_STEPS} />
     </div>
   );
 }

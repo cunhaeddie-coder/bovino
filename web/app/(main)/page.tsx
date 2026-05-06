@@ -6,6 +6,7 @@ import { ComoFunciona } from "@/components/home/ComoFunciona";
 import { AnuncioCard } from "@/components/anuncio/AnuncioCard";
 import { api } from "@/lib/api";
 import type { Anuncio, PaginatedResponse } from "@/lib/types";
+import { HomeTour } from "@/components/home/HomeTour";
 
 export const metadata: Metadata = {
   title: "Bovino — Compra e venda de gado bovino no Brasil",
@@ -27,7 +28,7 @@ export default async function Home() {
 
   return (
     <>
-      <HeroSearch />
+      <div id="hero-search"><HeroSearch /></div>
       <StatsBar />
 
       <div className="max-w-6xl mx-auto px-4 py-10 space-y-12">
@@ -48,7 +49,7 @@ export default async function Home() {
         )}
 
         {/* Recentes */}
-        <section>
+        <section id="secao-recentes">
           <div className="flex items-center justify-between mb-5">
             <div>
               <h2 className="text-xl font-bold text-gray-900">🕐 Anúncios recentes</h2>
@@ -78,7 +79,7 @@ export default async function Home() {
         </section>
 
         {/* CTA para vendedor */}
-        <section className="bg-linear-to-br from-green-700 to-green-800 rounded-3xl p-8 md:p-12 text-white text-center space-y-4">
+        <section id="cta-vender" className="bg-linear-to-br from-green-700 to-green-800 rounded-3xl p-8 md:p-12 text-white text-center space-y-4">
           <h2 className="text-2xl md:text-3xl font-bold">Tem gado para vender?</h2>
           <p className="text-green-100 max-w-md mx-auto">
             Anuncie grátis e alcance compradores em todo o Brasil. Sem intermediários, negociação direta.
@@ -93,6 +94,8 @@ export default async function Home() {
 
         <ComoFunciona />
       </div>
+
+      <HomeTour />
 
       <footer className="bg-gray-900 text-gray-400 mt-12">
         <div className="max-w-6xl mx-auto px-4 py-10 grid grid-cols-2 md:grid-cols-4 gap-8 text-sm">
