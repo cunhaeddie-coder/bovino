@@ -10,7 +10,9 @@ const nextConfig: NextConfig = {
     ],
   },
   async rewrites() {
-    const apiBase = process.env.INTERNAL_API_URL ?? "http://localhost:8000";
+    const isProd = process.env.NODE_ENV === "production";
+    const apiBase = process.env.INTERNAL_API_URL
+      ?? (isProd ? "https://api.bovino.agr.br" : "http://localhost:8000");
     return [
       {
         source: "/api/:path*",
