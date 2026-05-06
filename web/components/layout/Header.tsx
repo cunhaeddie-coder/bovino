@@ -42,6 +42,7 @@ export function Header() {
           {isPremium && (
             <>
               <Link href="/gestao" className={isActive("/gestao")}>Gestão</Link>
+              <Link href="/gestao/arrendamentos" className={isActive("/gestao/arrendamentos")}>Arrendamentos</Link>
               <Link href="/inteligencia" className={isActive("/inteligencia")}>Inteligência</Link>
               <Link href="/visitas" className={isActive("/visitas")}>Visitas</Link>
             </>
