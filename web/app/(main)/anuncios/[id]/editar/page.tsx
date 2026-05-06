@@ -170,9 +170,7 @@ export default function EditarAnuncioPage() {
           const fd = new FormData();
           fd.append("arquivo", newFiles[i]);
           fd.append("ordem", String((data.midias?.length ?? midias.length) + i));
-          const { data: nova } = await api.post(`/anuncios/${id}/midias`, fd, {
-            headers: { "Content-Type": "multipart/form-data" },
-          });
+          const { data: nova } = await api.post(`/anuncios/${id}/midias`, fd);
           setMidias(prev => [...prev, nova]);
         } catch {
           // continua

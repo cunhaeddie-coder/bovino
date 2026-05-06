@@ -151,9 +151,7 @@ function NovoAnuncioForm() {
             const fd = new FormData();
             fd.append("arquivo", files[i]);
             fd.append("ordem", String(i));
-            await api.post(`/anuncios/${anuncioId}/midias`, fd, {
-              headers: { "Content-Type": "multipart/form-data" },
-            });
+            await api.post(`/anuncios/${anuncioId}/midias`, fd);
           } catch {
             // continua mesmo se uma mídia falhar
           }
