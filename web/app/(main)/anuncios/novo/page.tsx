@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuthStore } from "@/lib/store";
 import { api } from "@/lib/api";
@@ -29,21 +29,27 @@ function NovoAnuncioForm() {
     aceita_negociacao: true,
     expira_em: "",
   });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [loading, setLoading]         = useState(false);
+  const [error, setError]             = useState("");
+  const [uploadStep, setUploadStep]   = useState("");
+
+  // Mídia
+  const [files, setFiles]       = useState<File[]>([]);
+  const [previews, setPreviews] = useState<string[]>([]);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!user) router.replace("/login");
   }, [user]);
 
-  // Pré-preenche o formulário com dados do lote da gestão
+  // Pré-preenche com dados do lote da gestão
   useEffect(() => {
-    const raca       = params.get("raca");
-    const quantidade = params.get("quantidade");
-    const pesoMedio  = params.get("peso_medio");
-    const precoArr   = params.get("preco_arroba");
-    const estado     = params.get("estado");
-    const municipio  = params.get("municipio");
+    const raca        = params.get("raca");
+    const quantidade  = params.get("quantidade");
+    const pesoMedio   = params.get("peso_medio");
+    const precoArr    = params.get("preco_arroba");
+    const estado      = params.get("estado");
+    const municipio   = params.get("municipio");
     const propriedade = params.get("propriedade");
 
     if (!raca && !quantidade) return;
@@ -51,22 +57,18 @@ function NovoAnuncioForm() {
     setForm(f => {
       const updates: Partial<typeof f> = {};
 
-      if (raca)       updates.raca       = raca;
-      if (quantidade) updates.quantidade = quantidade;
-      if (estado)     updates.estado     = estado;
-      if (municipio)  updates.municipio  = municipio;
+      if (raca)        updates.raca        = raca;
+      if (quantidade)  updates.quantidade  = quantidade;
+      if (estado)      updates.estado      = estado;
+      if (municipio)   updates.municipio   = municipio;
       if (propriedade) updates.propriedade = propriedade;
-      if (pesoMedio)  updates.peso_estimado = pesoMedio;
+      if (pesoMedio)   updates.peso_estimado = pesoMedio;
 
-      // Converte preço/@ para preço/cabeça usando o peso médio
       if (precoArr && pesoMedio) {
-        const precoArroba = parseFloat(precoArr);
-        const peso        = parseFloat(pesoMedio);
-        const arrobas     = peso / ARROBA;
-        updates.preco_unitario = (precoArroba * arrobas).toFixed(2);
+        const arrobas = parseFloat(pesoMedio) / ARROBA;
+        updates.preco_unitario = (parseFloat(precoArr) * arrobas).toFixed(2);
       }
 
-      // Gera título sugerido
       if (raca && quantidade) {
         updates.titulo = `${quantidade} ${raca} — ${estado || ""}`.trim();
       }
@@ -78,6 +80,38 @@ function NovoAnuncioForm() {
   function set(field: string, value: string | boolean) {
     setForm(prev => ({ ...prev, [field]: value }));
   }
+
+  // ─── Mídia ────────────────────────────────────────────────────────────────
+
+  function addFiles(picked: FileList | null) {
+    if (!picked) return;
+    const added = Array.from(picked);
+    setFiles(prev => [...prev, ...added]);
+    added.forEach(f => {
+      if (f.type.startsWith("image/")) {
+        setPreviews(prev => [...prev, URL.createObjectURL(f)]);
+      } else {
+        setPreviews(prev => [...prev, "video"]);
+      }
+    });
+    // reset input so o mesmo arquivo pode ser adicionado novamente
+    if (inputRef.current) inputRef.current.value = "";
+  }
+
+  function removeFile(index: number) {
+    const url = previews[index];
+    if (url && url !== "video") URL.revokeObjectURL(url);
+    setFiles(p => p.filter((_, i) => i !== index));
+    setPreviews(p => p.filter((_, i) => i !== index));
+  }
+
+  // Drag & drop
+  function onDrop(e: React.DragEvent) {
+    e.preventDefault();
+    addFiles(e.dataTransfer.files);
+  }
+
+  // ─── Submit ───────────────────────────────────────────────────────────────
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -107,7 +141,26 @@ function NovoAnuncioForm() {
       };
 
       const { data } = await api.post("/anuncios", payload);
-      router.push(`/anuncios/${data.id}`);
+      const anuncioId = data.id;
+
+      // Upload de mídias (best-effort — não bloqueia navegação se falhar)
+      if (files.length > 0) {
+        for (let i = 0; i < files.length; i++) {
+          setUploadStep(`Enviando mídia ${i + 1} de ${files.length}...`);
+          try {
+            const fd = new FormData();
+            fd.append("arquivo", files[i]);
+            fd.append("ordem", String(i));
+            await api.post(`/anuncios/${anuncioId}/midias`, fd, {
+              headers: { "Content-Type": "multipart/form-data" },
+            });
+          } catch {
+            // continua mesmo se uma mídia falhar
+          }
+        }
+      }
+
+      router.push(`/anuncios/${anuncioId}`);
     } catch (e: unknown) {
       const err = e as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } };
       if (err.response?.data?.errors) {
@@ -117,6 +170,7 @@ function NovoAnuncioForm() {
       }
     } finally {
       setLoading(false);
+      setUploadStep("");
     }
   }
 
@@ -135,13 +189,15 @@ function NovoAnuncioForm() {
       <div className="mb-6">
         <h1 className="text-2xl font-extrabold text-gray-900">Publicar anúncio</h1>
         <p className="text-gray-500 text-sm mt-1">
-          {vemDoLote ? "Dados pré-preenchidos com o lote da gestão. Revise e publique." : "Preencha os dados do lote que deseja vender."}
+          {vemDoLote
+            ? "Dados pré-preenchidos com o lote da gestão. Revise e publique."
+            : "Preencha os dados do lote que deseja vender."}
         </p>
       </div>
 
       {vemDoLote && (
         <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 mb-5 text-sm text-green-700">
-          🗂️ Dados importados do lote da gestão — revise antes de publicar.
+          Dados importados do lote da gestão — revise antes de publicar.
         </div>
       )}
 
@@ -153,7 +209,7 @@ function NovoAnuncioForm() {
 
       <form onSubmit={handleSubmit} className="space-y-5">
 
-        {/* Título */}
+        {/* Informações */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
           <h2 className="font-semibold text-gray-700 text-sm">Informações do anúncio</h2>
           <div>
@@ -224,6 +280,62 @@ function NovoAnuncioForm() {
           </div>
         </div>
 
+        {/* Fotos e Vídeos */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
+          <h2 className="font-semibold text-gray-700 text-sm">
+            Fotos e vídeos{" "}
+            <span className="text-gray-400 font-normal">(opcional)</span>
+          </h2>
+
+          {/* Grid de previews */}
+          {files.length > 0 && (
+            <div className="grid grid-cols-3 gap-2">
+              {files.map((f, i) => (
+                <div key={i} className="relative aspect-square rounded-xl overflow-hidden bg-gray-100 border border-gray-200 group">
+                  {previews[i] !== "video" ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={previews[i]} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center text-gray-500 p-2">
+                      <svg className="w-8 h-8 mb-1 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                          d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M4 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H6a2 2 0 01-2-2V8z" />
+                      </svg>
+                      <span className="text-xs text-center truncate w-full px-1">{f.name}</span>
+                    </div>
+                  )}
+                  <button type="button" onClick={() => removeFile(i)}
+                    className="absolute top-1.5 right-1.5 bg-black/60 hover:bg-black/80 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs transition-opacity opacity-0 group-hover:opacity-100">
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Zona de drop */}
+          <label
+            onDragOver={e => e.preventDefault()}
+            onDrop={onDrop}
+            className="flex flex-col items-center justify-center border-2 border-dashed border-gray-200 rounded-xl p-7 cursor-pointer hover:border-green-400 hover:bg-green-50 transition-colors">
+            <svg className="w-10 h-10 text-gray-300 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            <span className="text-sm font-semibold text-gray-700">
+              {files.length > 0 ? "Adicionar mais fotos / vídeos" : "Adicionar fotos ou vídeos"}
+            </span>
+            <span className="text-xs text-gray-400 mt-1">
+              Arraste ou clique — JPG, PNG, WEBP, MP4, MOV — até 50 MB por arquivo
+            </span>
+            <input ref={inputRef} type="file" multiple
+              accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime"
+              onChange={e => addFiles(e.target.files)}
+              className="hidden" />
+          </label>
+        </div>
+
         {/* Preço */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
           <h2 className="font-semibold text-gray-700 text-sm">Preço e condições</h2>
@@ -259,7 +371,7 @@ function NovoAnuncioForm() {
 
         <button type="submit" disabled={loading}
           className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-2xl transition disabled:opacity-60 text-base">
-          {loading ? "Publicando..." : "Publicar anúncio"}
+          {loading ? (uploadStep || "Publicando...") : "Publicar anúncio"}
         </button>
       </form>
     </div>
