@@ -106,13 +106,16 @@ function UnitToggle({ value, options, onChange }: {
 }
 
 export default function LotesPage() {
-  const [lotes, setLotes]             = useState<Lote[]>([]);
-  const [loading, setLoading]         = useState(true);
+  const [lotes, setLotes]               = useState<Lote[]>([]);
+  const [loading, setLoading]           = useState(true);
   const [filtroStatus, setFiltroStatus] = useState("");
-  const [showForm, setShowForm]       = useState(false);
-  const [editando, setEditando]       = useState<Lote | null>(null);
-  const [form, setForm]               = useState<FormState>(FORM_VAZIO);
-  const [salvando, setSalvando]       = useState(false);
+  const [showForm, setShowForm]         = useState(false);
+  const [editando, setEditando]         = useState<Lote | null>(null);
+  const [form, setForm]                 = useState<FormState>(FORM_VAZIO);
+  const [salvando, setSalvando]         = useState(false);
+  const [confirmarPublicar, setConfirmarPublicar] = useState<Lote | null>(null);
+  const [publicando, setPublicando]     = useState(false);
+  const [erroPublicar, setErroPublicar] = useState("");
 
   async function carregar() {
     setLoading(true);
@@ -186,14 +189,25 @@ export default function LotesPage() {
     }
   }
 
-  async function publicar(id: number) {
-    const { data } = await api.get(`/gestao/lotes/${id}/publicar`);
-    const params = new URLSearchParams({
-      raca: data.raca ?? "", quantidade: String(data.quantidade ?? ""),
-      estado: data.estado ?? "", municipio: data.municipio ?? "",
-      propriedade: data.propriedade ?? "", lote_id: String(data.lote_id),
-    });
-    window.location.href = `/anuncios/novo?${params}`;
+  async function publicar(lote: Lote) {
+    setPublicando(true);
+    setErroPublicar("");
+    try {
+      const { data } = await api.get(`/gestao/lotes/${lote.id}/publicar`);
+      const params = new URLSearchParams({
+        raca:        data.raca        ?? "",
+        quantidade:  String(data.quantidade ?? ""),
+        estado:      data.estado      ?? "",
+        municipio:   data.municipio   ?? "",
+        propriedade: data.propriedade ?? "",
+        lote_id:     String(data.lote_id),
+      });
+      window.location.href = `/anuncios/novo?${params}`;
+    } catch (err: any) {
+      const msg = err.response?.data?.message ?? "Erro ao publicar. Verifique sua conexão e tente novamente.";
+      setErroPublicar(msg);
+      setPublicando(false);
+    }
   }
 
   const precoLabel = form.unidade_preco === "arroba" ? "Preço/@" : "Preço/kg";
@@ -380,7 +394,7 @@ export default function LotesPage() {
                     ✏️ Editar
                   </button>
                   {lote.status === "disponivel" && (
-                    <button onClick={() => publicar(lote.id)}
+                    <button onClick={() => { setErroPublicar(""); setConfirmarPublicar(lote); }}
                       className="flex-1 border border-green-700 text-green-700 text-xs font-semibold py-2 rounded-full hover:bg-green-50 transition">
                       📢 Publicar
                     </button>
@@ -389,6 +403,52 @@ export default function LotesPage() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Modal confirmação publicar */}
+      {confirmarPublicar && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-sm shadow-xl p-6 space-y-4">
+            <div className="text-center">
+              <p className="text-4xl mb-2">📢</p>
+              <h3 className="font-bold text-gray-900 text-lg">Publicar como anúncio?</h3>
+              <p className="text-sm text-gray-500 mt-1">
+                O lote <strong>{confirmarPublicar.nome}</strong> será publicado no marketplace para compradores de todo o Brasil.
+              </p>
+            </div>
+
+            <div className="bg-gray-50 rounded-xl p-3 text-xs text-gray-600 space-y-1">
+              <p><span className="text-gray-400">Raça:</span> {confirmarPublicar.raca || "—"}</p>
+              <p><span className="text-gray-400">Cabeças:</span> {confirmarPublicar.qtd_cabecas}</p>
+              {confirmarPublicar.peso_medio && (
+                <p><span className="text-gray-400">Peso médio:</span> {confirmarPublicar.peso_medio} kg ({(confirmarPublicar.peso_medio / ARROBA).toFixed(1)} @)</p>
+              )}
+              {confirmarPublicar.preco_arroba && (
+                <p><span className="text-gray-400">Preço:</span> R$ {confirmarPublicar.preco_arroba.toFixed(2)}/@ (R$ {(confirmarPublicar.preco_arroba / ARROBA).toFixed(2)}/kg)</p>
+              )}
+            </div>
+
+            {erroPublicar && (
+              <p className="text-xs text-red-600 bg-red-50 rounded-xl px-3 py-2">{erroPublicar}</p>
+            )}
+
+            <div className="flex gap-2">
+              <button onClick={() => { setConfirmarPublicar(null); setErroPublicar(""); }}
+                disabled={publicando}
+                className="flex-1 border border-gray-200 text-gray-700 font-semibold py-2.5 rounded-full text-sm hover:bg-gray-50 disabled:opacity-50">
+                Cancelar
+              </button>
+              <button onClick={() => publicar(confirmarPublicar)}
+                disabled={publicando}
+                className="flex-1 bg-green-700 text-white font-semibold py-2.5 rounded-full text-sm hover:bg-green-800 disabled:opacity-60 flex items-center justify-center gap-2">
+                {publicando
+                  ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Publicando...</>
+                  : "📢 Confirmar publicação"
+                }
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
