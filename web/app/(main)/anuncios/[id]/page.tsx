@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { serverFetch } from "@/lib/api-server";
+import { AnuncioGallery } from "@/components/anuncio/AnuncioGallery";
 import type { Anuncio } from "@/lib/types";
 
 type Props = { params: Promise<{ id: string }> };
@@ -35,7 +35,7 @@ export default async function AnuncioPage({ params }: Props) {
   if (!anuncio) notFound();
 
   const preco = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(anuncio.preco_unitario);
-  const fotos = anuncio.midias?.filter((m) => m.tipo === "foto") ?? [];
+  const midias = anuncio.midias ?? [];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -48,11 +48,7 @@ export default async function AnuncioPage({ params }: Props) {
       </header>
 
       <main className="max-w-3xl mx-auto px-4 py-6 space-y-6">
-        {fotos.length > 0 && (
-          <div className="relative h-64 sm:h-80 rounded-2xl overflow-hidden bg-gray-200">
-            <Image src={fotos[0].url} alt={anuncio.titulo} fill className="object-cover" priority />
-          </div>
-        )}
+        {midias.length > 0 && <AnuncioGallery midias={midias} />}
 
         <div className="bg-white rounded-2xl p-5 shadow-sm space-y-4">
           <div className="flex items-start justify-between gap-4">
