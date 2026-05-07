@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { api } from "@/lib/api";
 
 type Animal = { id: number; brinco: string; nome: string | null; raca: string; categoria: string; sexo: string; peso_atual: number | null };
 type Lote   = { id: number; nome: string; raca: string; qtd_cabecas: number };
 type PesagemLocal   = { animal_id: number; brinco: string; peso_kg: string; data: string };
-type EventoLocal    = { tipo: string; descricao: string; animal_id?: number; data_evento: string };
+type EventoLocal    = { tipo: string; descricao: string; animal_id?: number; data_evento: string; foto_base64?: string };
 type Sessao = { id: number; data_sessao: string; descricao: string; status: string; total_animais: number; sincronizado_em: string | null };
 
 const TIPOS_EVENTO = ["nascimento","morte","acidente","doença","fuga","cobertura","parto","cio","outros"];
@@ -198,6 +198,8 @@ export default function CurralPage() {
   const [animalSel, setAnimalSel]     = useState<Animal | null>(null);
   const [pesoInput, setPesoInput]     = useState("");
   const [novoEvento, setNovoEvento]   = useState({ tipo: "outros", descricao: "", animal_id: "" });
+  const [fotoEvento, setFotoEvento]   = useState<string | null>(null);
+  const fotoInputRef                  = useRef<HTMLInputElement>(null);
   const [syncing, setSyncing]         = useState(false);
   const [syncMsg, setSyncMsg]         = useState("");
 
@@ -266,17 +268,28 @@ export default function CurralPage() {
     setAnimalSel(null); setPesoInput(""); setBuscaAnimal("");
   }
 
+  const handleFotoCaptura = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setFotoEvento(reader.result as string);
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  }, []);
+
   function adicionarEvento() {
     if (!novoEvento.descricao) return;
     const ev: EventoLocal = {
       tipo: novoEvento.tipo, descricao: novoEvento.descricao,
       animal_id: novoEvento.animal_id ? parseInt(novoEvento.animal_id) : undefined,
       data_evento: new Date().toISOString().split("T")[0],
+      foto_base64: fotoEvento ?? undefined,
     };
     const novos = [...eventos, ev];
     setEventos(novos);
     localStorage.setItem("curral_eventos", JSON.stringify(novos));
     setNovoEvento({ tipo: "outros", descricao: "", animal_id: "" });
+    setFotoEvento(null);
   }
 
   async function enviarParaServidor() {
@@ -441,6 +454,33 @@ export default function CurralPage() {
               <textarea value={novoEvento.descricao} onChange={e => setNovoEvento({...novoEvento, descricao: e.target.value})}
                 rows={2} placeholder="Descreva o que aconteceu..."
                 className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 resize-none" />
+
+              {/* Câmera */}
+              <input
+                ref={fotoInputRef} type="file"
+                accept="image/*" capture="environment"
+                className="hidden" onChange={handleFotoCaptura}
+              />
+              {fotoEvento ? (
+                <div className="relative">
+                  <img src={fotoEvento} alt="Foto" className="w-full h-40 object-cover rounded-xl border border-gray-200" />
+                  <button onClick={() => setFotoEvento(null)}
+                    className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-7 h-7 flex items-center justify-center text-sm font-bold shadow">
+                    ✕
+                  </button>
+                  <span className="absolute bottom-2 left-2 bg-black/50 text-white text-xs px-2 py-0.5 rounded-full">Foto adicionada</span>
+                </div>
+              ) : (
+                <button onClick={() => fotoInputRef.current?.click()}
+                  className="w-full py-2.5 rounded-xl border-2 border-dashed border-gray-300 text-gray-500 text-sm font-medium hover:border-green-400 hover:text-green-600 hover:bg-green-50 transition-colors flex items-center justify-center gap-2">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
+                  </svg>
+                  📷 Tirar foto / anexar imagem
+                </button>
+              )}
+
               <button onClick={adicionarEvento} disabled={!novoEvento.descricao}
                 className="w-full py-2.5 rounded-xl bg-green-600 hover:bg-green-700 text-white text-sm font-bold disabled:opacity-50">
                 + Registrar evento
@@ -453,13 +493,21 @@ export default function CurralPage() {
                 <p className="text-xs font-semibold text-gray-500">{eventos.length} evento(s) aguardando sincronização</p>
               </div>
               {eventos.map((ev, i) => (
-                <div key={i} className="px-5 py-3 flex items-center justify-between border-b border-gray-50 last:border-0">
-                  <div>
-                    <span className="text-xs font-bold text-gray-500 uppercase">{ev.tipo}</span>
-                    <p className="text-sm text-gray-700">{ev.descricao}</p>
+                <div key={i} className="px-4 py-3 border-b border-gray-50 last:border-0">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <span className="text-xs font-bold text-gray-500 uppercase">{ev.tipo}</span>
+                      <p className="text-sm text-gray-700">{ev.descricao}</p>
+                      {ev.foto_base64 && (
+                        <img src={ev.foto_base64} alt="foto"
+                          className="mt-2 w-24 h-16 object-cover rounded-lg border border-gray-200 cursor-pointer"
+                          onClick={() => window.open(ev.foto_base64)}
+                        />
+                      )}
+                    </div>
+                    <button onClick={() => { const n = eventos.filter((_,idx) => idx !== i); setEventos(n); localStorage.setItem("curral_eventos", JSON.stringify(n)); }}
+                      className="text-red-400 hover:text-red-600 shrink-0 mt-1">✕</button>
                   </div>
-                  <button onClick={() => { const n = eventos.filter((_,idx) => idx !== i); setEventos(n); localStorage.setItem("curral_eventos", JSON.stringify(n)); }}
-                    className="text-red-400 hover:text-red-600">✕</button>
                 </div>
               ))}
             </div>
