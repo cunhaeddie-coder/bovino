@@ -16,7 +16,19 @@ class GestaoCurralController extends Controller
 {
     private function fazenda(Request $request): Fazenda
     {
-        return Fazenda::where('user_id', $request->user()->id)->firstOrFail();
+        $user = $request->user();
+
+        // Gestor: fazenda própria
+        $fazenda = Fazenda::where('user_id', $user->id)->first();
+        if ($fazenda) return $fazenda;
+
+        // Vaqueiro: fazenda do funcionário vinculado
+        $funcionario = \App\Models\Funcionario::where('user_id', $user->id)->first();
+        if ($funcionario) {
+            return Fazenda::findOrFail($funcionario->fazenda_id);
+        }
+
+        abort(403, 'Fazenda não encontrada.');
     }
 
     public function iniciarSessao(Request $request): JsonResponse

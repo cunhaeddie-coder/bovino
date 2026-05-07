@@ -320,13 +320,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/templates/{id}/registros', [GestaoPastoController::class, 'storeRegistro']);
     });
 
-    // App Curral (offline-capable)
-    Route::prefix('gestao/curral')->group(function () {
-        Route::get('/dados-offline', [GestaoCurralController::class, 'dadosOffline']);
-        Route::get('/sessoes', [GestaoCurralController::class, 'indexSessoes']);
-        Route::post('/sessoes', [GestaoCurralController::class, 'iniciarSessao']);
-        Route::post('/sessoes/{id}/sincronizar', [GestaoCurralController::class, 'sincronizar']);
-    });
+    // App Curral — dentro do fazenda.context para gestores
 
     // App Gestor — IA e valor do rebanho
     Route::prefix('gestao/ia')->group(function () {
@@ -358,7 +352,14 @@ Route::middleware('auth:sanctum')->group(function () {
 
     }); // fazenda.context
 
-    // Vaqueiro — sem fazenda.context (vaqueiro não tem fazenda própria)
+    // Vaqueiro + Gestor — sem fazenda.context (controller resolve a fazenda internamente)
+    Route::prefix('gestao/curral')->group(function () {
+        Route::get('/dados-offline', [GestaoCurralController::class, 'dadosOffline']);
+        Route::get('/sessoes', [GestaoCurralController::class, 'indexSessoes']);
+        Route::post('/sessoes', [GestaoCurralController::class, 'iniciarSessao']);
+        Route::post('/sessoes/{id}/sincronizar', [GestaoCurralController::class, 'sincronizar']);
+    });
+
     Route::get('minhas-ordens', [OrdemServicoController::class, 'minhasOrdens']);
     Route::put('minhas-ordens/{osId}/animais/{animalId}', [OrdemServicoController::class, 'vaqueirAtualizarAnimal']);
 
