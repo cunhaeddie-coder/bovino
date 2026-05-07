@@ -186,14 +186,13 @@ function MinhasOrdensServico() {
 }
 
 export default function CurralPage() {
-  const [online, setOnline]           = useState(true);
-  const [animais, setAnimais]         = useState<Animal[]>([]);
-  const [lotes, setLotes]             = useState<Lote[]>([]);
-  const [sessoes, setSessoes]         = useState<Sessao[]>([]);
-  const [pesagens, setPesagens]       = useState<PesagemLocal[]>([]);
-  const [eventos, setEventos]         = useState<EventoLocal[]>([]);
-  const [sessaoAtual, setSessaoAtual] = useState<number | null>(null);
-  const [aba, setAba]                 = useState<"pesagens"|"eventos"|"sessoes">("pesagens");
+  const [online, setOnline]   = useState(true);
+  const [animais, setAnimais] = useState<Animal[]>([]);
+  const [lotes, setLotes]     = useState<Lote[]>([]);
+  const [sessoes, setSessoes] = useState<Sessao[]>([]);
+  const [pesagens, setPesagens] = useState<PesagemLocal[]>([]);
+  const [eventos, setEventos]   = useState<EventoLocal[]>([]);
+  const [aba, setAba]           = useState<"pesagens"|"eventos"|"sessoes">("pesagens");
   const [buscaAnimal, setBuscaAnimal] = useState("");
   const [animalSel, setAnimalSel]     = useState<Animal | null>(null);
   const [pesoInput, setPesoInput]     = useState("");
@@ -220,17 +219,13 @@ export default function CurralPage() {
       setLotes(d.lotes || []);
     }
 
-    const cachedSessao = localStorage.getItem("curral_sessao");
-    if (cachedSessao) setSessaoAtual(parseInt(cachedSessao));
-
     const cachedPesagens = localStorage.getItem("curral_pesagens");
     if (cachedPesagens) setPesagens(JSON.parse(cachedPesagens));
 
     const cachedEventos = localStorage.getItem("curral_eventos");
     if (cachedEventos) setEventos(JSON.parse(cachedEventos));
 
-    if (navigator.onLine) sincronizarDados();
-    loadSessoes();
+    if (navigator.onLine) { sincronizarDados(); loadSessoes(); }
   }, []);
 
   async function sincronizarDados() {
@@ -248,12 +243,6 @@ export default function CurralPage() {
       const r = await api.get("/gestao/curral/sessoes");
       setSessoes(r.data.data || []);
     } catch {}
-  }
-
-  async function iniciarSessao() {
-    const s = await api.post("/gestao/curral/sessoes", { descricao: "Sessão de curral " + new Date().toLocaleDateString("pt-BR") });
-    setSessaoAtual(s.data.id);
-    localStorage.setItem("curral_sessao", String(s.data.id));
   }
 
   function adicionarPesagem() {
@@ -306,26 +295,18 @@ export default function CurralPage() {
   async function enviarParaServidor() {
     if (!online) { setSyncMsg("Sem conexão. Tente quando tiver internet."); return; }
     setSyncing(true); setSyncMsg("");
+    const total = pesagens.length + eventos.length;
     try {
-      let sid = sessaoAtual;
-      if (!sid) {
-        const s = await api.post("/gestao/curral/sessoes", { descricao: "Sessão offline" });
-        sid = s.data.id;
-        setSessaoAtual(sid);
-        localStorage.setItem("curral_sessao", String(sid));
-      }
-      await api.post(`/gestao/curral/sessoes/${sid}/sincronizar`, {
+      const res = await api.post("/gestao/curral/sincronizar", {
         pesagens: pesagens.map(p => ({ animal_id: p.animal_id, peso_kg: parseFloat(p.peso_kg), data: p.data })),
         eventos,
       });
       setPesagens([]); setEventos([]);
       localStorage.removeItem("curral_pesagens");
       localStorage.removeItem("curral_eventos");
-      localStorage.removeItem("curral_sessao");
-      setSessaoAtual(null);
-      setSyncMsg(`✓ ${pesagens.length + eventos.length} registros enviados com sucesso!`);
+      setSyncMsg(res.data.message ?? `✓ ${total} registro(s) enviado(s) com sucesso!`);
       loadSessoes();
-    } catch (e: any) {
+    } catch {
       setSyncMsg("Erro ao sincronizar. Tente novamente.");
     } finally { setSyncing(false); }
   }
@@ -343,17 +324,10 @@ export default function CurralPage() {
           <h1 className="text-2xl font-bold text-gray-900">App Curral</h1>
           <p className="text-gray-500 text-sm">Coleta de dados no curral — funciona offline</p>
         </div>
-        <div className="flex items-center gap-3">
-          <span className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full ${online ? "bg-green-100 text-green-700" : "bg-red-100 text-red-600"}`}>
-            <span className={`w-2 h-2 rounded-full ${online ? "bg-green-500" : "bg-red-500"}`} />
-            {online ? "Online" : "Offline"}
-          </span>
-          {online && !sessaoAtual && (
-            <button onClick={iniciarSessao} className="bg-green-700 text-white text-sm font-semibold px-4 py-2 rounded-full hover:bg-green-800">
-              Iniciar sessão
-            </button>
-          )}
-        </div>
+        <span className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full ${online ? "bg-green-100 text-green-700" : "bg-red-100 text-red-600"}`}>
+          <span className={`w-2 h-2 rounded-full ${online ? "bg-green-500 animate-pulse" : "bg-red-500"}`} />
+          {online ? "Online" : "Offline"}
+        </span>
       </div>
 
       {/* Minhas OS atribuídas */}
