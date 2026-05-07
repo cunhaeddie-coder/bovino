@@ -76,27 +76,21 @@ class GestaoCurralController extends Controller
             'eventos.*.foto_base64' => ['nullable', 'string'],
         ]);
 
-        $sessao = SessaoCurral::create([
-            'fazenda_id'  => $fazenda->id,
-            'user_id'     => $request->user()->id,
-            'data_sessao' => today(),
-            'descricao'   => 'Sincronização automática — ' . now()->format('d/m/Y H:i'),
-            'status'      => 'ativa',
-        ]);
+        $totalPesagens = 0;
+        $totalEventos  = 0;
 
-        DB::transaction(function () use ($dados, $fazenda, $request, $sessao) {
-            $totalAnimais = 0;
+        DB::transaction(function () use ($dados, $fazenda, $request, &$totalPesagens, &$totalEventos) {
 
             foreach ($dados['pesagens'] ?? [] as $p) {
                 Pesagem::create([
-                    'animal_id'  => $p['animal_id'],
-                    'fazenda_id' => $fazenda->id,
-                    'peso'       => $p['peso_kg'],
-                    'data'       => $p['data'],
+                    'animal_id'      => $p['animal_id'],
+                    'fazenda_id'     => $fazenda->id,
+                    'peso'           => $p['peso_kg'],
+                    'data'           => $p['data'],
                     'registrado_por' => $request->user()->id,
                 ]);
                 Rebanho::where('id', $p['animal_id'])->update(['peso_atual' => $p['peso_kg']]);
-                $totalAnimais++;
+                $totalPesagens++;
             }
 
             foreach ($dados['eventos'] ?? [] as $ev) {
@@ -123,21 +117,12 @@ class GestaoCurralController extends Controller
                     'reportado_por' => $request->user()->id,
                     'foto_url'      => $fotoUrl,
                 ]);
+                $totalEventos++;
             }
-
-            $dadosSemFoto = $dados;
-            foreach ($dadosSemFoto['eventos'] ?? [] as &$ev) { unset($ev['foto_base64']); }
-
-            $sessao->update([
-                'status'          => 'sincronizada',
-                'total_animais'   => $totalAnimais,
-                'sincronizado_em' => now(),
-                'dados_offline'   => $dadosSemFoto,
-            ]);
         });
 
-        $total = count($dados['pesagens'] ?? []) + count($dados['eventos'] ?? []);
-        return response()->json(['message' => "✓ {$total} registro(s) sincronizado(s).", 'sessao_id' => $sessao->id]);
+        $total = $totalPesagens + $totalEventos;
+        return response()->json(['message' => "✓ {$total} registro(s) sincronizado(s)."]);
     }
 
     /**
