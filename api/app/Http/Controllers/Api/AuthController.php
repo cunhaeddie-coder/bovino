@@ -161,9 +161,9 @@ class AuthController extends Controller
         }
 
         $user->tokens()->where('name', 'access')->delete();
-        $token = $user->createToken('access', ['*'], now()->addHours(8))->plainTextToken;
+        // Vaqueiros têm token de 30 dias para não precisar relogar
+        $token = $user->createToken('access', ['*'], now()->addDays(30))->plainTextToken;
 
-        // Inclui papel do funcionário vinculado (para vaqueiros)
         $funcionario = \App\Models\Funcionario::where('user_id', $user->id)->first();
 
         return response()->json([

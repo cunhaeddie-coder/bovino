@@ -79,47 +79,51 @@ class GestaoCurralController extends Controller
         $totalPesagens = 0;
         $totalEventos  = 0;
 
-        DB::transaction(function () use ($dados, $fazenda, $request, &$totalPesagens, &$totalEventos) {
+        try {
+            DB::transaction(function () use ($dados, $fazenda, $request, &$totalPesagens, &$totalEventos) {
 
-            foreach ($dados['pesagens'] ?? [] as $p) {
-                Pesagem::create([
-                    'animal_id'      => $p['animal_id'],
-                    'fazenda_id'     => $fazenda->id,
-                    'peso'           => $p['peso_kg'],
-                    'data'           => $p['data'],
-                    'registrado_por' => $request->user()->id,
-                ]);
-                Rebanho::where('id', $p['animal_id'])->update(['peso_atual' => $p['peso_kg']]);
-                $totalPesagens++;
-            }
-
-            foreach ($dados['eventos'] ?? [] as $ev) {
-                $fotoUrl = null;
-                if (!empty($ev['foto_base64'])) {
-                    try {
-                        $base64  = preg_replace('/^data:image\/\w+;base64,/', '', $ev['foto_base64']);
-                        $imgData = base64_decode($base64);
-                        if ($imgData) {
-                            $nome    = 'eventos/' . uniqid('foto_') . '.jpg';
-                            \Illuminate\Support\Facades\Storage::disk('public')->put($nome, $imgData);
-                            $fotoUrl = \Illuminate\Support\Facades\Storage::disk('public')->url($nome);
-                        }
-                    } catch (\Throwable $e) {}
+                foreach ($dados['pesagens'] ?? [] as $p) {
+                    Pesagem::create([
+                        'animal_id'      => $p['animal_id'],
+                        'fazenda_id'     => $fazenda->id,
+                        'peso'           => $p['peso_kg'],
+                        'data_pesagem'   => $p['data'],
+                        'registrado_por' => $request->user()->id,
+                    ]);
+                    Rebanho::where('id', $p['animal_id'])->update(['peso_atual' => $p['peso_kg']]);
+                    $totalPesagens++;
                 }
 
-                EventoCampo::create([
-                    'fazenda_id'    => $fazenda->id,
-                    'tipo'          => $ev['tipo'],
-                    'descricao'     => $ev['descricao'],
-                    'animal_id'     => $ev['animal_id'] ?? null,
-                    'data_evento'   => $ev['data_evento'],
-                    'urgencia'      => 'media',
-                    'reportado_por' => $request->user()->id,
-                    'foto_url'      => $fotoUrl,
-                ]);
-                $totalEventos++;
-            }
-        });
+                foreach ($dados['eventos'] ?? [] as $ev) {
+                    $fotoUrl = null;
+                    if (!empty($ev['foto_base64'])) {
+                        try {
+                            $base64  = preg_replace('/^data:image\/\w+;base64,/', '', $ev['foto_base64']);
+                            $imgData = base64_decode($base64);
+                            if ($imgData) {
+                                $nome    = 'eventos/' . uniqid('foto_') . '.jpg';
+                                \Illuminate\Support\Facades\Storage::disk('public')->put($nome, $imgData);
+                                $fotoUrl = \Illuminate\Support\Facades\Storage::disk('public')->url($nome);
+                            }
+                        } catch (\Throwable $ignored) {}
+                    }
+
+                    EventoCampo::create([
+                        'fazenda_id'    => $fazenda->id,
+                        'tipo'          => $ev['tipo'],
+                        'descricao'     => $ev['descricao'],
+                        'animal_id'     => $ev['animal_id'] ?? null,
+                        'data_evento'   => \Carbon\Carbon::parse($ev['data_evento']),
+                        'urgencia'      => 'media',
+                        'reportado_por' => $request->user()->id,
+                        'foto_url'      => $fotoUrl,
+                    ]);
+                    $totalEventos++;
+                }
+            });
+        } catch (\Throwable $e) {
+            return response()->json(['message' => 'Erro ao salvar: ' . $e->getMessage()], 500);
+        }
 
         $total = $totalPesagens + $totalEventos;
         return response()->json(['message' => "✓ {$total} registro(s) sincronizado(s)."]);

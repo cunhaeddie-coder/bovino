@@ -382,10 +382,10 @@ export default function FuncionariosPage() {
               <div className="flex gap-2">
                 <button
                   onClick={() => {
-                    const base  = typeof window !== "undefined" ? window.location.origin : "https://bovino.agr.br";
-                    const link  = `${base}/login?c=${codigoModal.celular}&o=${codigoModal.codigo}`;
+                    const base     = typeof window !== "undefined" ? window.location.origin : "https://bovino.agr.br";
+                    const link     = `${base}/login?c=${codigoModal.celular}`;
                     const instalar = `${base}/instalar`;
-                    const texto = `🐄 *Bovino App Curral* — seu acesso está pronto!\n\n👆 Toque aqui para entrar direto:\n${link}\n\n📲 Para instalar o app no celular:\n${instalar}\n\n🔑 Ou entre em bovino.agr.br → aba *Vaqueiro* e use o código:\n*${codigoModal.codigo}*\n\n_Válido por 10 minutos_`;
+                    const texto = `🐄 *Bovino — App Curral* — seu acesso está pronto!\n\n👆 Clique para entrar no app:\n${link}\n\n📲 Instale no celular:\n${instalar}\n\n_(Na primeira vez, use o código: *${codigoModal.codigo}*)_`;
                     navigator.clipboard?.writeText(texto);
                     alert("Mensagem copiada! Cole no WhatsApp.");
                   }}
