@@ -108,14 +108,15 @@ class GestaoCurralController extends Controller
                     }
 
                     EventoCampo::create([
-                        'fazenda_id'    => $fazenda->id,
-                        'tipo'          => $ev['tipo'],
-                        'descricao'     => $ev['descricao'],
-                        'animal_id'     => $ev['animal_id'] ?? null,
-                        'data_evento'   => \Carbon\Carbon::parse($ev['data_evento']),
-                        'urgencia'      => 'media',
-                        'reportado_por' => $request->user()->id,
-                        'foto_url'      => $fotoUrl,
+                        'fazenda_id'       => $fazenda->id,
+                        'tipo'             => $ev['tipo'],
+                        'descricao'        => $ev['descricao'],
+                        'animal_id'        => $ev['animal_id'] ?? null,
+                        'categoria_animal' => $ev['categoria_animal'] ?? null,
+                        'data_evento'      => \Carbon\Carbon::parse($ev['data_evento']),
+                        'urgencia'         => 'media',
+                        'reportado_por'    => $request->user()->id,
+                        'foto_url'         => $fotoUrl,
                     ]);
                     $totalEventos++;
                 }

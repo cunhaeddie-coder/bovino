@@ -33,7 +33,7 @@ const TOUR_STEPS: DriveStep[] = [
 ];
 
 type Evento = {
-  id: number; tipo: string; descricao: string; urgencia: string; resolvido: boolean;
+  id: number; tipo: string; categoria_animal?: string; descricao: string; urgencia: string; resolvido: boolean;
   data_evento: string; resolucao: string | null;
   animal?: { brinco: string; nome: string };
   lote?: { nome: string };
@@ -123,6 +123,7 @@ export default function EventosCampoPage() {
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="font-semibold text-gray-800 capitalize">{ev.tipo}</span>
+                    {ev.categoria_animal && <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-semibold capitalize">{CAT_EMOJI[ev.categoria_animal] ?? "🐄"} {ev.categoria_animal}</span>}
                     <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${URGENCIA_COR[ev.urgencia]}`}>{ev.urgencia}</span>
                     {ev.resolvido && <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-semibold">✓ Resolvido</span>}
                   </div>

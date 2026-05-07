@@ -12,7 +12,7 @@ class EventoCampo extends Model
 
     protected $table = 'eventos_campo';
 
-    protected $fillable = ['fazenda_id','tipo','descricao','animal_id','lote_id','pastagem_id','latitude','longitude','foto_url','reportado_por','data_evento','urgencia','resolvido','resolucao','coletado_em'];
+    protected $fillable = ['fazenda_id','tipo','descricao','animal_id','categoria_animal','lote_id','pastagem_id','latitude','longitude','foto_url','reportado_por','data_evento','urgencia','resolvido','resolucao','coletado_em'];
 
     protected $casts = ['data_evento' => 'datetime', 'resolvido' => 'boolean'];
 

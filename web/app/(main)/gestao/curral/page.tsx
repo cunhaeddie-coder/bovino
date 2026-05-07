@@ -6,7 +6,7 @@ import { api } from "@/lib/api";
 type Animal = { id: number; brinco: string; nome: string | null; raca: string; categoria: string; sexo: string; peso_atual: number | null };
 type Lote   = { id: number; nome: string; raca: string; qtd_cabecas: number };
 type PesagemLocal   = { animal_id: number; brinco: string; peso_kg: string; data: string };
-type EventoLocal    = { tipo: string; descricao: string; animal_id?: number; data_evento: string; foto_base64?: string };
+type EventoLocal    = { tipo: string; categoria_animal?: string; descricao: string; animal_id?: number; data_evento: string; foto_base64?: string };
 type Sessao = { id: number; data_sessao: string; descricao: string; status: string; total_animais: number; sincronizado_em: string | null };
 
 const TIPOS_EVENTO = ["nascimento","morte","acidente","doença","fuga","cobertura","parto","cio","outros"];
@@ -196,7 +196,7 @@ export default function CurralPage() {
   const [buscaAnimal, setBuscaAnimal] = useState("");
   const [animalSel, setAnimalSel]     = useState<Animal | null>(null);
   const [pesoInput, setPesoInput]     = useState("");
-  const [novoEvento, setNovoEvento]   = useState({ tipo: "outros", descricao: "", animal_id: "" });
+  const [novoEvento, setNovoEvento]   = useState({ tipo: "outros", categoria_animal: "", descricao: "", animal_id: "" });
   const [fotoEvento, setFotoEvento]   = useState<string | null>(null);
   const fotoInputRef                  = useRef<HTMLInputElement>(null);
   const [syncing, setSyncing]         = useState(false);
@@ -280,7 +280,9 @@ export default function CurralPage() {
   function adicionarEvento() {
     if (!novoEvento.descricao) return;
     const ev: EventoLocal = {
-      tipo: novoEvento.tipo, descricao: novoEvento.descricao,
+      tipo: novoEvento.tipo,
+      categoria_animal: novoEvento.categoria_animal || undefined,
+      descricao: novoEvento.descricao,
       animal_id: novoEvento.animal_id ? parseInt(novoEvento.animal_id) : undefined,
       data_evento: new Date().toISOString().split("T")[0],
       foto_base64: fotoEvento ?? undefined,
@@ -288,7 +290,7 @@ export default function CurralPage() {
     const novos = [...eventos, ev];
     setEventos(novos);
     localStorage.setItem("curral_eventos", JSON.stringify(novos));
-    setNovoEvento({ tipo: "outros", descricao: "", animal_id: "" });
+    setNovoEvento({ tipo: "outros", categoria_animal: "", descricao: "", animal_id: "" });
     setFotoEvento(null);
   }
 
@@ -435,10 +437,23 @@ export default function CurralPage() {
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
             <h2 className="font-bold text-gray-800 text-base mb-4">Registrar evento</h2>
             <div className="space-y-3">
-              <select value={novoEvento.tipo} onChange={e => setNovoEvento({...novoEvento, tipo: e.target.value})}
+              <select value={novoEvento.tipo} onChange={e => setNovoEvento({...novoEvento, tipo: e.target.value, categoria_animal: ""})}
                 className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 text-base text-gray-900 font-medium bg-white focus:outline-none focus:border-green-500">
                 {TIPOS_EVENTO.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
+
+              <select value={novoEvento.categoria_animal} onChange={e => setNovoEvento({...novoEvento, categoria_animal: e.target.value})}
+                className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 text-base text-gray-900 font-medium bg-white focus:outline-none focus:border-green-500">
+                <option value="">— Categoria do animal (opcional) —</option>
+                <option value="bezerro">🐂 Bezerro</option>
+                <option value="bezerra">🐄 Bezerra</option>
+                <option value="novilho">🐂 Novilho</option>
+                <option value="novilha">🐄 Novilha</option>
+                <option value="boi">🐃 Boi</option>
+                <option value="touro">🦬 Touro</option>
+                <option value="vaca">🐮 Vaca</option>
+              </select>
+
               <textarea value={novoEvento.descricao} onChange={e => setNovoEvento({...novoEvento, descricao: e.target.value})}
                 rows={3} placeholder="Descreva o que aconteceu..."
                 className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 text-base text-gray-900 placeholder-gray-400 font-medium focus:outline-none focus:border-green-500 resize-none" />
@@ -484,7 +499,7 @@ export default function CurralPage() {
                 <div key={i} className="px-4 py-3 border-b border-gray-50 last:border-0">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
-                      <span className="text-xs font-bold text-gray-500 uppercase">{ev.tipo}</span>
+                      <span className="text-xs font-bold text-gray-500 uppercase">{ev.tipo}{ev.categoria_animal ? ` — ${ev.categoria_animal}` : ""}</span>
                       <p className="text-sm text-gray-700">{ev.descricao}</p>
                       {ev.foto_base64 && (
                         <img src={ev.foto_base64} alt="foto"
