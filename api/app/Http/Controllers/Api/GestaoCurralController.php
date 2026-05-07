@@ -56,6 +56,91 @@ class GestaoCurralController extends Controller
     }
 
     /**
+     * Sincronização direta — cria a sessão automaticamente e sincroniza tudo.
+     * Não exige que o vaqueiro/gestor gerencie sessões manualmente.
+     */
+    public function sincronizarDireto(Request $request): JsonResponse
+    {
+        $fazenda = $this->fazenda($request);
+
+        $dados = $request->validate([
+            'pesagens'              => ['nullable', 'array'],
+            'pesagens.*.animal_id'  => ['required', 'integer'],
+            'pesagens.*.peso_kg'    => ['required', 'numeric'],
+            'pesagens.*.data'       => ['required', 'date'],
+            'eventos'               => ['nullable', 'array'],
+            'eventos.*.tipo'        => ['required', 'string'],
+            'eventos.*.descricao'   => ['required', 'string'],
+            'eventos.*.animal_id'   => ['nullable', 'integer'],
+            'eventos.*.data_evento' => ['required', 'date'],
+            'eventos.*.foto_base64' => ['nullable', 'string'],
+        ]);
+
+        $sessao = SessaoCurral::create([
+            'fazenda_id'  => $fazenda->id,
+            'user_id'     => $request->user()->id,
+            'data_sessao' => today(),
+            'descricao'   => 'Sincronização automática — ' . now()->format('d/m/Y H:i'),
+            'status'      => 'ativa',
+        ]);
+
+        DB::transaction(function () use ($dados, $fazenda, $request, $sessao) {
+            $totalAnimais = 0;
+
+            foreach ($dados['pesagens'] ?? [] as $p) {
+                Pesagem::create([
+                    'animal_id'  => $p['animal_id'],
+                    'fazenda_id' => $fazenda->id,
+                    'peso'       => $p['peso_kg'],
+                    'data'       => $p['data'],
+                    'registrado_por' => $request->user()->id,
+                ]);
+                Rebanho::where('id', $p['animal_id'])->update(['peso_atual' => $p['peso_kg']]);
+                $totalAnimais++;
+            }
+
+            foreach ($dados['eventos'] ?? [] as $ev) {
+                $fotoUrl = null;
+                if (!empty($ev['foto_base64'])) {
+                    try {
+                        $base64  = preg_replace('/^data:image\/\w+;base64,/', '', $ev['foto_base64']);
+                        $imgData = base64_decode($base64);
+                        if ($imgData) {
+                            $nome    = 'eventos/' . uniqid('foto_') . '.jpg';
+                            \Illuminate\Support\Facades\Storage::disk('public')->put($nome, $imgData);
+                            $fotoUrl = \Illuminate\Support\Facades\Storage::disk('public')->url($nome);
+                        }
+                    } catch (\Throwable $e) {}
+                }
+
+                EventoCampo::create([
+                    'fazenda_id'    => $fazenda->id,
+                    'tipo'          => $ev['tipo'],
+                    'descricao'     => $ev['descricao'],
+                    'animal_id'     => $ev['animal_id'] ?? null,
+                    'data_evento'   => $ev['data_evento'],
+                    'urgencia'      => 'media',
+                    'reportado_por' => $request->user()->id,
+                    'foto_url'      => $fotoUrl,
+                ]);
+            }
+
+            $dadosSemFoto = $dados;
+            foreach ($dadosSemFoto['eventos'] ?? [] as &$ev) { unset($ev['foto_base64']); }
+
+            $sessao->update([
+                'status'          => 'sincronizada',
+                'total_animais'   => $totalAnimais,
+                'sincronizado_em' => now(),
+                'dados_offline'   => $dadosSemFoto,
+            ]);
+        });
+
+        $total = count($dados['pesagens'] ?? []) + count($dados['eventos'] ?? []);
+        return response()->json(['message' => "✓ {$total} registro(s) sincronizado(s).", 'sessao_id' => $sessao->id]);
+    }
+
+    /**
      * Sincroniza dados coletados offline no curral.
      * Recebe um array de registros: pesagens, eventos, sanitários.
      */

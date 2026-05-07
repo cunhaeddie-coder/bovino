@@ -358,6 +358,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/sessoes', [GestaoCurralController::class, 'indexSessoes']);
         Route::post('/sessoes', [GestaoCurralController::class, 'iniciarSessao']);
         Route::post('/sessoes/{id}/sincronizar', [GestaoCurralController::class, 'sincronizar']);
+        Route::post('/sincronizar', [GestaoCurralController::class, 'sincronizarDireto']);
     });
 
     Route::get('minhas-ordens', [OrdemServicoController::class, 'minhasOrdens']);
