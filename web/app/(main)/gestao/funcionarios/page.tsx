@@ -384,7 +384,7 @@ export default function FuncionariosPage() {
                   onClick={() => {
                     const base  = typeof window !== "undefined" ? window.location.origin : "https://bovino.agr.br";
                     const link  = `${base}/login?c=${codigoModal.celular}`;
-                    const texto = `🐄 *App Bovino — Curral*\n\nAcesse: ${link}\n\nCódigo 1º acesso: *${codigoModal.codigo}*`;
+                    const texto = `🐄 *Bovino — App Vaqueiro*\n\n👆 Toque para entrar:\n${link}\n\n🔑 Código (1ª vez): *${codigoModal.codigo}*`;
                     navigator.clipboard?.writeText(texto);
                     alert("Mensagem copiada! Cole no WhatsApp.");
                   }}
