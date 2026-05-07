@@ -20,6 +20,7 @@ export interface User {
   verificado_celular: boolean;
   verificado_cpf: boolean;
   assinatura_ativa: AssinaturaAtiva | null;
+  papel?: "vaqueiro" | "veterinario" | "gerente" | "outro" | null;
 }
 
 /** Returns true when user has any active paid subscription */
