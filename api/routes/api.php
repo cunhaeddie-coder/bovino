@@ -335,10 +335,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/valor-rebanho', [GestaoIAController::class, 'valorRebanho']);
     });
 
-    // Minhas OS (vaqueiro — fora de fazenda.context)
-    Route::get('minhas-ordens', [OrdemServicoController::class, 'minhasOrdens']);
-    Route::put('minhas-ordens/{osId}/animais/{animalId}', [OrdemServicoController::class, 'vaqueirAtualizarAnimal']);
-
     // Ordens de Serviço
     Route::prefix('gestao/ordens')->group(function () {
         Route::get('/estatisticas', [OrdemServicoController::class, 'estatisticas']);
@@ -361,6 +357,10 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     }); // fazenda.context
+
+    // Vaqueiro — sem fazenda.context (vaqueiro não tem fazenda própria)
+    Route::get('minhas-ordens', [OrdemServicoController::class, 'minhasOrdens']);
+    Route::put('minhas-ordens/{osId}/animais/{animalId}', [OrdemServicoController::class, 'vaqueirAtualizarAnimal']);
 
 }); // auth:sanctum
 
