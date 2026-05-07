@@ -271,10 +271,21 @@ export default function CurralPage() {
   const handleFotoCaptura = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => setFotoEvento(reader.result as string);
-    reader.readAsDataURL(file);
     e.target.value = "";
+
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      const MAX = 800;
+      const ratio = Math.min(MAX / img.width, MAX / img.height, 1);
+      const canvas = document.createElement("canvas");
+      canvas.width  = img.width  * ratio;
+      canvas.height = img.height * ratio;
+      canvas.getContext("2d")!.drawImage(img, 0, 0, canvas.width, canvas.height);
+      setFotoEvento(canvas.toDataURL("image/jpeg", 0.7));
+      URL.revokeObjectURL(url);
+    };
+    img.src = url;
   }, []);
 
   function adicionarEvento() {
