@@ -221,6 +221,10 @@ function CheckoutInner() {
                     preferenceId,
                     payer: {
                       email: user?.email ?? "",
+                      identification: {
+                        type: "CPF",
+                        number: "",
+                      },
                     },
                   }}
                   customization={{

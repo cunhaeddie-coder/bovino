@@ -81,6 +81,14 @@ class MercadoPagoService
     {
         $assinante = $assinatura->assinante;
 
+        $payerForm = $formData['payer'] ?? [];
+        if (empty($payerForm['identification']['number'])) {
+            $payerForm['identification'] = [
+                'type'   => 'CPF',
+                'number' => $assinante->cpf ?? '12345678909',
+            ];
+        }
+
         $payload = [
             'transaction_amount' => (float) $assinatura->valor,
             'description'        => "Bovino — {$assinatura->plano->nome}",
@@ -88,8 +96,8 @@ class MercadoPagoService
             'external_reference' => (string) $assinatura->id,
             'notification_url'   => config('app.url') . '/api/webhook/mercadopago',
             'payer'              => array_merge(
-                ['email' => $assinante->email ?? $formData['payer']['email'] ?? 'payer@email.com'],
-                $formData['payer'] ?? []
+                ['email' => $assinante->email ?? $payerForm['email'] ?? 'payer@email.com'],
+                $payerForm
             ),
         ];
 
@@ -115,6 +123,13 @@ class MercadoPagoService
         }
 
         $data = $response->json();
+
+        Log::info('MP criarPagamentoBrick resultado', [
+            'payment_id'    => $data['id'] ?? null,
+            'status'        => $data['status'] ?? null,
+            'status_detail' => $data['status_detail'] ?? null,
+            'assinatura_id' => $assinatura->id,
+        ]);
 
         // Processa imediatamente (não espera webhook para resposta síncrona)
         $this->processarPagamento((string) $data['id']);
