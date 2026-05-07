@@ -116,12 +116,12 @@ function CheckoutInner() {
   }, [planoSlug, token]);
 
   // Callback do Brick ao submeter pagamento
-  const onSubmit = useCallback(async (formData: IPaymentFormData) => {
+  const onSubmit = useCallback(async (paymentData: IPaymentFormData) => {
     setPayErr("");
     try {
       const { data } = await api.post("/pagamento/brick", {
         assinatura_id: assinaturaId,
-        ...formData,
+        ...paymentData.formData,   // formData interno contém payment_method_id, token, payer, etc.
       });
 
       if (data.status === "approved") {
