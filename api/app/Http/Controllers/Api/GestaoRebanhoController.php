@@ -69,6 +69,53 @@ class GestaoRebanhoController extends Controller
         return response()->json($animal, 201);
     }
 
+    public function storeGrupo(Request $request)
+    {
+        $fazenda = $this->fazenda($request);
+
+        $data = $request->validate([
+            'quantidade'      => 'required|integer|min:1|max:500',
+            'raca'            => 'required|string|max:60',
+            'sexo'            => 'required|in:macho,femea',
+            'categoria'       => 'required|in:bezerro,bezerra,novilho,novilha,touro,vaca,boi',
+            'peso_medio'      => 'nullable|numeric|min:0',
+            'data_nascimento' => 'nullable|date',
+            'prefixo_brinco'  => 'nullable|string|max:10',
+            'brinco_inicial'  => 'nullable|integer|min:0',
+            'observacao'      => 'nullable|string|max:500',
+        ]);
+
+        $criados = [];
+
+        \DB::transaction(function () use ($data, $fazenda, &$criados) {
+            for ($i = 0; $i < $data['quantidade']; $i++) {
+                $brinco = null;
+                if (!empty($data['prefixo_brinco'])) {
+                    $num    = ($data['brinco_inicial'] ?? 1) + $i;
+                    $brinco = $data['prefixo_brinco'] . str_pad($num, 3, '0', STR_PAD_LEFT);
+                }
+
+                $criados[] = Rebanho::create([
+                    'fazenda_id'      => $fazenda->id,
+                    'brinco'          => $brinco,
+                    'raca'            => $data['raca'],
+                    'sexo'            => $data['sexo'],
+                    'categoria'       => $data['categoria'],
+                    'peso_atual'      => $data['peso_medio'] ?? null,
+                    'data_nascimento' => $data['data_nascimento'] ?? null,
+                    'observacao'      => $data['observacao'] ?? null,
+                    'status'          => 'ativo',
+                ]);
+            }
+        });
+
+        return response()->json([
+            'message'   => "{$data['quantidade']} animais cadastrados com sucesso.",
+            'total'     => count($criados),
+            'categoria' => $data['categoria'],
+        ], 201);
+    }
+
     public function show(Request $request, int $id)
     {
         $fazenda = $this->fazenda($request);

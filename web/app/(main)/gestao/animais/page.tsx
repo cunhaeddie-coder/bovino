@@ -98,8 +98,9 @@ export default function AnimaisPage() {
     categoria:"", sexo:"", status:"ativo",
     raca:"", brinco:"", faixa_etaria:"", peso_min:"", peso_max:"",
   });
-  const [showForm, setShowForm] = useState(false);
-  const [editando, setEditando] = useState<Animal|null>(null);
+  const [showForm, setShowForm]   = useState(false);
+  const [showGrupo, setShowGrupo] = useState(false);
+  const [editando, setEditando]   = useState<Animal|null>(null);
   const [form, setForm]         = useState(FORM_VAZIO);
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro]         = useState("");
@@ -166,12 +167,18 @@ export default function AnimaisPage() {
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
         <h1 className="text-xl font-bold text-gray-900">Rebanho</h1>
-        <button onClick={()=>setShowForm(true)}
-          className="bg-green-700 text-white text-sm font-semibold px-4 py-2 rounded-full hover:bg-green-800 transition">
-          + Adicionar animal
-        </button>
+        <div className="flex gap-2">
+          <button onClick={()=>setShowGrupo(true)}
+            className="bg-amber-600 text-white text-sm font-semibold px-4 py-2 rounded-full hover:bg-amber-700 transition">
+            + Adicionar grupo
+          </button>
+          <button onClick={()=>setShowForm(true)}
+            className="bg-green-700 text-white text-sm font-semibold px-4 py-2 rounded-full hover:bg-green-800 transition">
+            + Animal individual
+          </button>
+        </div>
       </div>
 
       {/* Abas */}
@@ -542,6 +549,184 @@ export default function AnimaisPage() {
           </div>
         </div>
       )}
+
+      {showGrupo && (
+        <GrupoModal
+          onClose={() => setShowGrupo(false)}
+          onDone={() => { setShowGrupo(false); carregarDash(); carregarLista(); }}
+        />
+      )}
+    </div>
+  );
+}
+
+function GrupoModal({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
+  const SEX_CAT: Record<string, "macho"|"femea"> = {
+    bezerro:"macho", novilho:"macho", boi:"macho", touro:"macho",
+    bezerra:"femea", novilha:"femea", vaca:"femea",
+  };
+
+  const [form, setForm] = useState({
+    quantidade: "1", categoria: "vaca", raca: "",
+    peso_medio: "", data_nascimento: "",
+    prefixo_brinco: "", brinco_inicial: "1",
+    observacao: "",
+  });
+  const [salvando, setSalvando] = useState(false);
+  const [erro, setErro]         = useState("");
+  const [sucesso, setSucesso]   = useState("");
+
+  const qtd = parseInt(form.quantidade) || 0;
+
+  const preview = form.prefixo_brinco && qtd > 0
+    ? `${form.prefixo_brinco}${String(parseInt(form.brinco_inicial)||1).padStart(3,"0")} → ${form.prefixo_brinco}${String((parseInt(form.brinco_inicial)||1) + qtd - 1).padStart(3,"0")}`
+    : null;
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (qtd < 1) return;
+    setSalvando(true); setErro("");
+    try {
+      const payload = {
+        quantidade:     qtd,
+        categoria:      form.categoria,
+        sexo:           SEX_CAT[form.categoria] ?? "macho",
+        raca:           form.raca,
+        peso_medio:     form.peso_medio || undefined,
+        data_nascimento:form.data_nascimento || undefined,
+        prefixo_brinco: form.prefixo_brinco || undefined,
+        brinco_inicial: form.prefixo_brinco ? parseInt(form.brinco_inicial)||1 : undefined,
+        observacao:     form.observacao || undefined,
+      };
+      const { data } = await api.post("/gestao/rebanho/grupo", payload);
+      setSucesso(data.message);
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setErro(msg ?? "Erro ao cadastrar grupo.");
+      setSalvando(false);
+    }
+  }
+
+  if (sucesso) {
+    return (
+      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl w-full max-w-sm shadow-xl p-6 text-center space-y-4">
+          <p className="text-5xl">🐄</p>
+          <p className="font-bold text-gray-800 text-lg">{sucesso}</p>
+          <p className="text-xs text-gray-400">Todos os animais foram adicionados ao rebanho com status ativo.</p>
+          <button onClick={onDone} className="w-full bg-green-700 text-white font-semibold py-2.5 rounded-full text-sm hover:bg-green-800">
+            Ver rebanho
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-4">
+      <div className="bg-white rounded-2xl w-full max-w-lg shadow-xl max-h-[90vh] overflow-y-auto">
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-lg font-bold text-gray-900">Adicionar grupo</h2>
+              <p className="text-xs text-gray-400">Cadastre vários animais de uma vez (ex: compra de lote)</p>
+            </div>
+            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
+          </div>
+
+          {erro && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2 mb-3">{erro}</p>}
+
+          <form onSubmit={submit} className="space-y-4">
+            {/* Quantidade + Categoria */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-semibold text-gray-600 block mb-1">Quantidade *</label>
+                <input type="number" min="1" max="500" required
+                  value={form.quantidade} onChange={e=>setForm(f=>({...f,quantidade:e.target.value}))}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 text-center text-lg font-bold" />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-gray-600 block mb-1">Categoria *</label>
+                <select required value={form.categoria} onChange={e=>setForm(f=>({...f,categoria:e.target.value}))}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-400">
+                  {CATEGORIAS.map(c=><option key={c} value={c}>{CAT_LABEL[c]}</option>)}
+                </select>
+                <p className="text-[10px] text-gray-400 mt-0.5">Sexo: {SEX_CAT[form.categoria]==="femea"?"Fêmea ♀":"Macho ♂"}</p>
+              </div>
+            </div>
+
+            {/* Raça + Peso */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-semibold text-gray-600 block mb-1">Raça *</label>
+                <input required value={form.raca} onChange={e=>setForm(f=>({...f,raca:e.target.value}))}
+                  placeholder="Nelore, Angus..." className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-gray-600 block mb-1">Peso médio (kg)</label>
+                <input type="number" value={form.peso_medio} onChange={e=>setForm(f=>({...f,peso_medio:e.target.value}))}
+                  placeholder="Ex: 280" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
+              </div>
+            </div>
+
+            {/* Data nascimento */}
+            <div>
+              <label className="text-xs font-semibold text-gray-600 block mb-1">Data de nascimento (aprox.)</label>
+              <input type="date" value={form.data_nascimento} onChange={e=>setForm(f=>({...f,data_nascimento:e.target.value}))}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
+            </div>
+
+            {/* Brincos automáticos */}
+            <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-3">
+              <p className="text-xs font-bold text-gray-600 uppercase tracking-wide">Numeração dos brincos (opcional)</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-semibold text-gray-600 block mb-1">Prefixo</label>
+                  <input value={form.prefixo_brinco} onChange={e=>setForm(f=>({...f,prefixo_brinco:e.target.value.toUpperCase()}))}
+                    placeholder="Ex: V, B, T..." maxLength={5}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 font-mono" />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-600 block mb-1">Número inicial</label>
+                  <input type="number" min="0" value={form.brinco_inicial} onChange={e=>setForm(f=>({...f,brinco_inicial:e.target.value}))}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 font-mono" />
+                </div>
+              </div>
+              {preview && (
+                <p className="text-xs text-amber-700 bg-amber-50 rounded-lg px-3 py-2 font-mono">
+                  Brincos: <strong>{preview}</strong> ({qtd} animais)
+                </p>
+              )}
+              {!form.prefixo_brinco && (
+                <p className="text-xs text-gray-400">Sem prefixo — brincos ficarão em branco para preencher depois.</p>
+              )}
+            </div>
+
+            {/* Observação */}
+            <div>
+              <label className="text-xs font-semibold text-gray-600 block mb-1">Observação (ex: origem, nota fiscal)</label>
+              <input value={form.observacao} onChange={e=>setForm(f=>({...f,observacao:e.target.value}))}
+                placeholder="Ex: Compra 15/05/2026 — Fazenda São João" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
+            </div>
+
+            {/* Resumo */}
+            {qtd > 0 && form.raca && (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-800">
+                Cadastrar <strong>{qtd} {CAT_LABEL[form.categoria]}{qtd>1?"s":""}</strong> · {form.raca}
+                {form.peso_medio ? ` · ${form.peso_medio}kg` : ""}
+              </div>
+            )}
+
+            <div className="flex gap-2 pt-1">
+              <button type="button" onClick={onClose} className="flex-1 border border-gray-200 text-gray-700 font-semibold py-2.5 rounded-full text-sm hover:bg-gray-50">Cancelar</button>
+              <button type="submit" disabled={salvando || qtd < 1 || !form.raca}
+                className="flex-1 bg-amber-600 text-white font-semibold py-2.5 rounded-full text-sm hover:bg-amber-700 disabled:opacity-60">
+                {salvando ? "Cadastrando..." : `🐄 Cadastrar ${qtd > 1 ? `${qtd} animais` : "1 animal"}`}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
     </div>
   );
 }

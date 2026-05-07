@@ -193,6 +193,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('gestao/rebanho')->group(function () {
         Route::get('/', [GestaoRebanhoController::class, 'index']);
         Route::post('/', [GestaoRebanhoController::class, 'store']);
+        Route::post('/grupo', [GestaoRebanhoController::class, 'storeGrupo']);
         Route::get('/resumo', [GestaoRebanhoController::class, 'resumo']);
         Route::get('/dashboard', [GestaoRebanhoController::class, 'dashboard']);
         Route::get('/{id}', [GestaoRebanhoController::class, 'show']);
