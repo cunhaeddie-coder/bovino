@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import axios from "axios";
 import { api } from "@/lib/api";
 import { useAuthStore } from "@/lib/store";
 
@@ -30,7 +31,7 @@ export default function LoginPage() {
 function LoginPageInner() {
   const router       = useRouter();
   const searchParams = useSearchParams();
-  const setAuth      = useAuthStore((s) => s.setAuth);
+  const { setAuth, user, token } = useAuthStore((s) => s);
 
   // Modo: 'senha' (gestor) ou 'otp' (vaqueiro)
   const [modo, setModo] = useState<"senha" | "otp">("senha");
@@ -46,6 +47,7 @@ function LoginPageInner() {
 
   const [error, setError]     = useState("");
   const [loading, setLoading] = useState(false);
+  const [verificando, setVerificando] = useState(false);
 
   // Magic link: /login?c=CELULAR&o=CODIGO ou /login?modo=vaqueiro
   useEffect(() => {
@@ -57,11 +59,29 @@ function LoginPageInner() {
       setModo("otp");
       if (c) setCelularOtp(c);
       if (o) setCodigo(o);
-      // Auto-login se ambos presentes
-      if (c && o) {
-        api.post("/auth/login-otp", { celular: c.replace(/\D/g, ""), codigo: o })
-          .then(({ data }) => { setAuth(data.user, data.token); router.push("/gestao/curral"); })
-          .catch(() => setError("Link expirado. Peça um novo código ao gestor."));
+    }
+
+    // Auto-login com OTP no link (primeiro acesso)
+    if (c && o) {
+      setVerificando(true);
+      api.post("/auth/login-otp", { celular: c.replace(/\D/g, ""), codigo: o })
+        .then(({ data }) => { setAuth(data.user, data.token); router.push("/gestao/curral"); })
+        .catch(() => { setVerificando(false); setError("Link expirado. Peça um novo código ao gestor."); });
+      return;
+    }
+
+    // Auto-login com token salvo — se celular do link bate com usuário armazenado
+    if (c && token && user) {
+      const celularUrl   = c.replace(/\D/g, "");
+      const celularSalvo = (user.celular ?? "").replace(/\D/g, "");
+      if (celularUrl && celularUrl === celularSalvo) {
+        setVerificando(true);
+        // Usa axios direto para não disparar o interceptor de 401 (que redireciona para /login)
+        axios.get("/api/v1/auth/me", {
+          headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+        })
+          .then(({ data }) => { setAuth(data, token); router.push("/gestao/curral"); })
+          .catch(() => { setVerificando(false); });
       }
     }
   }, [searchParams]); // eslint-disable-line
@@ -97,6 +117,16 @@ function LoginPageInner() {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
       setError(msg ?? "Código inválido ou expirado.");
     } finally { setLoading(false); }
+  }
+
+  if (verificando) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-amber-50 gap-4">
+        <p className="text-4xl">🤠</p>
+        <p className="text-gray-700 font-semibold">Verificando acesso...</p>
+        <div className="w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
   }
 
   return (
