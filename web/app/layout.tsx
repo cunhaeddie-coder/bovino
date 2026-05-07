@@ -11,6 +11,10 @@ export const metadata: Metadata = {
   description: "O maior mercado de gado bovino do Brasil. Compre e venda nelore, angus, girolando e mais — direto do produtor.",
   manifest: "/manifest.json",
   appleWebApp: { capable: true, statusBarStyle: "default", title: "Bovino" },
+  icons: {
+    icon: "/icons/icon.svg",
+    apple: "/icons/icon.svg",
+  },
   openGraph: { type: "website", locale: "pt_BR", siteName: "Bovino" },
 };
 

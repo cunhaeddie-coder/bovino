@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { api } from "@/lib/api";
 import { useAuthStore } from "@/lib/store";
 
@@ -20,23 +20,43 @@ function EyeIcon({ open }: { open: boolean }) {
 }
 
 export default function LoginPage() {
-  const router = useRouter();
-  const setAuth = useAuthStore((s) => s.setAuth);
+  const router       = useRouter();
+  const searchParams = useSearchParams();
+  const setAuth      = useAuthStore((s) => s.setAuth);
 
   // Modo: 'senha' (gestor) ou 'otp' (vaqueiro)
   const [modo, setModo] = useState<"senha" | "otp">("senha");
 
   // Login com senha
-  const [login, setLogin] = useState("");
-  const [password, setPassword] = useState("");
+  const [login, setLogin]               = useState("");
+  const [password, setPassword]         = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
   // Login com OTP (vaqueiro)
   const [celularOtp, setCelularOtp] = useState("");
-  const [codigo, setCodigo] = useState("");
+  const [codigo, setCodigo]         = useState("");
 
-  const [error, setError] = useState("");
+  const [error, setError]     = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Magic link: /login?c=CELULAR&o=CODIGO ou /login?modo=vaqueiro
+  useEffect(() => {
+    const c = searchParams.get("c");
+    const o = searchParams.get("o");
+    const m = searchParams.get("modo");
+
+    if (c || o || m === "vaqueiro") {
+      setModo("otp");
+      if (c) setCelularOtp(c);
+      if (o) setCodigo(o);
+      // Auto-login se ambos presentes
+      if (c && o) {
+        api.post("/auth/login-otp", { celular: c.replace(/\D/g, ""), codigo: o })
+          .then(({ data }) => { setAuth(data.user, data.token); router.push("/gestao/curral"); })
+          .catch(() => setError("Link expirado. Peça um novo código ao gestor."));
+      }
+    }
+  }, [searchParams]); // eslint-disable-line
 
   async function handleLoginSenha(e: React.FormEvent) {
     e.preventDefault();

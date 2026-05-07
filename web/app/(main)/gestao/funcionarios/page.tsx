@@ -376,19 +376,22 @@ export default function FuncionariosPage() {
                 <p className="text-xs text-gray-500 mt-1">Válido por 10 minutos</p>
               </div>
               <p className="text-xs text-gray-500 bg-gray-50 rounded-xl px-3 py-2">
-                Envie este código pelo WhatsApp para <strong>{codigoModal.celular}</strong>.
-                O vaqueiro usa este código no primeiro login do app.
+                Envie a mensagem abaixo pelo WhatsApp para <strong>{codigoModal.celular}</strong>.
+                O link já leva direto ao acesso — o código é o backup.
               </p>
               <div className="flex gap-2">
                 <button
                   onClick={() => {
-                    const texto = `Seu código de acesso ao app Bovino é: ${codigoModal.codigo}\nVálido por 10 minutos.`;
+                    const base  = typeof window !== "undefined" ? window.location.origin : "https://bovino.agr.br";
+                    const link  = `${base}/login?c=${codigoModal.celular}&o=${codigoModal.codigo}`;
+                    const instalar = `${base}/instalar`;
+                    const texto = `🐄 *Bovino App Curral* — seu acesso está pronto!\n\n👆 Toque aqui para entrar direto:\n${link}\n\n📲 Para instalar o app no celular:\n${instalar}\n\n🔑 Ou entre em bovino.agr.br → aba *Vaqueiro* e use o código:\n*${codigoModal.codigo}*\n\n_Válido por 10 minutos_`;
                     navigator.clipboard?.writeText(texto);
-                    alert("Copiado!");
+                    alert("Mensagem copiada! Cole no WhatsApp.");
                   }}
-                  className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 font-semibold hover:bg-gray-50"
+                  className="flex-1 py-2.5 rounded-xl border border-green-200 bg-green-50 text-sm text-green-700 font-semibold hover:bg-green-100"
                 >
-                  Copiar código
+                  Copiar msg WhatsApp
                 </button>
                 <button
                   onClick={() => setCodigoModal(null)}
