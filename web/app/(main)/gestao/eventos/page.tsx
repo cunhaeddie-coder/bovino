@@ -230,28 +230,93 @@ function ReportarModal({ onClose, onDone }: { onClose: () => void; onDone: () =>
 
 function ResolverModal({ evento, onClose, onDone }: { evento: Evento; onClose: () => void; onDone: () => void }) {
   const [resolucao, setResolucao] = useState("");
-  const [saving, setSaving] = useState(false);
+  const [brinco, setBrinco]       = useState("");
+  const [sexo, setSexo]           = useState("M");
+  const [raca, setRaca]           = useState("");
+  const [saving, setSaving]       = useState(false);
+  const [animalCriado, setAnimalCriado] = useState<{ brinco: string; categoria: string } | null>(null);
+
+  const isNascimento = evento.tipo === "nascimento";
+
   async function submit(e: React.FormEvent) {
-    e.preventDefault(); setSaving(true);
-    try { await api.post(`/gestao/eventos/${evento.id}/resolver`, { resolucao }); onDone(); onClose(); }
-    catch { setSaving(false); }
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const payload: Record<string, string> = { resolucao };
+      if (isNascimento && brinco) { payload.brinco = brinco; payload.sexo = sexo; payload.raca = raca; }
+      const { data } = await api.post(`/gestao/eventos/${evento.id}/resolver`, payload);
+      if (data.animal_criado) { setAnimalCriado(data.animal_criado); onDone(); }
+      else { onDone(); onClose(); }
+    } catch { setSaving(false); }
   }
+
+  if (animalCriado) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6 text-center space-y-4">
+          <p className="text-5xl">🐣</p>
+          <p className="font-bold text-gray-800 text-lg">Animal cadastrado!</p>
+          <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-sm text-green-800">
+            <p><strong>Brinco:</strong> {animalCriado.brinco}</p>
+            <p><strong>Categoria:</strong> {animalCriado.categoria}</p>
+          </div>
+          <p className="text-xs text-gray-400">O animal foi adicionado ao rebanho da fazenda.</p>
+          <button onClick={onClose} className="w-full py-2.5 rounded-xl bg-green-600 text-white font-bold text-sm hover:bg-green-700">
+            OK
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4">
         <div className="flex items-center justify-between px-6 py-4 border-b">
-          <h2 className="font-bold text-gray-800">Resolver Ocorrência</h2>
+          <h2 className="font-bold text-gray-800">
+            {isNascimento ? "🐣 Confirmar nascimento" : "Resolver Ocorrência"}
+          </h2>
           <button onClick={onClose} className="text-gray-400 text-xl">×</button>
         </div>
         <form onSubmit={submit} className="p-6 space-y-4">
           <p className="text-sm text-gray-600">{TIPO_EMOJI[evento.tipo]} {evento.descricao}</p>
+
+          {isNascimento && (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-3">
+              <p className="text-xs font-bold text-amber-700 uppercase tracking-wide">Cadastrar animal no rebanho</p>
+              <div>
+                <label className="text-xs font-semibold text-gray-600 block mb-1">Brinco / Nº de identificação *</label>
+                <input value={brinco} onChange={e => setBrinco(e.target.value)} required
+                  placeholder="Ex: 0042" className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-gray-600 block mb-1">Sexo</label>
+                <div className="flex gap-2">
+                  {[["M", "♂ Macho"], ["F", "♀ Fêmea"]].map(([v, l]) => (
+                    <button key={v} type="button" onClick={() => setSexo(v)}
+                      className={`flex-1 py-2 rounded-xl text-sm font-semibold border transition ${sexo === v ? "bg-amber-600 text-white border-amber-600" : "border-gray-200 text-gray-600 hover:border-gray-300"}`}>
+                      {l}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-gray-600 block mb-1">Raça (opcional)</label>
+                <input value={raca} onChange={e => setRaca(e.target.value)}
+                  placeholder="Ex: Nelore, Angus..." className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
+              </div>
+            </div>
+          )}
+
           <textarea value={resolucao} onChange={e => setResolucao(e.target.value)}
-            rows={3} placeholder="Descreva como foi resolvido (opcional)..."
+            rows={2} placeholder={isNascimento ? "Observações sobre o nascimento (opcional)..." : "Descreva como foi resolvido (opcional)..."}
             className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 resize-none" />
+
           <div className="flex gap-2">
             <button type="button" onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 font-semibold">Cancelar</button>
-            <button type="submit" disabled={saving} className="flex-1 py-2.5 rounded-xl bg-green-600 hover:bg-green-700 text-white text-sm font-bold disabled:opacity-50">
-              {saving ? "Salvando..." : "✓ Marcar resolvido"}
+            <button type="submit" disabled={saving || (isNascimento && !brinco)}
+              className="flex-1 py-2.5 rounded-xl bg-green-600 hover:bg-green-700 text-white text-sm font-bold disabled:opacity-50">
+              {saving ? "Salvando..." : isNascimento ? "🐣 Confirmar e cadastrar" : "✓ Marcar resolvido"}
             </button>
           </div>
         </form>

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\EventoCampo;
 use App\Models\Fazenda;
+use App\Models\Rebanho;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -57,11 +58,35 @@ class GestaoEventoCampoController extends Controller
     {
         $fazenda = $this->fazenda($request);
         $evento  = EventoCampo::where('fazenda_id', $fazenda->id)->findOrFail($id);
+
         $evento->update([
             'resolvido' => true,
             'resolucao' => $request->input('resolucao'),
         ]);
-        return response()->json($evento);
+
+        $animalCriado = null;
+
+        if ($evento->tipo === 'nascimento' && $request->filled('brinco')) {
+            $sexo      = $request->input('sexo', 'M');
+            $categoria = $sexo === 'F' ? 'bezerra' : 'bezerro';
+
+            $animalCriado = Rebanho::create([
+                'fazenda_id'      => $fazenda->id,
+                'brinco'          => $request->input('brinco'),
+                'sexo'            => $sexo,
+                'raca'            => $request->input('raca', 'Não informada'),
+                'categoria'       => $categoria,
+                'data_nascimento' => \Carbon\Carbon::parse($evento->data_evento)->toDateString(),
+                'status'          => 'ativo',
+            ]);
+
+            $evento->update(['animal_id' => $animalCriado->id]);
+        }
+
+        return response()->json([
+            'evento'        => $evento,
+            'animal_criado' => $animalCriado,
+        ]);
     }
 
     public function destroy(Request $request, int $id): JsonResponse
