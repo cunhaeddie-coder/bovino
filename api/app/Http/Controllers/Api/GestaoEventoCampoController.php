@@ -64,11 +64,13 @@ class GestaoEventoCampoController extends Controller
             'resolucao' => $request->input('resolucao'),
         ]);
 
-        $animalCriado = null;
+        $animalCriado  = null;
+        $animalBaixado = null;
 
+        // Nascimento → cria animal no rebanho
         if ($evento->tipo === 'nascimento' && $request->filled('brinco')) {
-            $sexo      = $request->input('sexo', 'M');
-            $categoria = $sexo === 'F' ? 'bezerra' : 'bezerro';
+            $categoria = $request->input('categoria', 'bezerro');
+            $sexo      = in_array($categoria, ['bezerra', 'novilha', 'vaca']) ? 'femea' : 'macho';
 
             $animalCriado = Rebanho::create([
                 'fazenda_id'      => $fazenda->id,
@@ -83,9 +85,18 @@ class GestaoEventoCampoController extends Controller
             $evento->update(['animal_id' => $animalCriado->id]);
         }
 
+        // Morte → baixa o animal do rebanho
+        if ($evento->tipo === 'morte' && $evento->animal_id) {
+            $animalBaixado = Rebanho::find($evento->animal_id);
+            if ($animalBaixado) {
+                $animalBaixado->update(['status' => 'morto']);
+            }
+        }
+
         return response()->json([
-            'evento'        => $evento,
-            'animal_criado' => $animalCriado,
+            'evento'         => $evento->load('animal'),
+            'animal_criado'  => $animalCriado,
+            'animal_baixado' => $animalBaixado,
         ]);
     }
 
