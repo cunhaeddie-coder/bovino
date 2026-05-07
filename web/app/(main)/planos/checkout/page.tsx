@@ -61,7 +61,7 @@ function PixModal({ qrCode, qrBase64, onClose }: { qrCode: string; qrBase64: str
 function CheckoutInner() {
   const searchParams        = useSearchParams();
   const router              = useRouter();
-  const { token, setAuth }  = useAuthStore();
+  const { token, setAuth, user } = useAuthStore();
   const planoSlug           = searchParams.get("plano") ?? "";
 
   const [plano, setPlano]           = useState<PlanoInfo | null>(null);
@@ -219,6 +219,9 @@ function CheckoutInner() {
                   initialization={{
                     amount: plano.preco,
                     preferenceId,
+                    payer: {
+                      email: user?.email ?? "",
+                    },
                   }}
                   customization={{
                     paymentMethods: {
