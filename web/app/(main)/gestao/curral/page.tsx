@@ -306,8 +306,11 @@ export default function CurralPage() {
       localStorage.removeItem("curral_eventos");
       setSyncMsg(res.data.message ?? `✓ ${total} registro(s) enviado(s) com sucesso!`);
       loadSessoes();
-    } catch {
-      setSyncMsg("Erro ao sincronizar. Tente novamente.");
+    } catch (err: unknown) {
+      const e = err as { response?: { status?: number; data?: { message?: string } }; message?: string };
+      const status = e?.response?.status;
+      const msg    = e?.response?.data?.message ?? e?.message ?? "Erro desconhecido";
+      setSyncMsg(`Erro ${status ?? ""}: ${msg}`);
     } finally { setSyncing(false); }
   }
 
