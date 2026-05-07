@@ -179,9 +179,11 @@ class AuthController extends Controller
     {
         $user = $request->user();
         $assinatura = $user->assinaturaAtiva();
+        $funcionario = \App\Models\Funcionario::where('user_id', $user->id)->first();
 
         return response()->json([
             ...$user->only(['id', 'nome', 'celular', 'email', 'tipo', 'plano', 'verificado_celular', 'verificado_cpf']),
+            'papel' => $funcionario?->papel,
             'assinatura_ativa' => $assinatura ? [
                 'id'        => $assinatura->id,
                 'status'    => $assinatura->status,
