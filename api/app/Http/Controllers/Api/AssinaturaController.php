@@ -55,6 +55,32 @@ class AssinaturaController extends Controller
         }
     }
 
+    public function processarBrick(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'assinatura_id'    => ['required', 'integer'],
+            'payment_method_id'=> ['required', 'string'],
+            'token'            => ['nullable', 'string'],
+            'installments'     => ['nullable', 'integer'],
+            'issuer_id'        => ['nullable', 'string'],
+            'payer'            => ['nullable', 'array'],
+            'payer.email'      => ['nullable', 'email'],
+        ]);
+
+        $assinatura = Assinatura::findOrFail($data['assinatura_id']);
+
+        if ($assinatura->assinante_id !== $request->user()->id) {
+            return response()->json(['message' => 'Não autorizado.'], 403);
+        }
+
+        try {
+            $resultado = $this->mp->criarPagamentoBrick($assinatura, $data);
+            return response()->json($resultado);
+        } catch (\RuntimeException $e) {
+            return response()->json(['message' => $e->getMessage()], 502);
+        }
+    }
+
     public function minhaAssinatura(Request $request): JsonResponse
     {
         $assinatura = $request->user()->assinaturaAtiva();

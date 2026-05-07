@@ -74,6 +74,63 @@ class MercadoPagoService
     }
 
     /**
+     * Processa pagamento enviado pelo Checkout Bricks (frontend).
+     * Recebe o formData do Brick e cria o pagamento via API do MP.
+     */
+    public function criarPagamentoBrick(Assinatura $assinatura, array $formData): array
+    {
+        $assinante = $assinatura->assinante;
+
+        $payload = [
+            'transaction_amount' => (float) $assinatura->valor,
+            'description'        => "Bovino — {$assinatura->plano->nome}",
+            'payment_method_id'  => $formData['payment_method_id'],
+            'external_reference' => (string) $assinatura->id,
+            'notification_url'   => config('app.url') . '/api/webhook/mercadopago',
+            'payer'              => array_merge(
+                ['email' => $assinante->email ?? $formData['payer']['email'] ?? 'payer@email.com'],
+                $formData['payer'] ?? []
+            ),
+        ];
+
+        // Cartão: inclui token e parcelas
+        if (!empty($formData['token'])) {
+            $payload['token']        = $formData['token'];
+            $payload['installments'] = $formData['installments'] ?? 1;
+            if (!empty($formData['issuer_id'])) {
+                $payload['issuer_id'] = $formData['issuer_id'];
+            }
+        }
+
+        $response = Http::withToken($this->token)
+            ->withHeaders(['X-Idempotency-Key' => 'assinatura-' . $assinatura->id . '-' . time()])
+            ->post("{$this->baseUrl}/v1/payments", $payload);
+
+        if ($response->failed()) {
+            Log::error('MP criarPagamentoBrick error', [
+                'status' => $response->status(),
+                'body'   => $response->body(),
+            ]);
+            throw new \RuntimeException('Erro ao processar pagamento: ' . ($response->json('message') ?? $response->status()));
+        }
+
+        $data = $response->json();
+
+        // Processa imediatamente (não espera webhook para resposta síncrona)
+        $this->processarPagamento((string) $data['id']);
+
+        return [
+            'status'        => $data['status'],
+            'status_detail' => $data['status_detail'],
+            'payment_id'    => $data['id'],
+            'payment_type'  => $data['payment_type_id'],
+            // PIX: retorna QR code se pendente
+            'pix_qr_code'   => $data['point_of_interaction']['transaction_data']['qr_code'] ?? null,
+            'pix_qr_code_base64' => $data['point_of_interaction']['transaction_data']['qr_code_base64'] ?? null,
+        ];
+    }
+
+    /**
      * Processa notificação IPN/webhook do Mercado Pago.
      */
     public function processarWebhook(array $payload): void

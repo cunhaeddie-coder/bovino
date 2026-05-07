@@ -138,6 +138,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Assinatura do usuário
     Route::get('assinatura', [AssinaturaController::class, 'minhaAssinatura']);
     Route::post('assinar', [AssinaturaController::class, 'assinar']);
+    Route::post('pagamento/brick', [AssinaturaController::class, 'processarBrick']);
     Route::delete('assinatura', [AssinaturaController::class, 'cancelar']);
 
     // Checkout simulado (pagamento fictício para testes)
