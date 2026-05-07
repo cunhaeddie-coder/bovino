@@ -12,8 +12,9 @@ export function AuthHydrator() {
     if (ran.current) return;
     ran.current = true;
 
-    if (!token || user) return;
+    if (!token) return;
 
+    // Sempre atualiza o user do servidor para garantir papel, permissões atualizadas
     getMe()
       .then((me) => setAuth(me, token))
       .catch(() => clearAuth());

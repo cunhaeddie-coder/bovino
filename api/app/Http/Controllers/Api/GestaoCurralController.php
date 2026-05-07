@@ -84,11 +84,10 @@ class GestaoCurralController extends Controller
 
                 foreach ($dados['pesagens'] ?? [] as $p) {
                     Pesagem::create([
-                        'animal_id'      => $p['animal_id'],
-                        'fazenda_id'     => $fazenda->id,
-                        'peso'           => $p['peso_kg'],
-                        'data_pesagem'   => $p['data'],
-                        'registrado_por' => $request->user()->id,
+                        'animal_id'    => $p['animal_id'],
+                        'fazenda_id'   => $fazenda->id,
+                        'peso'         => $p['peso_kg'],
+                        'data_pesagem' => $p['data'],
                     ]);
                     Rebanho::where('id', $p['animal_id'])->update(['peso_atual' => $p['peso_kg']]);
                     $totalPesagens++;
