@@ -145,20 +145,22 @@ class OrdemServicoController extends Controller
 
         $os->update(['status' => 'aguardando', 'publicado_em' => now()]);
 
-        // Notificação para o vaqueiro (se tiver user_id vinculado)
-        if ($os->atribuido_a) {
-            $vaqueiro = $os->vaqueiro;
-            if ($vaqueiro && $vaqueiro->user_id) {
-                \App\Models\Notificacao::create([
-                    'user_id'         => $vaqueiro->user_id,
-                    'tipo'            => 'ordem_servico',
-                    'titulo'          => "Nova OS: {$os->nome}",
-                    'corpo'           => "Você tem uma nova ordem de serviço aguardando execução.",
-                    'link'            => "/app-vaqueiro/ordens/{$os->id}",
-                    'referencia_tipo' => OrdemServico::class,
-                    'referencia_id'   => $os->id,
-                ]);
+        // Notificação para o vaqueiro — ignorada silenciosamente se tabela/modelo não existir
+        try {
+            if ($os->atribuido_a) {
+                $vaqueiro = Funcionario::find($os->atribuido_a);
+                if ($vaqueiro && $vaqueiro->user_id) {
+                    \App\Models\Notificacao::create([
+                        'user_id'         => $vaqueiro->user_id,
+                        'tipo'            => 'ordem_servico',
+                        'titulo'          => "Nova OS: {$os->nome}",
+                        'corpo'           => 'Você tem uma nova ordem de serviço aguardando execução.',
+                        'referencia_id'   => $os->id,
+                    ]);
+                }
             }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('publicar: falha ao criar notificacao', ['erro' => $e->getMessage()]);
         }
 
         return response()->json($os->fresh());
