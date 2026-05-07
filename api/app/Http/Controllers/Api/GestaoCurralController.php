@@ -64,6 +64,7 @@ class GestaoCurralController extends Controller
             'eventos.*.animal_id'        => ['nullable', 'integer'],
             'eventos.*.data_evento'      => ['required', 'date'],
             'eventos.*.coletado_em'      => ['nullable', 'date'],
+            'eventos.*.foto_base64'      => ['nullable', 'string'],
         ]);
 
         DB::transaction(function () use ($dados, $fazenda, $request, $sessao) {
@@ -86,6 +87,21 @@ class GestaoCurralController extends Controller
             }
 
             foreach ($dados['eventos'] ?? [] as $ev) {
+                $fotoPath = null;
+
+                // Salva foto base64 como arquivo se presente
+                if (!empty($ev['foto_base64'])) {
+                    try {
+                        $base64  = preg_replace('/^data:image\/\w+;base64,/', '', $ev['foto_base64']);
+                        $imgData = base64_decode($base64);
+                        if ($imgData) {
+                            $nome     = 'eventos/' . uniqid('foto_') . '.jpg';
+                            \Illuminate\Support\Facades\Storage::disk('public')->put($nome, $imgData);
+                            $fotoPath = \Illuminate\Support\Facades\Storage::disk('public')->url($nome);
+                        }
+                    } catch (\Throwable $e) {}
+                }
+
                 EventoCampo::create([
                     'fazenda_id'    => $fazenda->id,
                     'tipo'          => $ev['tipo'],
@@ -95,14 +111,21 @@ class GestaoCurralController extends Controller
                     'urgencia'      => $ev['urgencia'] ?? 'media',
                     'reportado_por' => $request->user()->id,
                     'coletado_em'   => $ev['coletado_em'] ?? $ev['data_evento'],
+                    'foto_url'      => $fotoPath,
                 ]);
+            }
+
+            // Não armazena base64 no dados_offline (muito pesado)
+            $dadosSemFoto = $dados;
+            foreach ($dadosSemFoto['eventos'] ?? [] as &$ev) {
+                unset($ev['foto_base64']);
             }
 
             $sessao->update([
                 'status'           => 'sincronizada',
                 'total_animais'    => $totalAnimais,
                 'sincronizado_em'  => now(),
-                'dados_offline'    => $dados,
+                'dados_offline'    => $dadosSemFoto,
             ]);
         });
 
