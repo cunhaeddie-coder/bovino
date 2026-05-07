@@ -67,7 +67,11 @@ PROMPT;
         ]);
 
         if (!$response->successful()) {
-            return response()->json(['error' => 'Erro ao contatar IA.'], 502);
+            \Illuminate\Support\Facades\Log::error('Anthropic API error', [
+                'status' => $response->status(),
+                'body'   => $response->body(),
+            ]);
+            return response()->json(['error' => 'Erro ao contatar IA: ' . $response->status()], 502);
         }
 
         $resposta = $response->json('content.0.text', 'Não consegui processar sua mensagem.');
@@ -105,7 +109,7 @@ PROMPT;
 
         // Preço médio da @arroba por categoria (usando cotação mais recente)
         $cotacao = \App\Models\Cotacao::where('tipo', 'boi_gordo')
-            ->orderByDesc('created_at')->value('preco') ?? 230.00;
+            ->orderByDesc('created_at')->value('preco_arroba') ?? 230.00;
 
         $valorTotal = 0;
         $detalhes   = [];
