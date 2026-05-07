@@ -106,7 +106,7 @@ class AuthController extends Controller
     public function enviarOtp(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'celular' => ['required', 'string'],
+            'celular'    => ['required', 'string'],
             'finalidade' => ['required', 'in:cadastro,login,recuperacao'],
         ]);
 
@@ -116,10 +116,57 @@ class AuthController extends Controller
             return response()->json(['message' => 'Celular não encontrado.'], 404);
         }
 
-        $codigo = $this->otpService->gerar($celular, $data['finalidade']);
-        $this->otpService->enviarWhatsApp($celular, $codigo);
+        $codigo          = $this->otpService->gerar($celular, $data['finalidade']);
+        $whatsappEnviado = false;
 
-        return response()->json(['message' => 'Código enviado via WhatsApp.']);
+        try {
+            $whatsappEnviado = $this->otpService->enviarWhatsApp($celular, $codigo);
+        } catch (\Exception $e) {}
+
+        $response = ['message' => 'Código enviado via WhatsApp.', 'whatsapp_enviado' => $whatsappEnviado];
+        if (!$whatsappEnviado) {
+            $response['codigo_manual'] = $codigo;
+            $response['aviso'] = 'WhatsApp não configurado. Use o código abaixo.';
+        }
+
+        return response()->json($response);
+    }
+
+    public function loginComOtp(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'celular' => ['required', 'string'],
+            'codigo'  => ['required', 'string', 'size:6'],
+        ]);
+
+        $celular = preg_replace('/\D/', '', $data['celular']);
+
+        // Aceita OTP de cadastro (primeiro acesso) ou login
+        $verificado = $this->otpService->verificar($celular, $data['codigo'], 'cadastro')
+                   || $this->otpService->verificar($celular, $data['codigo'], 'login');
+
+        if (!$verificado) {
+            return response()->json(['message' => 'Código inválido ou expirado.'], 422);
+        }
+
+        $user = User::where('celular', $celular)->first();
+
+        if (!$user) {
+            return response()->json(['message' => 'Usuário não encontrado.'], 404);
+        }
+
+        // Marca celular como verificado no primeiro acesso
+        if (!$user->verificado_celular) {
+            $user->update(['verificado_celular' => true]);
+        }
+
+        $user->tokens()->where('name', 'access')->delete();
+        $token = $user->createToken('access', ['*'], now()->addHours(8))->plainTextToken;
+
+        return response()->json([
+            'token' => $token,
+            'user'  => $user->only(['id', 'nome', 'celular', 'email', 'tipo', 'plano', 'verificado_celular']),
+        ]);
     }
 
     public function me(Request $request): JsonResponse
