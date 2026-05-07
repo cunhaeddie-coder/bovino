@@ -213,12 +213,11 @@ function CheckoutInner() {
             )}
 
             {/* Checkout Bricks */}
-            {!modoSimulado && mpPronto && plano && preferenceId && (
+            {!modoSimulado && mpPronto && plano && assinaturaId && (
               <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
                 <Payment
                   initialization={{
                     amount: plano.preco,
-                    preferenceId,
                     payer: {
                       email: user?.email ?? "",
                       identification: {
@@ -249,8 +248,8 @@ function CheckoutInner() {
               </div>
             )}
 
-            {/* Loading enquanto preferenceId não chegou */}
-            {!modoSimulado && mpPronto && plano && !preferenceId && (
+            {/* Loading enquanto assinaturaId não chegou */}
+            {!modoSimulado && mpPronto && plano && !assinaturaId && (
               <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
                 <Spinner full={false} />
                 <p className="text-center text-sm text-gray-400 mt-2">Preparando checkout seguro...</p>
