@@ -456,15 +456,15 @@ export default function CurralPage() {
       {aba === "eventos" && (
         <div className="space-y-4">
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-            <h2 className="font-semibold text-gray-700 mb-3">Registrar evento</h2>
+            <h2 className="font-bold text-gray-800 text-base mb-4">Registrar evento</h2>
             <div className="space-y-3">
               <select value={novoEvento.tipo} onChange={e => setNovoEvento({...novoEvento, tipo: e.target.value})}
-                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400">
+                className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 text-base text-gray-900 font-medium bg-white focus:outline-none focus:border-green-500">
                 {TIPOS_EVENTO.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
               <textarea value={novoEvento.descricao} onChange={e => setNovoEvento({...novoEvento, descricao: e.target.value})}
-                rows={2} placeholder="Descreva o que aconteceu..."
-                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 resize-none" />
+                rows={3} placeholder="Descreva o que aconteceu..."
+                className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 text-base text-gray-900 placeholder-gray-400 font-medium focus:outline-none focus:border-green-500 resize-none" />
 
               {/* Câmera */}
               <input
@@ -493,7 +493,7 @@ export default function CurralPage() {
               )}
 
               <button onClick={adicionarEvento} disabled={!novoEvento.descricao}
-                className="w-full py-2.5 rounded-xl bg-green-600 hover:bg-green-700 text-white text-sm font-bold disabled:opacity-50">
+                className="w-full py-4 rounded-xl bg-green-600 hover:bg-green-700 text-white text-base font-bold disabled:opacity-50 tracking-wide">
                 + Registrar evento
               </button>
             </div>
