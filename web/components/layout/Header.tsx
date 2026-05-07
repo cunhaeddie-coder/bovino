@@ -13,12 +13,32 @@ export function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   const isPremium = temPlano(user);
+  const isVaqueiro = user?.papel === "vaqueiro";
 
   async function handleLogout() {
     await logout();
     clearAuth();
-    router.push("/");
+    router.push("/login");
     setMenuOpen(false);
+  }
+
+  // Header mínimo para vaqueiros — sem marketplace
+  if (isVaqueiro) {
+    return (
+      <header className="bg-amber-700 shadow-md sticky top-0 z-40">
+        <div className="max-w-6xl mx-auto px-4 h-12 flex items-center gap-3">
+          <span className="text-xl">🤠</span>
+          <span className="text-white font-bold text-base tracking-tight flex-1">App Vaqueiro</span>
+          <span className="text-amber-200 text-sm truncate max-w-32">{user.nome.split(" ")[0]}</span>
+          <button
+            onClick={handleLogout}
+            className="text-amber-200 hover:text-white text-xs border border-amber-500 rounded-full px-3 py-1 transition-colors"
+          >
+            Sair
+          </button>
+        </div>
+      </header>
+    );
   }
 
   const isActive = (href: string) =>

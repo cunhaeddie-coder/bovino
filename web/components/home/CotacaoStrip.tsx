@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useAuthStore } from "@/lib/store";
 
 type Cotacao = {
   tipo: string;
@@ -51,6 +52,9 @@ const BRL = (v: number) =>
 
 export function CotacaoStrip() {
   const [items, setItems] = useState<TickerItem[]>([]);
+  const isVaqueiro = useAuthStore((s) => s.user?.papel === "vaqueiro");
+
+  if (isVaqueiro) return null;
 
   async function carregar() {
     const [cotacoes, dolar] = await Promise.all([fetchCotacoes(), fetchDolar()]);
