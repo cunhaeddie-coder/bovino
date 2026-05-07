@@ -163,9 +163,15 @@ class AuthController extends Controller
         $user->tokens()->where('name', 'access')->delete();
         $token = $user->createToken('access', ['*'], now()->addHours(8))->plainTextToken;
 
+        // Inclui papel do funcionário vinculado (para vaqueiros)
+        $funcionario = \App\Models\Funcionario::where('user_id', $user->id)->first();
+
         return response()->json([
             'token' => $token,
-            'user'  => $user->only(['id', 'nome', 'celular', 'email', 'tipo', 'plano', 'verificado_celular']),
+            'user'  => array_merge(
+                $user->only(['id', 'nome', 'celular', 'email', 'tipo', 'plano', 'verificado_celular']),
+                ['papel' => $funcionario?->papel]
+            ),
         ]);
     }
 
