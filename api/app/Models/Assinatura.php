@@ -13,8 +13,8 @@ class Assinatura extends Model
 
     protected $fillable = [
         'assinante_type', 'assinante_id', 'plano_id', 'status',
-        'valor', 'gateway_id', 'gateway_subscription_id',
-        'inicia_em', 'expira_em', 'cancelada_em',
+        'gateway', 'valor', 'gateway_id', 'gateway_subscription_id',
+        'stripe_subscription_id', 'inicia_em', 'expira_em', 'cancelada_em',
     ];
 
     protected function casts(): array

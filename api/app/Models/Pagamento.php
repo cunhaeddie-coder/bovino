@@ -10,7 +10,7 @@ class Pagamento extends Model
     protected $table = 'pagamentos';
 
     protected $fillable = [
-        'assinatura_id', 'valor', 'status',
+        'assinatura_id', 'gateway', 'valor', 'status',
         'gateway_id', 'metodo', 'gateway_response', 'pago_em',
     ];
 

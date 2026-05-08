@@ -34,6 +34,7 @@ class User extends Authenticatable
         'bairro',
         'nome_propriedade',
         'avatar_url',
+        'stripe_customer_id',
     ];
 
     protected $hidden = [

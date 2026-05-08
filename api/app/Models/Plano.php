@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Plano extends Model
 {
     protected $fillable = [
-        'slug', 'nome', 'tipo', 'preco', 'periodo', 'recursos',
+        'slug', 'nome', 'tipo', 'preco', 'periodo', 'stripe_price_id', 'recursos',
         'max_anuncios', 'max_destaques', 'ver_contato_vendedor',
         'alertas_preco', 'analytics', 'badge_verificado',
         'suporte_prioritario', 'ativo', 'ordem',

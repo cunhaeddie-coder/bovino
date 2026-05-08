@@ -29,9 +29,15 @@ return [
     ],
 
     'mercadopago' => [
-        'public_key'        => env('MERCADO_PAGO_PUBLIC_KEY', ''),
-        'access_token'      => env('MERCADO_PAGO_ACCESS_TOKEN', ''),
-        'test_buyer_email'  => env('MERCADO_PAGO_TEST_BUYER_EMAIL', ''),
+        'public_key'       => env('MERCADO_PAGO_PUBLIC_KEY', ''),
+        'access_token'     => env('MERCADO_PAGO_ACCESS_TOKEN', ''),
+        'test_buyer_email' => env('MERCADO_PAGO_TEST_BUYER_EMAIL', ''),
+    ],
+
+    'stripe' => [
+        'key'            => env('STRIPE_PUBLIC_KEY', ''),
+        'secret'         => env('STRIPE_SECRET_KEY', ''),
+        'webhook_secret' => env('STRIPE_WEBHOOK_SECRET', ''),
     ],
 
     'anthropic' => [

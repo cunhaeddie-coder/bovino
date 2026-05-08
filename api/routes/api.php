@@ -32,6 +32,7 @@ use App\Http\Controllers\Api\GestaoSugestaoController;
 use App\Http\Controllers\Api\ArrendamentoController;
 use App\Http\Controllers\Api\OrdemServicoController;
 use App\Http\Controllers\Api\GoogleAuthController;
+use App\Http\Controllers\Api\StripeWebhookController;
 use App\Http\Controllers\Api\WebhookController;
 use Illuminate\Support\Facades\Route;
 
@@ -57,8 +58,9 @@ if (app()->environment('local')) {
     });
 }
 
-// Webhook fora do versionamento — URL registrada no Mercado Pago é imutável
+// Webhooks fora do versionamento — URLs imutáveis registradas nos gateways
 Route::post('webhook/mercadopago', [WebhookController::class, 'mercadopago']);
+Route::post('webhook/stripe', [StripeWebhookController::class, 'handle']);
 
 Route::prefix('v1')->group(function () {
 
@@ -138,7 +140,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // Assinatura do usuário
     Route::get('assinatura', [AssinaturaController::class, 'minhaAssinatura']);
     Route::post('assinar', [AssinaturaController::class, 'assinar']);
-    Route::post('pagamento/brick', [AssinaturaController::class, 'processarBrick']);
+    Route::post('pagamento/pix', [AssinaturaController::class, 'pagarPix']);
+    Route::post('pagamento/stripe', [AssinaturaController::class, 'pagarStripe']);
     Route::delete('assinatura', [AssinaturaController::class, 'cancelar']);
 
     // Checkout simulado (pagamento fictício para testes)

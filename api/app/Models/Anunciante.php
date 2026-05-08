@@ -16,7 +16,7 @@ class Anunciante extends Authenticatable
     protected $fillable = [
         'empresa', 'cnpj', 'responsavel', 'celular', 'email',
         'password', 'logo_url', 'site', 'estado', 'descricao',
-        'ativo', 'plano_id',
+        'ativo', 'plano_id', 'stripe_customer_id',
     ];
 
     protected $hidden = ['password'];
