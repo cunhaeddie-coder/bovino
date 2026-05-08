@@ -12,15 +12,20 @@ class Banner extends Model
         'imagem_url',
         'link_url',
         'posicao',
+        'abrangencia',
+        'estados',
+        'municipios',
         'ativo',
     ];
 
     protected function casts(): array
     {
         return [
-            'ativo' => 'boolean',
-            'cliques' => 'integer',
-            'impressoes' => 'integer',
+            'ativo'       => 'boolean',
+            'cliques'     => 'integer',
+            'impressoes'  => 'integer',
+            'estados'     => 'array',
+            'municipios'  => 'array',
         ];
     }
 

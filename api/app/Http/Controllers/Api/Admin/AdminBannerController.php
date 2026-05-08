@@ -14,7 +14,7 @@ class AdminBannerController extends Controller
     {
         $banners = Banner::with('anunciante:id,empresa')
             ->when($request->anunciante_id, fn($q, $v) => $q->where('anunciante_id', $v))
-            ->when($request->posicao, fn($q, $v) => $q->where('posicao', $v))
+            ->when($request->posicao,       fn($q, $v) => $q->where('posicao', $v))
             ->latest()
             ->paginate(20);
 
@@ -28,8 +28,15 @@ class AdminBannerController extends Controller
             'imagem_url'    => ['required', 'url'],
             'link_url'      => ['nullable', 'url'],
             'posicao'       => ['required', 'in:home,feed,busca'],
+            'abrangencia'   => ['required', 'in:nacional,estadual,municipal'],
+            'estados'       => ['nullable', 'array'],
+            'estados.*'     => ['string', 'size:2'],
+            'municipios'    => ['nullable', 'array'],
+            'municipios.*'  => ['string', 'max:100'],
             'ativo'         => ['boolean'],
         ]);
+
+        $data = $this->limparAbrangencia($data);
 
         $banner = Banner::create($data);
         $banner->load('anunciante:id,empresa');
@@ -42,11 +49,18 @@ class AdminBannerController extends Controller
         $banner = Banner::findOrFail($id);
 
         $data = $request->validate([
-            'imagem_url' => ['sometimes', 'url'],
-            'link_url'   => ['nullable', 'url'],
-            'posicao'    => ['sometimes', 'in:home,feed,busca'],
-            'ativo'      => ['sometimes', 'boolean'],
+            'imagem_url'  => ['sometimes', 'url'],
+            'link_url'    => ['nullable', 'url'],
+            'posicao'     => ['sometimes', 'in:home,feed,busca'],
+            'abrangencia' => ['sometimes', 'in:nacional,estadual,municipal'],
+            'estados'     => ['nullable', 'array'],
+            'estados.*'   => ['string', 'size:2'],
+            'municipios'  => ['nullable', 'array'],
+            'municipios.*'=> ['string', 'max:100'],
+            'ativo'       => ['sometimes', 'boolean'],
         ]);
+
+        $data = $this->limparAbrangencia($data);
 
         $banner->update($data);
 
@@ -75,5 +89,18 @@ class AdminBannerController extends Controller
             ->get();
 
         return response()->json($anunciantes);
+    }
+
+    // Garante que estados/municipios são nulos quando não aplicáveis
+    private function limparAbrangencia(array $data): array
+    {
+        if (($data['abrangencia'] ?? null) === 'nacional') {
+            $data['estados']    = null;
+            $data['municipios'] = null;
+        } elseif (($data['abrangencia'] ?? null) === 'estadual') {
+            $data['municipios'] = null;
+        }
+
+        return $data;
     }
 }

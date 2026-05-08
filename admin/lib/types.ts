@@ -90,6 +90,9 @@ export interface Banner {
   imagem_url: string;
   link_url: string | null;
   posicao: "home" | "feed" | "busca";
+  abrangencia: "nacional" | "estadual" | "municipal";
+  estados: string[] | null;
+  municipios: string[] | null;
   cliques: number;
   impressoes: number;
   ativo: boolean;

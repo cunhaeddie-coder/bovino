@@ -12,11 +12,33 @@ class BannerController extends Controller
     public function porPosicao(Request $request): JsonResponse
     {
         $posicao = $request->validate(['posicao' => ['required', 'in:feed,busca,home']])['posicao'];
+        $estado   = $request->query('estado');
+        $municipio = $request->query('municipio');
 
         $banners = Banner::with('anunciante:id,empresa')
             ->where('posicao', $posicao)
             ->where('ativo', true)
             ->whereHas('anunciante', fn($q) => $q->where('validade', '>=', now()))
+            ->where(function ($q) use ($estado, $municipio) {
+                // Nacional: sempre visível
+                $q->where('abrangencia', 'nacional');
+
+                // Estadual: visível se o estado do usuário estiver na lista
+                if ($estado) {
+                    $q->orWhere(function ($s) use ($estado) {
+                        $s->where('abrangencia', 'estadual')
+                          ->whereJsonContains('estados', $estado);
+                    });
+                }
+
+                // Municipal: visível se município E estado baterem
+                if ($municipio && $estado) {
+                    $q->orWhere(function ($s) use ($municipio) {
+                        $s->where('abrangencia', 'municipal')
+                          ->whereJsonContains('municipios', $municipio);
+                    });
+                }
+            })
             ->inRandomOrder()
             ->limit(3)
             ->get();

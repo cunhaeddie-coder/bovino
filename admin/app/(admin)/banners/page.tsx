@@ -7,9 +7,9 @@ import { Banner, Paginated } from "@/lib/types";
 type AnuncianteOpt = { id: number; empresa: string };
 
 const POSICAO_LABEL: Record<string, string> = {
-  home:  "🏠 Home",
-  feed:  "📋 Feed",
-  busca: "🔍 Busca",
+  home:  "Home",
+  feed:  "Feed",
+  busca: "Busca",
 };
 
 const POSICAO_DESC: Record<string, string> = {
@@ -18,21 +18,55 @@ const POSICAO_DESC: Record<string, string> = {
   busca: "Aparece nos resultados de busca",
 };
 
+const ABRANGENCIA_LABEL: Record<string, string> = {
+  nacional:  "Nacional",
+  estadual:  "Estadual",
+  municipal: "Municipal",
+};
+
+const ESTADOS_BR = [
+  "AC","AL","AP","AM","BA","CE","DF","ES","GO","MA",
+  "MT","MS","MG","PA","PB","PR","PE","PI","RJ","RN",
+  "RS","RO","RR","SC","SP","SE","TO",
+];
+
+function AbrangenciaBadge({ banner }: { banner: Banner }) {
+  const cores: Record<string, string> = {
+    nacional:  "bg-blue-100 text-blue-700",
+    estadual:  "bg-amber-100 text-amber-700",
+    municipal: "bg-purple-100 text-purple-700",
+  };
+  const extra =
+    banner.abrangencia === "estadual" && banner.estados?.length
+      ? ` · ${banner.estados.join(", ")}`
+      : banner.abrangencia === "municipal" && banner.municipios?.length
+      ? ` · ${banner.municipios.slice(0, 2).join(", ")}${banner.municipios.length > 2 ? "…" : ""}`
+      : "";
+  return (
+    <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${cores[banner.abrangencia]}`}>
+      {ABRANGENCIA_LABEL[banner.abrangencia]}{extra}
+    </span>
+  );
+}
+
 export default function BannersPage() {
-  const [data, setData]         = useState<Paginated<Banner> | null>(null);
-  const [anunciantes, setAn]    = useState<AnuncianteOpt[]>([]);
+  const [data, setData]           = useState<Paginated<Banner> | null>(null);
+  const [anunciantes, setAn]      = useState<AnuncianteOpt[]>([]);
   const [filtroPos, setFiltroPos] = useState("");
-  const [page, setPage]         = useState(1);
-  const [loading, setLoading]   = useState(false);
-  const [modal, setModal]       = useState(false);
-  const [editando, setEditando] = useState<Banner | null>(null);
+  const [page, setPage]           = useState(1);
+  const [loading, setLoading]     = useState(false);
+  const [modal, setModal]         = useState(false);
+  const [editando, setEditando]   = useState<Banner | null>(null);
 
   const [form, setForm] = useState({
     anunciante_id: "",
-    imagem_url: "",
-    link_url: "",
-    posicao: "home",
-    ativo: true,
+    imagem_url:    "",
+    link_url:      "",
+    posicao:       "home",
+    abrangencia:   "nacional",
+    estadosSel:    [] as string[],
+    municipiosTxt: "",
+    ativo:         true,
   });
 
   async function carregar(p = 1) {
@@ -52,7 +86,7 @@ export default function BannersPage() {
 
   function abrirNovo() {
     setEditando(null);
-    setForm({ anunciante_id: "", imagem_url: "", link_url: "", posicao: "home", ativo: true });
+    setForm({ anunciante_id: "", imagem_url: "", link_url: "", posicao: "home", abrangencia: "nacional", estadosSel: [], municipiosTxt: "", ativo: true });
     setModal(true);
   }
 
@@ -60,17 +94,44 @@ export default function BannersPage() {
     setEditando(b);
     setForm({
       anunciante_id: String(b.anunciante_id),
-      imagem_url: b.imagem_url,
-      link_url: b.link_url ?? "",
-      posicao: b.posicao,
-      ativo: b.ativo,
+      imagem_url:    b.imagem_url,
+      link_url:      b.link_url ?? "",
+      posicao:       b.posicao,
+      abrangencia:   b.abrangencia,
+      estadosSel:    b.estados ?? [],
+      municipiosTxt: (b.municipios ?? []).join(", "),
+      ativo:         b.ativo,
     });
     setModal(true);
   }
 
+  function toggleEstado(uf: string) {
+    setForm((f) => ({
+      ...f,
+      estadosSel: f.estadosSel.includes(uf)
+        ? f.estadosSel.filter((e) => e !== uf)
+        : [...f.estadosSel, uf],
+    }));
+  }
+
   async function handleSalvar(e: React.FormEvent) {
     e.preventDefault();
-    const payload = { ...form, anunciante_id: Number(form.anunciante_id) };
+    const municipios = form.municipiosTxt
+      .split(",")
+      .map((m) => m.trim())
+      .filter(Boolean);
+
+    const payload = {
+      anunciante_id: Number(form.anunciante_id),
+      imagem_url:    form.imagem_url,
+      link_url:      form.link_url || null,
+      posicao:       form.posicao,
+      abrangencia:   form.abrangencia,
+      estados:       form.abrangencia === "estadual" ? form.estadosSel : null,
+      municipios:    form.abrangencia === "municipal" ? municipios : null,
+      ativo:         form.ativo,
+    };
+
     if (editando) {
       await api.put(`/banners/${editando.id}`, payload);
     } else {
@@ -107,12 +168,13 @@ export default function BannersPage() {
         </button>
       </div>
 
-      {/* Posições */}
+      {/* Cards de posição */}
       <div className="grid grid-cols-3 gap-4">
         {Object.entries(POSICAO_LABEL).map(([pos, label]) => {
           const count = data?.data.filter((b) => b.posicao === pos && b.ativo).length ?? 0;
           return (
-            <div key={pos} className={`bg-white rounded-2xl border p-4 cursor-pointer transition ${filtroPos === pos ? "border-green-400 ring-1 ring-green-300" : "border-slate-200 hover:border-slate-300"}`}
+            <div key={pos}
+              className={`bg-white rounded-2xl border p-4 cursor-pointer transition ${filtroPos === pos ? "border-green-400 ring-1 ring-green-300" : "border-slate-200 hover:border-slate-300"}`}
               onClick={() => setFiltroPos(filtroPos === pos ? "" : pos)}>
               <p className="font-bold text-slate-700 text-sm">{label}</p>
               <p className="text-xs text-slate-400 mt-1">{POSICAO_DESC[pos]}</p>
@@ -147,6 +209,7 @@ export default function BannersPage() {
                 <th className="px-5 py-3 text-left">Prévia</th>
                 <th className="px-3 py-3 text-left">Anunciante</th>
                 <th className="px-3 py-3 text-left">Posição</th>
+                <th className="px-3 py-3 text-left">Abrangência</th>
                 <th className="px-3 py-3 text-right">Impressões</th>
                 <th className="px-3 py-3 text-right">Cliques</th>
                 <th className="px-3 py-3 text-center">Status</th>
@@ -164,6 +227,9 @@ export default function BannersPage() {
                     <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-semibold">
                       {POSICAO_LABEL[b.posicao]}
                     </span>
+                  </td>
+                  <td className="px-3 py-3">
+                    <AbrangenciaBadge banner={b} />
                   </td>
                   <td className="px-3 py-3 text-right text-slate-500">{b.impressoes.toLocaleString("pt-BR")}</td>
                   <td className="px-3 py-3 text-right text-slate-500">{b.cliques.toLocaleString("pt-BR")}</td>
@@ -183,7 +249,7 @@ export default function BannersPage() {
                 </tr>
               ))}
               {!data?.data.length && (
-                <tr><td colSpan={7} className="px-5 py-10 text-center text-slate-400 text-sm">Nenhum banner cadastrado.</td></tr>
+                <tr><td colSpan={8} className="px-5 py-10 text-center text-slate-400 text-sm">Nenhum banner cadastrado.</td></tr>
               )}
             </tbody>
           </table>
@@ -203,10 +269,11 @@ export default function BannersPage() {
       {/* Modal */}
       {modal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 space-y-4 max-h-[90vh] overflow-y-auto">
             <h2 className="text-base font-extrabold text-slate-800">{editando ? "Editar banner" : "Novo banner"}</h2>
 
             <form onSubmit={handleSalvar} className="space-y-4">
+              {/* Anunciante */}
               <div>
                 <label className="text-xs font-semibold text-slate-500 block mb-1">Anunciante</label>
                 <select required value={form.anunciante_id} onChange={(e) => setForm({ ...form, anunciante_id: e.target.value })}
@@ -216,6 +283,7 @@ export default function BannersPage() {
                 </select>
               </div>
 
+              {/* Imagem */}
               <div>
                 <label className="text-xs font-semibold text-slate-500 block mb-1">URL da imagem</label>
                 <input required type="url" value={form.imagem_url}
@@ -227,6 +295,7 @@ export default function BannersPage() {
                 )}
               </div>
 
+              {/* Link */}
               <div>
                 <label className="text-xs font-semibold text-slate-500 block mb-1">Link de destino (opcional)</label>
                 <input type="url" value={form.link_url}
@@ -235,6 +304,7 @@ export default function BannersPage() {
                   className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" />
               </div>
 
+              {/* Posição */}
               <div>
                 <label className="text-xs font-semibold text-slate-500 block mb-1">Posição no marketplace</label>
                 <select value={form.posicao} onChange={(e) => setForm({ ...form, posicao: e.target.value })}
@@ -245,6 +315,60 @@ export default function BannersPage() {
                 </select>
               </div>
 
+              {/* Abrangência */}
+              <div>
+                <label className="text-xs font-semibold text-slate-500 block mb-1">Abrangência</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {(["nacional", "estadual", "municipal"] as const).map((ab) => (
+                    <button key={ab} type="button"
+                      onClick={() => setForm({ ...form, abrangencia: ab, estadosSel: [], municipiosTxt: "" })}
+                      className={`py-2 rounded-lg border text-xs font-semibold transition ${form.abrangencia === ab ? "bg-green-50 border-green-400 text-green-700" : "border-slate-200 text-slate-500 hover:border-slate-300"}`}>
+                      {ab === "nacional" ? "Nacional" : ab === "estadual" ? "Estadual" : "Municipal"}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[11px] text-slate-400 mt-1">
+                  {form.abrangencia === "nacional"  && "Aparece para todos os usuários do Brasil"}
+                  {form.abrangencia === "estadual"  && "Aparece apenas nos estados selecionados abaixo"}
+                  {form.abrangencia === "municipal" && "Aparece apenas nos municípios informados abaixo"}
+                </p>
+              </div>
+
+              {/* Seleção de estados */}
+              {form.abrangencia === "estadual" && (
+                <div>
+                  <label className="text-xs font-semibold text-slate-500 block mb-2">
+                    Estados ({form.estadosSel.length} selecionados)
+                  </label>
+                  <div className="grid grid-cols-9 gap-1">
+                    {ESTADOS_BR.map((uf) => (
+                      <button key={uf} type="button"
+                        onClick={() => toggleEstado(uf)}
+                        className={`py-1 rounded text-[11px] font-bold transition ${form.estadosSel.includes(uf) ? "bg-green-500 text-white" : "bg-slate-100 text-slate-500 hover:bg-slate-200"}`}>
+                        {uf}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Municípios */}
+              {form.abrangencia === "municipal" && (
+                <div>
+                  <label className="text-xs font-semibold text-slate-500 block mb-1">
+                    Municípios <span className="font-normal text-slate-400">(separados por vírgula)</span>
+                  </label>
+                  <textarea
+                    value={form.municipiosTxt}
+                    onChange={(e) => setForm({ ...form, municipiosTxt: e.target.value })}
+                    placeholder="Belo Horizonte, Contagem, Betim"
+                    rows={3}
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm resize-none" />
+                  <p className="text-[11px] text-slate-400 mt-0.5">Digite os nomes exatamente como aparecem no cadastro do usuário</p>
+                </div>
+              )}
+
+              {/* Publicar */}
               <div className="flex items-center gap-2">
                 <input type="checkbox" id="ativo" checked={form.ativo}
                   onChange={(e) => setForm({ ...form, ativo: e.target.checked })} className="rounded" />
