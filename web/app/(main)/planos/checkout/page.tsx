@@ -278,12 +278,7 @@ function CheckoutInner() {
                     },
                   }}
                   customization={{
-                    paymentMethods: {
-                      bankTransfer: "all",
-                      ticket: "none",
-                      creditCard: "none",
-                      debitCard: "none",
-                    },
+                    paymentMethods: { bankTransfer: "all" },
                     visual: { style: { customVariables: { formPadding: "24px" } } },
                   }}
                   onSubmit={onSubmitPix}
