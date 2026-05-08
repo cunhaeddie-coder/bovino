@@ -10,8 +10,10 @@ import { api } from "@/lib/api";
 import { useAuthStore } from "@/lib/store";
 import { getMe } from "@/lib/auth";
 
-// loadStripe fora do ciclo de renderização para evitar recriações
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY ?? "");
+// loadStripe fora do componente mas apenas no cliente (evita hydration mismatch no SSG)
+const stripePromise = typeof window !== "undefined"
+  ? loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY ?? "")
+  : null;
 const MP_PUBLIC_KEY = process.env.NEXT_PUBLIC_MP_PUBLIC_KEY ?? "";
 
 type PlanoInfo = {
