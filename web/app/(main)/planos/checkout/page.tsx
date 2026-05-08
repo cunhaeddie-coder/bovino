@@ -283,7 +283,6 @@ function CheckoutInner() {
                       ticket: "none",
                       creditCard: "none",
                       debitCard: "none",
-                      mercadoPago: "none",
                     },
                     visual: { style: { customVariables: { formPadding: "24px" } } },
                   }}
