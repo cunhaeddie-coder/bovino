@@ -49,6 +49,116 @@ function AbrangenciaBadge({ banner }: { banner: Banner }) {
   );
 }
 
+// Seletor de municípios: escolhe UF → carrega lista via IBGE → seleciona múltiplos
+function MunicipioSelector({
+  municipiosSel,
+  onChange,
+}: {
+  municipiosSel: string[];
+  onChange: (m: string[]) => void;
+}) {
+  const [ufSel, setUfSel]         = useState("");
+  const [lista, setLista]         = useState<string[]>([]);
+  const [busca, setBusca]         = useState("");
+  const [carregando, setCarregando] = useState(false);
+
+  async function carregarMunicipios(uf: string) {
+    if (!uf) { setLista([]); return; }
+    setCarregando(true);
+    try {
+      const res = await fetch(
+        `https://servicodados.ibge.gov.br/api/v1/localidades/estados/${uf}/municipios?orderBy=nome`
+      );
+      const json = await res.json();
+      setLista(json.map((m: { nome: string }) => m.nome));
+    } finally {
+      setCarregando(false);
+    }
+  }
+
+  function toggleMunicipio(nome: string) {
+    onChange(
+      municipiosSel.includes(nome)
+        ? municipiosSel.filter((m) => m !== nome)
+        : [...municipiosSel, nome]
+    );
+  }
+
+  const filtrados = lista.filter((m) =>
+    m.toLowerCase().includes(busca.toLowerCase())
+  );
+
+  return (
+    <div className="space-y-2">
+      {/* Escolha do estado */}
+      <div>
+        <label className="text-xs font-semibold text-slate-500 block mb-1">Estado</label>
+        <select
+          value={ufSel}
+          onChange={(e) => { setUfSel(e.target.value); setBusca(""); carregarMunicipios(e.target.value); }}
+          className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm"
+        >
+          <option value="">Selecione o estado...</option>
+          {ESTADOS_BR.map((uf) => <option key={uf} value={uf}>{uf}</option>)}
+        </select>
+      </div>
+
+      {/* Selecionados */}
+      {municipiosSel.length > 0 && (
+        <div className="flex flex-wrap gap-1">
+          {municipiosSel.map((m) => (
+            <span key={m} className="flex items-center gap-1 bg-purple-100 text-purple-700 text-[11px] font-semibold px-2 py-0.5 rounded-full">
+              {m}
+              <button type="button" onClick={() => toggleMunicipio(m)} className="hover:text-purple-900 leading-none">×</button>
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Lista de municípios */}
+      {ufSel && (
+        <div>
+          <label className="text-xs font-semibold text-slate-500 block mb-1">
+            Municípios de {ufSel} ({municipiosSel.length} selecionados)
+          </label>
+          <input
+            type="text"
+            placeholder="Buscar cidade..."
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            className="w-full border border-slate-200 rounded-lg px-3 py-1.5 text-sm mb-1"
+          />
+          {carregando ? (
+            <div className="flex justify-center py-4">
+              <div className="w-5 h-5 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : (
+            <div className="border border-slate-200 rounded-lg overflow-y-auto max-h-44">
+              {filtrados.map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => toggleMunicipio(m)}
+                  className={`w-full text-left px-3 py-1.5 text-sm transition ${
+                    municipiosSel.includes(m)
+                      ? "bg-purple-50 text-purple-700 font-semibold"
+                      : "text-slate-600 hover:bg-slate-50"
+                  }`}
+                >
+                  {municipiosSel.includes(m) ? "✓ " : ""}{m}
+                </button>
+              ))}
+              {filtrados.length === 0 && (
+                <p className="px-3 py-3 text-xs text-slate-400 text-center">Nenhuma cidade encontrada</p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function BannersPage() {
   const [data, setData]           = useState<Paginated<Banner> | null>(null);
   const [anunciantes, setAn]      = useState<AnuncianteOpt[]>([]);
@@ -65,7 +175,7 @@ export default function BannersPage() {
     posicao:       "home",
     abrangencia:   "nacional",
     estadosSel:    [] as string[],
-    municipiosTxt: "",
+    municipiosSel: [] as string[],
     ativo:         true,
   });
 
@@ -86,7 +196,7 @@ export default function BannersPage() {
 
   function abrirNovo() {
     setEditando(null);
-    setForm({ anunciante_id: "", imagem_url: "", link_url: "", posicao: "home", abrangencia: "nacional", estadosSel: [], municipiosTxt: "", ativo: true });
+    setForm({ anunciante_id: "", imagem_url: "", link_url: "", posicao: "home", abrangencia: "nacional", estadosSel: [], municipiosSel: [], ativo: true });
     setModal(true);
   }
 
@@ -99,7 +209,7 @@ export default function BannersPage() {
       posicao:       b.posicao,
       abrangencia:   b.abrangencia,
       estadosSel:    b.estados ?? [],
-      municipiosTxt: (b.municipios ?? []).join(", "),
+      municipiosSel: b.municipios ?? [],
       ativo:         b.ativo,
     });
     setModal(true);
@@ -116,19 +226,14 @@ export default function BannersPage() {
 
   async function handleSalvar(e: React.FormEvent) {
     e.preventDefault();
-    const municipios = form.municipiosTxt
-      .split(",")
-      .map((m) => m.trim())
-      .filter(Boolean);
-
     const payload = {
       anunciante_id: Number(form.anunciante_id),
       imagem_url:    form.imagem_url,
       link_url:      form.link_url || null,
       posicao:       form.posicao,
       abrangencia:   form.abrangencia,
-      estados:       form.abrangencia === "estadual" ? form.estadosSel : null,
-      municipios:    form.abrangencia === "municipal" ? municipios : null,
+      estados:       form.abrangencia === "estadual"  ? form.estadosSel    : null,
+      municipios:    form.abrangencia === "municipal" ? form.municipiosSel : null,
       ativo:         form.ativo,
     };
 
@@ -321,7 +426,7 @@ export default function BannersPage() {
                 <div className="grid grid-cols-3 gap-2">
                   {(["nacional", "estadual", "municipal"] as const).map((ab) => (
                     <button key={ab} type="button"
-                      onClick={() => setForm({ ...form, abrangencia: ab, estadosSel: [], municipiosTxt: "" })}
+                      onClick={() => setForm({ ...form, abrangencia: ab, estadosSel: [], municipiosSel: [] })}
                       className={`py-2 rounded-lg border text-xs font-semibold transition ${form.abrangencia === ab ? "bg-green-50 border-green-400 text-green-700" : "border-slate-200 text-slate-500 hover:border-slate-300"}`}>
                       {ab === "nacional" ? "Nacional" : ab === "estadual" ? "Estadual" : "Municipal"}
                     </button>
@@ -330,7 +435,7 @@ export default function BannersPage() {
                 <p className="text-[11px] text-slate-400 mt-1">
                   {form.abrangencia === "nacional"  && "Aparece para todos os usuários do Brasil"}
                   {form.abrangencia === "estadual"  && "Aparece apenas nos estados selecionados abaixo"}
-                  {form.abrangencia === "municipal" && "Aparece apenas nos municípios informados abaixo"}
+                  {form.abrangencia === "municipal" && "Aparece apenas nas cidades selecionadas abaixo"}
                 </p>
               </div>
 
@@ -352,20 +457,12 @@ export default function BannersPage() {
                 </div>
               )}
 
-              {/* Municípios */}
+              {/* Seleção de municípios */}
               {form.abrangencia === "municipal" && (
-                <div>
-                  <label className="text-xs font-semibold text-slate-500 block mb-1">
-                    Municípios <span className="font-normal text-slate-400">(separados por vírgula)</span>
-                  </label>
-                  <textarea
-                    value={form.municipiosTxt}
-                    onChange={(e) => setForm({ ...form, municipiosTxt: e.target.value })}
-                    placeholder="Belo Horizonte, Contagem, Betim"
-                    rows={3}
-                    className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm resize-none" />
-                  <p className="text-[11px] text-slate-400 mt-0.5">Digite os nomes exatamente como aparecem no cadastro do usuário</p>
-                </div>
+                <MunicipioSelector
+                  municipiosSel={form.municipiosSel}
+                  onChange={(m) => setForm((f) => ({ ...f, municipiosSel: m }))}
+                />
               )}
 
               {/* Publicar */}
