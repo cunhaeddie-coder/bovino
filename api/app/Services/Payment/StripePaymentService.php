@@ -18,8 +18,10 @@ class StripePaymentService implements PaymentServiceInterface
     }
 
     /**
-     * Cria (ou recupera) o Customer da Stripe, cria a Subscription e retorna
-     * o client_secret para o Payment Element confirmar o pagamento no frontend.
+     * Cria um PaymentIntent para a primeira cobrança.
+     * A Subscription é criada no webhook payment_intent.succeeded,
+     * evitando o problema da API Stripe 2025 que não cria PaymentIntent
+     * automaticamente em subscriptions sem método de pagamento.
      */
     public function iniciarPagamento(Assinatura $assinatura, array $dados): array
     {
@@ -29,73 +31,29 @@ class StripePaymentService implements PaymentServiceInterface
             ?? $this->criarOuRecuperarCustomer($assinante);
 
         try {
-            $subscription = $this->stripe->subscriptions->create([
-                'customer'         => $stripeCustomerId,
-                'items'            => [['price' => $assinatura->plano->stripe_price_id]],
-                'payment_behavior' => 'default_incomplete',
-                'payment_settings' => ['save_default_payment_method' => 'on_subscription'],
-                'expand'           => ['latest_invoice.payment_intent', 'pending_setup_intent'],
-                'metadata'         => ['assinatura_id' => (string) $assinatura->id],
+            $paymentIntent = $this->stripe->paymentIntents->create([
+                'amount'                    => (int) round($assinatura->valor * 100),
+                'currency'                  => 'brl',
+                'customer'                  => $stripeCustomerId,
+                'automatic_payment_methods' => ['enabled' => true],
+                'setup_future_usage'        => 'off_session',
+                'metadata'                  => [
+                    'assinatura_id'   => (string) $assinatura->id,
+                    'stripe_price_id' => $assinatura->plano->stripe_price_id,
+                ],
             ]);
         } catch (\Stripe\Exception\ApiErrorException $e) {
             Log::error('Stripe iniciarPagamento error', ['error' => $e->getMessage()]);
-            throw new \RuntimeException('Erro ao criar assinatura na Stripe: ' . $e->getMessage());
+            throw new \RuntimeException('Erro ao iniciar pagamento: ' . $e->getMessage());
         }
 
-        Log::info('Stripe subscription criada', [
-            'subscription_id'       => $subscription->id,
-            'status'                => $subscription->status,
-            'has_payment_intent'    => $subscription->latest_invoice?->payment_intent !== null,
-            'has_setup_intent'      => $subscription->pending_setup_intent !== null,
-            'latest_invoice_status' => $subscription->latest_invoice?->status ?? null,
-        ]);
+        $assinatura->update(['gateway' => 'stripe']);
 
-        $assinatura->update([
-            'gateway'                => 'stripe',
-            'stripe_subscription_id' => $subscription->id,
-        ]);
-
-        // 1. Tenta PaymentIntent do expand
-        $clientSecret = $subscription->latest_invoice?->payment_intent?->client_secret ?? null;
-
-        // 2. Busca invoice separadamente se PaymentIntent vier null
-        if (!$clientSecret) {
-            $invoiceId = is_string($subscription->latest_invoice)
-                ? $subscription->latest_invoice
-                : $subscription->latest_invoice?->id;
-
-            if ($invoiceId) {
-                try {
-                    $invoice      = $this->stripe->invoices->retrieve($invoiceId, ['expand' => ['payment_intent']]);
-                    $clientSecret = $invoice->payment_intent?->client_secret ?? null;
-                } catch (\Stripe\Exception\ApiErrorException $e) {
-                    Log::warning('Stripe: falha ao buscar invoice', ['error' => $e->getMessage()]);
-                }
-            }
-        }
-
-        // 3. Fallback: SetupIntent para cliente sem método de pagamento
-        if (!$clientSecret && $subscription->pending_setup_intent) {
-            $setupIntent  = $subscription->pending_setup_intent;
-            $clientSecret = is_string($setupIntent) ? null : $setupIntent->client_secret ?? null;
-        }
-
-        if (!$clientSecret) {
-            Log::error('Stripe: client_secret null após todas tentativas', [
-                'subscription_id' => $subscription->id,
-                'status'          => $subscription->status,
-            ]);
-            throw new \RuntimeException('Não foi possível iniciar o pagamento. Tente novamente.');
-        }
-
-        return [
-            'client_secret'   => $clientSecret,
-            'subscription_id' => $subscription->id,
-        ];
+        return ['client_secret' => $paymentIntent->client_secret];
     }
 
     /**
-     * Cancela a Subscription na Stripe imediatamente e atualiza o registro local.
+     * Cancela a Subscription na Stripe e atualiza o registro local.
      */
     public function cancelarAssinatura(Assinatura $assinatura): void
     {
@@ -116,11 +74,71 @@ class StripePaymentService implements PaymentServiceInterface
     public function processarWebhook(array $payload): void
     {
         match ($payload['type'] ?? '') {
-            'invoice.payment_succeeded'      => $this->handleInvoicePaid($payload['data']['object']),
-            'invoice.payment_failed'         => $this->handleInvoiceFailed($payload['data']['object']),
-            'customer.subscription.deleted'  => $this->handleSubscriptionDeleted($payload['data']['object']),
-            default                          => null,
+            'payment_intent.succeeded'      => $this->handlePaymentIntentSucceeded($payload['data']['object']),
+            'invoice.payment_succeeded'     => $this->handleInvoicePaid($payload['data']['object']),
+            'invoice.payment_failed'        => $this->handleInvoiceFailed($payload['data']['object']),
+            'customer.subscription.deleted' => $this->handleSubscriptionDeleted($payload['data']['object']),
+            default                         => null,
         };
+    }
+
+    /**
+     * Primeira cobrança confirmada: cria Subscription com trial até próximo ciclo.
+     */
+    private function handlePaymentIntentSucceeded(array $pi): void
+    {
+        $assinaturaId  = $pi['metadata']['assinatura_id'] ?? null;
+        $stripePriceId = $pi['metadata']['stripe_price_id'] ?? null;
+
+        if (!$assinaturaId || !$stripePriceId) return;
+
+        $assinatura = Assinatura::find($assinaturaId);
+        if (!$assinatura || $assinatura->stripe_subscription_id) return;
+
+        $assinante        = $assinatura->assinante;
+        $stripeCustomerId = $assinante->stripe_customer_id;
+        $paymentMethodId  = $pi['payment_method'] ?? null;
+
+        if ($stripeCustomerId && $paymentMethodId) {
+            try {
+                // Define como método padrão do cliente
+                $this->stripe->customers->update($stripeCustomerId, [
+                    'invoice_settings' => ['default_payment_method' => $paymentMethodId],
+                ]);
+
+                // Cria Subscription com trial de 1 mês (sem cobrar novamente agora)
+                $subscription = $this->stripe->subscriptions->create([
+                    'customer'               => $stripeCustomerId,
+                    'items'                  => [['price' => $stripePriceId]],
+                    'default_payment_method' => $paymentMethodId,
+                    'trial_end'              => now()->addMonth()->timestamp,
+                    'metadata'               => ['assinatura_id' => $assinaturaId],
+                ]);
+
+                $assinatura->update(['stripe_subscription_id' => $subscription->id]);
+            } catch (\Stripe\Exception\ApiErrorException $e) {
+                Log::error('Stripe: falha ao criar subscription', ['error' => $e->getMessage()]);
+            }
+        }
+
+        Pagamento::updateOrCreate(
+            ['gateway' => 'stripe', 'gateway_id' => $pi['id']],
+            [
+                'assinatura_id'    => $assinatura->id,
+                'gateway'          => 'stripe',
+                'valor'            => $pi['amount'] / 100,
+                'status'           => 'aprovado',
+                'metodo'           => 'credit_card',
+                'gateway_response' => $pi,
+                'pago_em'          => now(),
+            ]
+        );
+
+        $assinatura->update([
+            'status'    => 'ativa',
+            'inicia_em' => now(),
+            'expira_em' => now()->addMonth(),
+        ]);
     }
 
     private function handleInvoicePaid(array $invoice): void
@@ -141,13 +159,12 @@ class StripePaymentService implements PaymentServiceInterface
             ]
         );
 
-        $novaExpiracao = now()->addMonth();
         $assinatura->update([
             'status'    => 'ativa',
             'inicia_em' => $assinatura->inicia_em ?? now(),
             'expira_em' => $assinatura->expira_em?->isFuture()
                 ? $assinatura->expira_em->addMonth()
-                : $novaExpiracao,
+                : now()->addMonth(),
         ]);
     }
 
