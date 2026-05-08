@@ -34,7 +34,7 @@ class StripePaymentService implements PaymentServiceInterface
                 'items'            => [['price' => $assinatura->plano->stripe_price_id]],
                 'payment_behavior' => 'default_incomplete',
                 'payment_settings' => ['save_default_payment_method' => 'on_subscription'],
-                'expand'           => ['latest_invoice.payment_intent'],
+                'expand'           => ['latest_invoice.payment_intent', 'pending_setup_intent'],
                 'metadata'         => ['assinatura_id' => (string) $assinatura->id],
             ]);
         } catch (\Stripe\Exception\ApiErrorException $e) {
@@ -42,37 +42,54 @@ class StripePaymentService implements PaymentServiceInterface
             throw new \RuntimeException('Erro ao criar assinatura na Stripe: ' . $e->getMessage());
         }
 
+        Log::info('Stripe subscription criada', [
+            'subscription_id'       => $subscription->id,
+            'status'                => $subscription->status,
+            'has_payment_intent'    => $subscription->latest_invoice?->payment_intent !== null,
+            'has_setup_intent'      => $subscription->pending_setup_intent !== null,
+            'latest_invoice_status' => $subscription->latest_invoice?->status ?? null,
+        ]);
+
         $assinatura->update([
             'gateway'                => 'stripe',
             'stripe_subscription_id' => $subscription->id,
         ]);
 
-        // Tenta obter o client_secret do expand; se vier null, busca a invoice separadamente
-        $paymentIntent = $subscription->latest_invoice?->payment_intent ?? null;
+        // 1. Tenta PaymentIntent do expand
+        $clientSecret = $subscription->latest_invoice?->payment_intent?->client_secret ?? null;
 
-        if (!$paymentIntent) {
+        // 2. Busca invoice separadamente se PaymentIntent vier null
+        if (!$clientSecret) {
             $invoiceId = is_string($subscription->latest_invoice)
                 ? $subscription->latest_invoice
                 : $subscription->latest_invoice?->id;
 
-            if (!$invoiceId) {
-                throw new \RuntimeException('Não foi possível iniciar o pagamento. Tente novamente.');
-            }
-
-            try {
-                $invoice       = $this->stripe->invoices->retrieve($invoiceId, ['expand' => ['payment_intent']]);
-                $paymentIntent = $invoice->payment_intent;
-            } catch (\Stripe\Exception\ApiErrorException $e) {
-                throw new \RuntimeException('Erro ao recuperar dados de pagamento: ' . $e->getMessage());
+            if ($invoiceId) {
+                try {
+                    $invoice      = $this->stripe->invoices->retrieve($invoiceId, ['expand' => ['payment_intent']]);
+                    $clientSecret = $invoice->payment_intent?->client_secret ?? null;
+                } catch (\Stripe\Exception\ApiErrorException $e) {
+                    Log::warning('Stripe: falha ao buscar invoice', ['error' => $e->getMessage()]);
+                }
             }
         }
 
-        if (!$paymentIntent) {
-            throw new \RuntimeException('Pagamento não iniciado pela Stripe. Tente novamente.');
+        // 3. Fallback: SetupIntent para cliente sem método de pagamento
+        if (!$clientSecret && $subscription->pending_setup_intent) {
+            $setupIntent  = $subscription->pending_setup_intent;
+            $clientSecret = is_string($setupIntent) ? null : $setupIntent->client_secret ?? null;
+        }
+
+        if (!$clientSecret) {
+            Log::error('Stripe: client_secret null após todas tentativas', [
+                'subscription_id' => $subscription->id,
+                'status'          => $subscription->status,
+            ]);
+            throw new \RuntimeException('Não foi possível iniciar o pagamento. Tente novamente.');
         }
 
         return [
-            'client_secret'   => $paymentIntent->client_secret,
+            'client_secret'   => $clientSecret,
             'subscription_id' => $subscription->id,
         ];
     }
