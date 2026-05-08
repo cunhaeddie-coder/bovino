@@ -47,8 +47,32 @@ class StripePaymentService implements PaymentServiceInterface
             'stripe_subscription_id' => $subscription->id,
         ]);
 
+        // Tenta obter o client_secret do expand; se vier null, busca a invoice separadamente
+        $paymentIntent = $subscription->latest_invoice?->payment_intent ?? null;
+
+        if (!$paymentIntent) {
+            $invoiceId = is_string($subscription->latest_invoice)
+                ? $subscription->latest_invoice
+                : $subscription->latest_invoice?->id;
+
+            if (!$invoiceId) {
+                throw new \RuntimeException('Não foi possível iniciar o pagamento. Tente novamente.');
+            }
+
+            try {
+                $invoice       = $this->stripe->invoices->retrieve($invoiceId, ['expand' => ['payment_intent']]);
+                $paymentIntent = $invoice->payment_intent;
+            } catch (\Stripe\Exception\ApiErrorException $e) {
+                throw new \RuntimeException('Erro ao recuperar dados de pagamento: ' . $e->getMessage());
+            }
+        }
+
+        if (!$paymentIntent) {
+            throw new \RuntimeException('Pagamento não iniciado pela Stripe. Tente novamente.');
+        }
+
         return [
-            'client_secret'   => $subscription->latest_invoice->payment_intent->client_secret,
+            'client_secret'   => $paymentIntent->client_secret,
             'subscription_id' => $subscription->id,
         ];
     }
