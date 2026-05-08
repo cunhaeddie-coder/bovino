@@ -89,6 +89,12 @@ class MercadoPagoService
             ];
         }
 
+        // Em Sandbox, comprador e vendedor não podem ser a mesma conta MP.
+        // Substituir pelo email do test user criado no painel MP para testes.
+        $payerEmail = app()->environment('production')
+            ? ($assinante->email ?? $payerForm['email'] ?? 'payer@email.com')
+            : (config('services.mercadopago.test_buyer_email') ?? $assinante->email ?? $payerForm['email'] ?? 'payer@email.com');
+
         $payload = [
             'transaction_amount' => (float) $assinatura->valor,
             'description'        => "Bovino — {$assinatura->plano->nome}",
@@ -96,7 +102,7 @@ class MercadoPagoService
             'external_reference' => (string) $assinatura->id,
             'notification_url'   => config('app.url') . '/api/webhook/mercadopago',
             'payer'              => array_merge(
-                ['email' => $assinante->email ?? $payerForm['email'] ?? 'payer@email.com'],
+                ['email' => $payerEmail],
                 $payerForm
             ),
         ];
