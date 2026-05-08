@@ -4,16 +4,21 @@ import { Suspense, useEffect, useState, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { initMercadoPago, Payment } from "@mercadopago/sdk-react";
 import type { IPaymentFormData } from "@mercadopago/sdk-react/esm/bricks/payment/type";
+import { loadStripe } from "@stripe/stripe-js";
+import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { api } from "@/lib/api";
 import { useAuthStore } from "@/lib/store";
 import { getMe } from "@/lib/auth";
 
+// loadStripe fora do ciclo de renderização para evitar recriações
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY ?? "");
 const MP_PUBLIC_KEY = process.env.NEXT_PUBLIC_MP_PUBLIC_KEY ?? "";
 
 type PlanoInfo = {
   id: number; nome: string; slug: string; preco: number;
   tipo: string; recursos: string[];
 };
+type Tab = "pix" | "cartao";
 
 function fmt(v: number) {
   return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 0 });
@@ -27,14 +32,8 @@ function Spinner({ full = true }: { full?: boolean }) {
   );
 }
 
-// PIX QR Code modal
 function PixModal({ qrCode, qrBase64, onClose }: { qrCode: string; qrBase64: string; onClose: () => void }) {
   const [copiado, setCopiado] = useState(false);
-  function copiar() {
-    navigator.clipboard?.writeText(qrCode);
-    setCopiado(true);
-    setTimeout(() => setCopiado(false), 2000);
-  }
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-4 text-center">
@@ -47,7 +46,8 @@ function PixModal({ qrCode, qrBase64, onClose }: { qrCode: string; qrBase64: str
         <div className="bg-gray-50 rounded-xl p-3 text-xs font-mono text-gray-600 break-all text-left max-h-24 overflow-y-auto">
           {qrCode}
         </div>
-        <button onClick={copiar}
+        <button
+          onClick={() => { navigator.clipboard?.writeText(qrCode); setCopiado(true); setTimeout(() => setCopiado(false), 2000); }}
           className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm transition">
           {copiado ? "✓ Copiado!" : "Copiar código PIX"}
         </button>
@@ -58,27 +58,71 @@ function PixModal({ qrCode, qrBase64, onClose }: { qrCode: string; qrBase64: str
   );
 }
 
+function StripeCardForm({ plano, onSuccess, onError }: {
+  plano: PlanoInfo;
+  onSuccess: () => void;
+  onError: (msg: string) => void;
+}) {
+  const stripe   = useStripe();
+  const elements = useElements();
+  const [confirming, setConfirming] = useState(false);
+
+  async function handleConfirm(e: React.FormEvent) {
+    e.preventDefault();
+    if (!stripe || !elements) return;
+    setConfirming(true);
+
+    const { error } = await stripe.confirmPayment({
+      elements,
+      confirmParams: {
+        return_url: `${window.location.origin}/planos/sucesso?status=approved&payment_type=credit_card`,
+      },
+      redirect: "if_required",
+    });
+
+    if (error) {
+      onError(error.message ?? "Erro ao confirmar pagamento.");
+      setConfirming(false);
+    } else {
+      onSuccess();
+    }
+  }
+
+  return (
+    <form onSubmit={handleConfirm} className="space-y-5">
+      <PaymentElement options={{ layout: "tabs" }} />
+      <button
+        type="submit"
+        disabled={confirming || !stripe || !elements}
+        className="w-full py-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm disabled:opacity-60 flex items-center justify-center gap-2 transition">
+        {confirming
+          ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Processando...</>
+          : `Confirmar pagamento — ${fmt(plano.preco)}/mês`}
+      </button>
+    </form>
+  );
+}
+
 function CheckoutInner() {
-  const searchParams        = useSearchParams();
-  const router              = useRouter();
+  const searchParams          = useSearchParams();
+  const router                = useRouter();
   const { token, setAuth, user } = useAuthStore();
-  const planoSlug           = searchParams.get("plano") ?? "";
+  const planoSlug             = searchParams.get("plano") ?? "";
 
-  const [plano, setPlano]           = useState<PlanoInfo | null>(null);
+  const [plano, setPlano]             = useState<PlanoInfo | null>(null);
   const [assinaturaId, setAssinaturaId] = useState<number | null>(null);
-  const [preferenceId, setPreferenceId] = useState<string | null>(null);
-  const [loadErr, setLoadErr]       = useState("");
-  const [loading, setLoading]       = useState(true);
-  const [payErr, setPayErr]         = useState("");
-  const [pixData, setPixData]       = useState<{ qrCode: string; qrBase64: string } | null>(null);
-  const [mpPronto, setMpPronto]     = useState(false);
-
-  // Modo fallback simulação
+  const [tab, setTab]                 = useState<Tab>("pix");
+  const [loadErr, setLoadErr]         = useState("");
+  const [loading, setLoading]         = useState(true);
+  const [payErr, setPayErr]           = useState("");
+  const [pixData, setPixData]         = useState<{ qrCode: string; qrBase64: string } | null>(null);
+  const [mpPronto, setMpPronto]       = useState(false);
   const [modoSimulado, setModoSimulado] = useState(false);
-  const [simulando, setSimulando]       = useState(false);
-  const [card, setCard] = useState({ numero: "", nome: "", validade: "", cvv: "" });
 
-  // Inicializa MP
+  // Stripe
+  const [stripeClientSecret, setStripeClientSecret] = useState<string | null>(null);
+  const [stripeLoading, setStripeLoading]           = useState(false);
+
   useEffect(() => {
     if (!MP_PUBLIC_KEY) { setModoSimulado(true); setMpPronto(true); return; }
     try {
@@ -87,7 +131,6 @@ function CheckoutInner() {
     } catch { setModoSimulado(true); setMpPronto(true); }
   }, []);
 
-  // Carrega plano e cria assinatura
   useEffect(() => {
     if (!token) { router.push("/login"); return; }
     if (!planoSlug) { router.push("/planos"); return; }
@@ -99,12 +142,10 @@ function CheckoutInner() {
       .then(([planoRes, assRes]) => {
         setPlano(planoRes.data);
         setAssinaturaId(assRes.data.assinatura_id);
-        setPreferenceId(assRes.data.checkout?.preference_id ?? null);
       })
       .catch((e) => {
         const msg = e.response?.data?.message ?? "Erro ao iniciar checkout.";
         if (e.response?.status === 502) {
-          // MP não configurado: carrega só o plano e vai para simulação
           api.get(`/planos/${planoSlug}`)
             .then((r) => { setPlano(r.data); setModoSimulado(true); })
             .catch(() => setLoadErr("Plano não encontrado."));
@@ -115,20 +156,34 @@ function CheckoutInner() {
       .finally(() => setLoading(false));
   }, [planoSlug, token]);
 
-  // Callback do Brick ao submeter pagamento
-  const onSubmit = useCallback(async (paymentData: IPaymentFormData) => {
+  // Inicia Stripe Subscription quando usuário seleciona tab cartão
+  async function handleSelectCartao() {
+    setTab("cartao");
+    setPayErr("");
+    if (stripeClientSecret || !assinaturaId) return;
+    setStripeLoading(true);
+    try {
+      const { data } = await api.post("/pagamento/stripe", { assinatura_id: assinaturaId });
+      setStripeClientSecret(data.client_secret);
+    } catch (e: unknown) {
+      const err = e as { response?: { data?: { message?: string } } };
+      setPayErr(err.response?.data?.message ?? "Erro ao iniciar pagamento com cartão.");
+    } finally {
+      setStripeLoading(false);
+    }
+  }
+
+  // Callback PIX Brick
+  const onSubmitPix = useCallback(async (paymentData: IPaymentFormData) => {
     setPayErr("");
     try {
-      const { data } = await api.post("/pagamento/brick", {
+      const { data } = await api.post("/pagamento/pix", {
         assinatura_id: assinaturaId,
-        ...paymentData.formData,   // formData interno contém payment_method_id, token, payer, etc.
+        ...paymentData.formData,
       });
 
       if (data.status === "approved") {
-        if (token) {
-          const u = await getMe().catch(() => null);
-          if (u) setAuth(u, token);
-        }
+        if (token) { const u = await getMe().catch(() => null); if (u) setAuth(u, token); }
         router.push(`/planos/sucesso?status=approved&payment_type=${data.payment_type}`);
       } else if (data.status === "pending" && data.pix_qr_code) {
         setPixData({ qrCode: data.pix_qr_code, qrBase64: data.pix_qr_code_base64 ?? "" });
@@ -140,37 +195,19 @@ function CheckoutInner() {
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } };
       setPayErr(e.response?.data?.message ?? "Erro ao processar pagamento.");
-      throw err; // Brick precisa que a Promise rejeite para mostrar erro interno
+      throw err;
     }
   }, [assinaturaId, token]);
 
-  const onError = useCallback((error: unknown) => {
+  const onErrorPix = useCallback((error: unknown) => {
     console.error("MP Brick error:", error);
     setPayErr("Erro no formulário de pagamento. Tente novamente.");
   }, []);
 
-  // Simulação fallback
-  async function handleSimulado(e: React.FormEvent) {
-    e.preventDefault();
-    if (!plano) return;
-    setSimulando(true); setPayErr("");
-    try {
-      const { data: initData } = await api.post("/checkout/simular/iniciar", { plano_slug: plano.slug });
-      await api.post(`/checkout/simular/${initData.assinatura_id}/confirmar`);
-      if (token) {
-        const u = await getMe().catch(() => null);
-        if (u) setAuth(u, token);
-      }
-      router.push("/planos/sucesso?simulacao=1");
-    } catch (err: unknown) {
-      const e = err as { response?: { data?: { message?: string } } };
-      setPayErr(e.response?.data?.message ?? "Erro ao processar.");
-      setSimulando(false);
-    }
+  async function handleStripeSuccess() {
+    if (token) { const u = await getMe().catch(() => null); if (u) setAuth(u, token); }
+    router.push("/planos/sucesso?status=approved&payment_type=credit_card");
   }
-
-  function formatCardNumber(v: string) { return v.replace(/\D/g, "").slice(0, 16).replace(/(.{4})/g, "$1 ").trim(); }
-  function formatValidade(v: string)   { return v.replace(/\D/g, "").slice(0, 4).replace(/^(\d{2})(\d)/, "$1/$2"); }
 
   if (loading || !mpPronto) return <Spinner />;
   if (loadErr) return (
@@ -206,101 +243,83 @@ function CheckoutInner() {
         </div>
 
         <div className="grid md:grid-cols-5 gap-6">
-          {/* Coluna esquerda — pagamento */}
           <div className="md:col-span-3">
             {payErr && (
               <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-600 mb-4">{payErr}</div>
             )}
 
-            {/* Checkout Bricks */}
-            {!modoSimulado && mpPronto && plano && assinaturaId && (
+            {/* Tabs */}
+            {!modoSimulado && assinaturaId && (
+              <div className="flex gap-2 mb-4">
+                <button
+                  onClick={() => { setTab("pix"); setPayErr(""); }}
+                  className={`flex-1 py-3 rounded-xl text-sm font-bold transition border ${tab === "pix" ? "bg-green-600 text-white border-green-600" : "bg-white text-gray-600 border-gray-200 hover:border-green-400"}`}>
+                  💠 PIX
+                </button>
+                <button
+                  onClick={handleSelectCartao}
+                  className={`flex-1 py-3 rounded-xl text-sm font-bold transition border ${tab === "cartao" ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-gray-600 border-gray-200 hover:border-indigo-400"}`}>
+                  💳 Cartão de crédito
+                </button>
+              </div>
+            )}
+
+            {/* PIX — MP Brick restrito a pix */}
+            {!modoSimulado && mpPronto && plano && assinaturaId && tab === "pix" && (
               <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
                 <Payment
                   initialization={{
                     amount: plano.preco,
                     payer: {
                       email: user?.email ?? "",
-                      identification: {
-                        type: "CPF",
-                        number: "",
-                      },
+                      identification: { type: "CPF", number: "" },
                     },
                   }}
                   customization={{
                     paymentMethods: {
-                      ticket: "all",
                       bankTransfer: "all",
-                      creditCard: "all",
-                      debitCard: "all",
-                      mercadoPago: "all",
+                      ticket: "none",
+                      creditCard: "none",
+                      debitCard: "none",
+                      mercadoPago: "none",
                     },
-                    visual: {
-                      style: {
-                        customVariables: {
-                          formPadding: "24px",
-                        },
-                      },
-                    },
+                    visual: { style: { customVariables: { formPadding: "24px" } } },
                   }}
-                  onSubmit={onSubmit}
-                  onError={onError}
+                  onSubmit={onSubmitPix}
+                  onError={onErrorPix}
                 />
               </div>
             )}
 
-            {/* Loading enquanto assinaturaId não chegou */}
+            {/* Cartão — Stripe Payment Element */}
+            {!modoSimulado && plano && assinaturaId && tab === "cartao" && (
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+                {stripeLoading && <Spinner full={false} />}
+
+                {!stripeLoading && stripeClientSecret && (
+                  <Elements
+                    stripe={stripePromise}
+                    options={{ clientSecret: stripeClientSecret, locale: "pt-BR" }}>
+                    <StripeCardForm
+                      plano={plano}
+                      onSuccess={handleStripeSuccess}
+                      onError={(msg) => setPayErr(msg)}
+                    />
+                  </Elements>
+                )}
+
+                {!stripeLoading && !stripeClientSecret && (
+                  <p className="text-center text-sm text-gray-400 py-8">Preparando checkout seguro...</p>
+                )}
+              </div>
+            )}
+
+            {/* Loading inicial */}
             {!modoSimulado && mpPronto && plano && !assinaturaId && (
               <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
                 <Spinner full={false} />
                 <p className="text-center text-sm text-gray-400 mt-2">Preparando checkout seguro...</p>
               </div>
-            )}
-
-            {/* Fallback simulação */}
-            {modoSimulado && (
-              <form onSubmit={handleSimulado} className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 space-y-5">
-                <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-xs text-amber-700">
-                  <strong>Modo simulação.</strong> Nenhum valor será cobrado. Use qualquer dado fictício.
-                </div>
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-xs font-semibold text-gray-600 block mb-1.5">Número do cartão</label>
-                    <input type="text" inputMode="numeric" value={card.numero} required
-                      onChange={(e) => setCard({ ...card, numero: formatCardNumber(e.target.value) })}
-                      placeholder="0000 0000 0000 0000"
-                      className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm font-mono tracking-widest focus:outline-none focus:ring-2 focus:ring-green-400" />
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold text-gray-600 block mb-1.5">Nome no cartão</label>
-                    <input type="text" value={card.nome} required
-                      onChange={(e) => setCard({ ...card, nome: e.target.value.toUpperCase() })}
-                      placeholder="COMO ESTÁ NO CARTÃO"
-                      className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm uppercase tracking-wide focus:outline-none focus:ring-2 focus:ring-green-400" />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-xs font-semibold text-gray-600 block mb-1.5">Validade</label>
-                      <input type="text" value={card.validade} required
-                        onChange={(e) => setCard({ ...card, validade: formatValidade(e.target.value) })}
-                        placeholder="MM/AA"
-                        className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-green-400" />
-                    </div>
-                    <div>
-                      <label className="text-xs font-semibold text-gray-600 block mb-1.5">CVV</label>
-                      <input type="text" inputMode="numeric" value={card.cvv} required
-                        onChange={(e) => setCard({ ...card, cvv: e.target.value.replace(/\D/g, "").slice(0, 4) })}
-                        placeholder="000"
-                        className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-green-400" />
-                    </div>
-                  </div>
-                </div>
-                <button type="submit" disabled={simulando}
-                  className="w-full py-4 rounded-xl bg-green-600 hover:bg-green-700 text-white font-bold text-sm disabled:opacity-60 flex items-center justify-center gap-2">
-                  {simulando
-                    ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Processando...</>
-                    : `Confirmar pagamento — ${fmt(plano?.preco ?? 0)}/mês`}
-                </button>
-              </form>
             )}
           </div>
 
@@ -351,13 +370,16 @@ function CheckoutInner() {
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4">
               <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">Formas de pagamento</p>
               <div className="flex flex-wrap gap-2">
-                {["💠 PIX", "💳 Crédito", "🏦 Débito", "📱 Google Pay"].map(m => (
+                {["💠 PIX", "💳 Crédito"].map(m => (
                   <span key={m} className="text-xs bg-gray-50 border border-gray-200 px-2 py-1 rounded-lg text-gray-600">{m}</span>
                 ))}
               </div>
             </div>
 
-            <p className="text-center text-xs text-gray-400">Cancele quando quiser · Sem fidelidade<br/>Pagamento seguro via Mercado Pago</p>
+            <p className="text-center text-xs text-gray-400">
+              Cancele quando quiser · Sem fidelidade<br />
+              PIX via Mercado Pago · Cartão via Stripe
+            </p>
           </div>
         </div>
       </div>
