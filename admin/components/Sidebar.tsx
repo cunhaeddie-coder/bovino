@@ -26,6 +26,7 @@ const NAV: NavEntry[] = [
   { href: "/assinaturas",  label: "Assinaturas",        icon: "◈" },
   { href: "/pagamentos",   label: "Pagamentos",         icon: "◉" },
   { href: "/anunciantes",  label: "Anunciantes B2B",    icon: "⬟" },
+  { href: "/banners",      label: "Banners B2B",        icon: "▨" },
   { href: "/custos",       label: "Custos do SaaS",      icon: "◌" },
 
   { group: "Inteligência" },

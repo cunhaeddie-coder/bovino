@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\Admin\AdminAnuncianteController;
+use App\Http\Controllers\Api\Admin\AdminBannerController;
 use App\Http\Controllers\Api\Admin\AdminAnuncioController;
 use App\Http\Controllers\Api\Admin\AdminAuthController;
 use App\Http\Controllers\Api\Admin\AdminAvaliacaoController;
@@ -82,6 +83,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('custos',             [AdminCustoSaasController::class, 'store']);
     Route::put('custos/{id}',         [AdminCustoSaasController::class, 'update']);
     Route::delete('custos/{id}',      [AdminCustoSaasController::class, 'destroy']);
+
+    // Banners B2B
+    Route::get('banners',                      [AdminBannerController::class, 'index']);
+    Route::get('banners/anunciantes',          [AdminBannerController::class, 'anunciantes']);
+    Route::post('banners',                     [AdminBannerController::class, 'store']);
+    Route::put('banners/{id}',                 [AdminBannerController::class, 'update']);
+    Route::post('banners/{id}/toggle-ativo',   [AdminBannerController::class, 'toggleAtivo']);
+    Route::delete('banners/{id}',              [AdminBannerController::class, 'destroy']);
 
     // Sugestões dos clientes
     Route::get('sugestoes',               [AdminSugestaoController::class, 'index']);

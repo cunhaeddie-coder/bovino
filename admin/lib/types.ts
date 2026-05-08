@@ -84,6 +84,19 @@ export interface Anunciante {
   assinatura_ativa?: { plano?: Plano } | null;
 }
 
+export interface Banner {
+  id: number;
+  anunciante_id: number;
+  imagem_url: string;
+  link_url: string | null;
+  posicao: "home" | "feed" | "busca";
+  cliques: number;
+  impressoes: number;
+  ativo: boolean;
+  created_at: string;
+  anunciante?: { id: number; empresa: string };
+}
+
 export interface DashboardStats {
   usuarios: {
     total: number;
