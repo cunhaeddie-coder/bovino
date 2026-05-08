@@ -89,8 +89,6 @@ class MercadoPagoService
             ];
         }
 
-        // Em Sandbox, comprador e vendedor não podem ser a mesma conta MP.
-        // Substituir pelo email do test user criado no painel MP para testes.
         $payerEmail = app()->environment('production')
             ? ($assinante->email ?? $payerForm['email'] ?? 'payer@email.com')
             : (config('services.mercadopago.test_buyer_email') ?? $assinante->email ?? $payerForm['email'] ?? 'payer@email.com');
@@ -129,13 +127,6 @@ class MercadoPagoService
         }
 
         $data = $response->json();
-
-        Log::info('MP criarPagamentoBrick resultado', [
-            'payment_id'    => $data['id'] ?? null,
-            'status'        => $data['status'] ?? null,
-            'status_detail' => $data['status_detail'] ?? null,
-            'assinatura_id' => $assinatura->id,
-        ]);
 
         // Processa imediatamente (não espera webhook para resposta síncrona)
         $this->processarPagamento((string) $data['id']);
