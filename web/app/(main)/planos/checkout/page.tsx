@@ -261,7 +261,7 @@ function CheckoutInner() {
                 <button
                   onClick={handleSelectCartao}
                   className={`flex-1 py-3 rounded-xl text-sm font-bold transition border ${tab === "cartao" ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-gray-600 border-gray-200 hover:border-indigo-400"}`}>
-                  💳 Cartão de crédito
+                  💳 Cartão
                 </button>
               </div>
             )}
@@ -366,7 +366,7 @@ function CheckoutInner() {
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4">
               <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">Formas de pagamento</p>
               <div className="flex flex-wrap gap-2">
-                {["💠 PIX", "💳 Crédito"].map(m => (
+                {["💠 PIX", "💳 Crédito / Débito"].map(m => (
                   <span key={m} className="text-xs bg-gray-50 border border-gray-200 px-2 py-1 rounded-lg text-gray-600">{m}</span>
                 ))}
               </div>
