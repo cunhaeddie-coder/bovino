@@ -30,15 +30,78 @@ class GestaoPastoController extends Controller
                 'id'          => $p->id,
                 'nome'        => $p->nome,
                 'area_ha'     => $p->area_ha,
-                'tipo'        => $p->tipo,
-                'capacidade'  => $p->capacidade,
+                'tipo'        => $p->tipo_capim,
+                'capacidade'  => $p->capacidade_ua,
+                'status'      => $p->status,
                 'lotes_count' => $p->lotes_count,
                 'ocupada'     => $p->lotes_count > 0,
-                'posicao_x'   => $p->posicao_x ?? null,
-                'posicao_y'   => $p->posicao_y ?? null,
+                'posicao_x'   => null,
+                'posicao_y'   => null,
             ]);
 
         return response()->json($pastagens);
+    }
+
+    public function storePastagem(Request $request): JsonResponse
+    {
+        $fazenda = $this->fazenda($request);
+        $request->validate([
+            'nome'       => ['required', 'string', 'max:100'],
+            'area_ha'    => ['nullable', 'numeric', 'min:0'],
+            'tipo'       => ['nullable', 'string', 'max:50'],
+            'capacidade' => ['nullable', 'numeric', 'min:0'],
+        ]);
+        $pastagem = \App\Models\Pastagem::create([
+            'fazenda_id'   => $fazenda->id,
+            'nome'         => $request->nome,
+            'area_ha'      => $request->area_ha,
+            'tipo_capim'   => $request->tipo,
+            'capacidade_ua'=> $request->capacidade,
+        ]);
+        return response()->json([
+            'id'         => $pastagem->id,
+            'nome'       => $pastagem->nome,
+            'area_ha'    => $pastagem->area_ha,
+            'tipo'       => $pastagem->tipo_capim,
+            'capacidade' => $pastagem->capacidade_ua,
+            'status'     => $pastagem->status,
+            'ocupada'    => false,
+            'lotes_count'=> 0,
+        ], 201);
+    }
+
+    public function updatePastagem(Request $request, int $id): JsonResponse
+    {
+        $fazenda  = $this->fazenda($request);
+        $pastagem = \App\Models\Pastagem::where('fazenda_id', $fazenda->id)->findOrFail($id);
+        $request->validate([
+            'nome'       => ['sometimes', 'string', 'max:100'],
+            'area_ha'    => ['nullable', 'numeric', 'min:0'],
+            'tipo'       => ['nullable', 'string', 'max:50'],
+            'capacidade' => ['nullable', 'numeric', 'min:0'],
+        ]);
+        $pastagem->update([
+            'nome'          => $request->nome          ?? $pastagem->nome,
+            'area_ha'       => $request->area_ha,
+            'tipo_capim'    => $request->tipo,
+            'capacidade_ua' => $request->capacidade,
+        ]);
+        return response()->json([
+            'id'         => $pastagem->id,
+            'nome'       => $pastagem->nome,
+            'area_ha'    => $pastagem->area_ha,
+            'tipo'       => $pastagem->tipo_capim,
+            'capacidade' => $pastagem->capacidade_ua,
+            'status'     => $pastagem->status,
+        ]);
+    }
+
+    public function destroyPastagem(Request $request, int $id): JsonResponse
+    {
+        $fazenda  = $this->fazenda($request);
+        $pastagem = \App\Models\Pastagem::where('fazenda_id', $fazenda->id)->findOrFail($id);
+        $pastagem->delete();
+        return response()->json(['message' => 'Pastagem removida.']);
     }
 
     // ── TROCAS DE PIQUETE ────────────────────────────────────────────────────

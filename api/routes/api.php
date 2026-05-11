@@ -315,6 +315,9 @@ Route::middleware('auth:sanctum')->group(function () {
     // Gestão — pasto (mapa, trocas, nutrição, coletas)
     Route::prefix('gestao/pasto')->group(function () {
         Route::get('/mapa', [GestaoPastoController::class, 'mapaPastagens']);
+        Route::post('/pastagens', [GestaoPastoController::class, 'storePastagem']);
+        Route::put('/pastagens/{id}', [GestaoPastoController::class, 'updatePastagem']);
+        Route::delete('/pastagens/{id}', [GestaoPastoController::class, 'destroyPastagem']);
         Route::get('/trocas', [GestaoPastoController::class, 'indexTrocas']);
         Route::post('/trocas', [GestaoPastoController::class, 'storeTroca']);
         Route::get('/aplicacoes', [GestaoPastoController::class, 'indexAplicacoes']);
