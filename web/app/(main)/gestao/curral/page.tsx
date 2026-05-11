@@ -318,7 +318,7 @@ export default function CurralPage() {
   }
 
   const animaisFiltrados = animais.filter(a =>
-    a.brinco.includes(buscaAnimal) || (a.nome ?? "").toLowerCase().includes(buscaAnimal.toLowerCase())
+    (a.brinco ?? "").includes(buscaAnimal) || (a.nome ?? "").toLowerCase().includes(buscaAnimal.toLowerCase())
   ).slice(0, 6);
 
   const totalPendentes = pesagens.length + eventos.length;
