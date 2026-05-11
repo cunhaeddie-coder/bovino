@@ -120,7 +120,10 @@ export default function LotesPage() {
   async function carregar() {
     setLoading(true);
     const params = filtroStatus ? `?status=${filtroStatus}` : "";
-    api.get(`/gestao/lotes${params}`).then(r => setLotes(r.data)).finally(() => setLoading(false));
+    api.get(`/gestao/lotes${params}`).then(r => {
+      const d = r.data;
+      setLotes(Array.isArray(d) ? d : (d?.data ?? []));
+    }).finally(() => setLoading(false));
   }
 
   useEffect(() => { carregar(); }, [filtroStatus]);

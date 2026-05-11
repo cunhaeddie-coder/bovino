@@ -40,7 +40,8 @@ function MinhasOrdensServico() {
   useEffect(() => {
     api.get("/minhas-ordens")
       .then(r => {
-        const lista: MinhaOS[] = r.data;
+        const raw = r.data;
+        const lista: MinhaOS[] = Array.isArray(raw) ? raw : (raw?.data ?? []);
         setOrdens(lista);
         const map: Record<string, { status: string; peso: string }> = {};
         lista.forEach(os => os.animais?.forEach(i => {

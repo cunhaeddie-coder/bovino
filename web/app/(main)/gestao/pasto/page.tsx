@@ -35,6 +35,7 @@ export default function PastoPage() {
 
   async function carregar() {
     setLoading(true);
+    const toArr = (v: unknown) => Array.isArray(v) ? v : ((v as any)?.data ?? []);
     const [mapa, tr, ap, tmpl, lt] = await Promise.all([
       api.get("/gestao/pasto/mapa").then(r => r.data).catch(() => []),
       api.get("/gestao/pasto/trocas").then(r => r.data.data || []).catch(() => []),
@@ -42,7 +43,7 @@ export default function PastoPage() {
       api.get("/gestao/pasto/templates").then(r => r.data).catch(() => []),
       api.get("/gestao/lotes").then(r => r.data).catch(() => []),
     ]);
-    setPastagens(mapa); setTrocas(tr); setAplicacoes(ap); setTemplates(tmpl); setLotes(lt);
+    setPastagens(toArr(mapa)); setTrocas(tr); setAplicacoes(ap); setTemplates(toArr(tmpl)); setLotes(toArr(lt));
     setLoading(false);
   }
 
