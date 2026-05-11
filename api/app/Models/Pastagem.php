@@ -11,6 +11,8 @@ class Pastagem extends Model
 {
     use BelongsToFazenda;
 
+    protected $table = 'pastagens';
+
     protected $fillable = [
         'fazenda_id', 'nome', 'area_ha', 'capacidade_ua',
         'tipo_capim', 'status', 'observacao',
