@@ -165,7 +165,7 @@ export default function PastoPage() {
             </div>
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
               <p className="text-xl mb-1">📐</p>
-              <p className="text-xl font-bold text-gray-900">{pastagens.reduce((s, p) => s + (p.area_ha ?? 0), 0).toFixed(1)}</p>
+              <p className="text-xl font-bold text-gray-900">{pastagens.reduce((s, p) => s + Number(p.area_ha ?? 0), 0).toFixed(1)}</p>
               <p className="text-xs text-gray-400">Total ha</p>
             </div>
           </div>
