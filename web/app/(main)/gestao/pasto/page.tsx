@@ -32,6 +32,8 @@ export default function PastoPage() {
   const [showTemplate, setShowTemplate]   = useState(false);
   const [showColeta, setShowColeta]       = useState<Template | null>(null);
   const [loteDestaque, setLoteDestaque]   = useState<Pastagem | null>(null);
+  const [showPastagem, setShowPastagem]   = useState(false);
+  const [editandoPastagem, setEditandoPastagem] = useState<Pastagem | null>(null);
 
   async function carregar() {
     setLoading(true);
@@ -63,6 +65,7 @@ export default function PastoPage() {
           <p className="text-gray-500 text-sm">Mapa de pastagens, rotação, nutrição e coletas</p>
         </div>
         <div className="flex gap-2">
+          {aba === "mapa"     && <button onClick={() => { setEditandoPastagem(null); setShowPastagem(true); }} className="bg-green-700 text-white text-sm font-semibold px-4 py-2 rounded-full hover:bg-green-800">+ Nova pastagem</button>}
           {aba === "trocas"   && <button onClick={() => setShowTroca(true)}    className="bg-green-700 text-white text-sm font-semibold px-4 py-2 rounded-full hover:bg-green-800">+ Troca de piquete</button>}
           {aba === "nutricao" && <button onClick={() => setShowAplicacao(true)} className="bg-green-700 text-white text-sm font-semibold px-4 py-2 rounded-full hover:bg-green-800">+ Aplicação</button>}
           {aba === "coletas"  && <button onClick={() => setShowTemplate(true)}  className="bg-green-700 text-white text-sm font-semibold px-4 py-2 rounded-full hover:bg-green-800">+ Novo template</button>}
@@ -95,8 +98,13 @@ export default function PastoPage() {
             {pastagens.length === 0 ? (
               <div className="text-center py-12">
                 <p className="text-4xl mb-3">🌿</p>
-                <p className="text-gray-500 text-sm">Nenhuma pastagem cadastrada</p>
-                <p className="text-gray-400 text-xs mt-1">Cadastre pastagens na aba Saúde → Pastagens</p>
+                <p className="text-gray-500 text-sm font-medium">Nenhuma pastagem cadastrada</p>
+                <p className="text-gray-400 text-xs mt-1 mb-4">Cadastre seus piquetes para usar rotação e nutrição</p>
+                <button
+                  onClick={() => { setEditandoPastagem(null); setShowPastagem(true); }}
+                  className="bg-green-600 hover:bg-green-700 text-white text-sm font-semibold px-5 py-2.5 rounded-full transition">
+                  + Cadastrar primeira pastagem
+                </button>
               </div>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
@@ -104,17 +112,22 @@ export default function PastoPage() {
                   const cor = TIPO_PASTO_COR[p.tipo ?? ""] ?? TIPO_PASTO_COR.default;
                   const isDestaque = loteDestaque?.id === p.id;
                   return (
-                    <button key={p.id} onClick={() => setLoteDestaque(isDestaque ? null : p)}
-                      className={`relative rounded-2xl border-2 p-4 text-left transition-all ${cor} ${isDestaque ? "ring-4 ring-green-400 scale-105 shadow-lg" : "hover:shadow-md"}`}>
-                      <div className="flex items-start justify-between mb-2">
-                        <span className="text-2xl">{p.ocupada ? "🐄" : "🌿"}</span>
-                        {p.ocupada && <span className="text-[10px] bg-amber-100 text-amber-700 font-bold px-1.5 py-0.5 rounded-full">OCUPADA</span>}
-                      </div>
-                      <p className="font-semibold text-gray-800 text-sm truncate">{p.nome}</p>
-                      {p.area_ha && <p className="text-xs text-gray-500">{p.area_ha} ha</p>}
-                      {p.tipo && <p className="text-xs text-gray-400 capitalize">{p.tipo}</p>}
-                      {p.capacidade && <p className="text-xs text-gray-500">Cap: {p.capacidade} cab.</p>}
-                    </button>
+                    <div key={p.id} className={`relative rounded-2xl border-2 p-4 transition-all ${cor} ${isDestaque ? "ring-4 ring-green-400 scale-105 shadow-lg" : "hover:shadow-md"}`}>
+                      <button className="absolute top-2 right-2 text-[10px] text-gray-400 hover:text-gray-600 bg-white/70 rounded px-1.5 py-0.5"
+                        onClick={() => { setEditandoPastagem(p); setShowPastagem(true); }}>
+                        editar
+                      </button>
+                      <button className="w-full text-left" onClick={() => setLoteDestaque(isDestaque ? null : p)}>
+                        <div className="flex items-start justify-between mb-2">
+                          <span className="text-2xl">{p.ocupada ? "🐄" : "🌿"}</span>
+                          {p.ocupada && <span className="text-[10px] bg-amber-100 text-amber-700 font-bold px-1.5 py-0.5 rounded-full mr-8">OCUPADA</span>}
+                        </div>
+                        <p className="font-semibold text-gray-800 text-sm truncate">{p.nome}</p>
+                        {p.area_ha && <p className="text-xs text-gray-500">{p.area_ha} ha</p>}
+                        {p.tipo && <p className="text-xs text-gray-400 capitalize">{p.tipo}</p>}
+                        {p.capacidade && <p className="text-xs text-gray-500">Cap: {p.capacidade} cab.</p>}
+                      </button>
+                    </div>
                   );
                 })}
               </div>
@@ -249,6 +262,7 @@ export default function PastoPage() {
         </div>
       )}
 
+      {showPastagem   && <PastagensModal pastagem={editandoPastagem} onClose={() => setShowPastagem(false)} onDone={carregar} />}
       {showTroca      && <TrocaModal pastagens={pastagens} lotes={lotes} onClose={() => setShowTroca(false)} onDone={carregar} />}
       {showAplicacao  && <AplicacaoModal lotes={lotes} pastagens={pastagens} onClose={() => setShowAplicacao(false)} onDone={carregar} />}
       {showTemplate   && <TemplateModal onClose={() => setShowTemplate(false)} onDone={carregar} />}
@@ -258,6 +272,104 @@ export default function PastoPage() {
 }
 
 // ── Modais ─────────────────────────────────────────────────────────────────────
+
+function PastagensModal({ pastagem, onClose, onDone }: { pastagem: Pastagem | null; onClose: () => void; onDone: () => void }) {
+  const [form, setForm] = useState({
+    nome:        pastagem?.nome        ?? "",
+    area_ha:     pastagem?.area_ha     ? String(pastagem.area_ha) : "",
+    tipo:        pastagem?.tipo        ?? "",
+    capacidade:  pastagem?.capacidade  ? String(pastagem.capacidade) : "",
+  });
+  const [saving, setSaving]   = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault(); setSaving(true);
+    const payload = {
+      nome:       form.nome,
+      area_ha:    form.area_ha    ? parseFloat(form.area_ha)    : null,
+      tipo:       form.tipo       || null,
+      capacidade: form.capacidade ? parseInt(form.capacidade)   : null,
+    };
+    try {
+      if (pastagem) {
+        await api.put(`/gestao/pasto/pastagens/${pastagem.id}`, payload);
+      } else {
+        await api.post("/gestao/pasto/pastagens", payload);
+      }
+      onDone(); onClose();
+    } catch { setSaving(false); }
+  }
+
+  async function deletar() {
+    if (!pastagem) return;
+    if (!confirm(`Remover "${pastagem.nome}"? Esta ação não pode ser desfeita.`)) return;
+    setDeleting(true);
+    try { await api.delete(`/gestao/pasto/pastagens/${pastagem.id}`); onDone(); onClose(); }
+    catch { setDeleting(false); }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4">
+        <div className="flex items-center justify-between px-6 py-4 border-b">
+          <h2 className="font-bold text-gray-800">{pastagem ? "Editar pastagem" : "🌿 Nova pastagem / piquete"}</h2>
+          <button onClick={onClose} className="text-gray-400 text-xl">×</button>
+        </div>
+        <form onSubmit={submit} className="p-6 space-y-3">
+          <div>
+            <label className="text-xs font-semibold text-gray-600 block mb-1">Nome do piquete / pastagem *</label>
+            <input required value={form.nome} onChange={e => setForm({...form, nome: e.target.value})}
+              placeholder="Ex: Piquete 1, Brejo, Pastagem Norte..."
+              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-semibold text-gray-600 block mb-1">Área (ha)</label>
+              <input type="number" step="0.1" min="0" value={form.area_ha}
+                onChange={e => setForm({...form, area_ha: e.target.value})}
+                placeholder="Ex: 10.5"
+                className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400" />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-gray-600 block mb-1">Capacidade (cab.)</label>
+              <input type="number" min="0" value={form.capacidade}
+                onChange={e => setForm({...form, capacidade: e.target.value})}
+                placeholder="Ex: 50"
+                className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400" />
+            </div>
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-gray-600 block mb-1">Tipo de forrageira</label>
+            <select value={form.tipo} onChange={e => setForm({...form, tipo: e.target.value})}
+              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400">
+              <option value="">Não informado</option>
+              <option value="brachiaria">Brachiaria</option>
+              <option value="panicum">Panicum / Mombaça</option>
+              <option value="bermuda">Bermuda / Tifton</option>
+              <option value="andropogon">Andropogon</option>
+              <option value="napier">Napier / Capineira</option>
+              <option value="coast_cross">Coast Cross</option>
+              <option value="outro">Outro</option>
+            </select>
+          </div>
+          <div className="flex gap-2 pt-2">
+            {pastagem && (
+              <button type="button" onClick={deletar} disabled={deleting}
+                className="px-4 py-2.5 rounded-xl border border-red-200 text-red-500 text-sm font-semibold hover:bg-red-50 disabled:opacity-50">
+                {deleting ? "..." : "Remover"}
+              </button>
+            )}
+            <button type="button" onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 font-semibold">Cancelar</button>
+            <button type="submit" disabled={saving} className="flex-1 py-2.5 rounded-xl bg-green-600 hover:bg-green-700 text-white text-sm font-semibold disabled:opacity-50">
+              {saving ? "Salvando..." : pastagem ? "Salvar" : "Cadastrar"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
 
 function TrocaModal({ pastagens, lotes, onClose, onDone }: { pastagens: Pastagem[]; lotes: Lote[]; onClose: () => void; onDone: () => void }) {
   const [form, setForm] = useState({ lote_id: "", pastagem_origem_id: "", pastagem_destino_id: "", data_troca: new Date().toISOString().split("T")[0], observacoes: "" });
