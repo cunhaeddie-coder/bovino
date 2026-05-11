@@ -10,6 +10,8 @@ class AplicacaoNutricional extends Model
 {
     use BelongsToFazenda;
 
+    protected $table = 'aplicacoes_nutricionais';
+
     protected $fillable = ['fazenda_id','descricao','tipo','insumo_id','quantidade_total','unidade','custo_total','data_aplicacao','lote_id','pastagem_id','observacoes','user_id'];
 
     public function fazenda(): BelongsTo { return $this->belongsTo(Fazenda::class); }

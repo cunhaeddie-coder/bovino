@@ -10,6 +10,8 @@ class TrocaPiquete extends Model
 {
     use BelongsToFazenda;
 
+    protected $table = 'trocas_piquete';
+
     protected $fillable = ['fazenda_id','lote_id','pastagem_origem_id','pastagem_destino_id','data_troca','dias_descanso_origem','observacoes','user_id'];
 
     public function fazenda(): BelongsTo { return $this->belongsTo(Fazenda::class); }

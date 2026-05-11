@@ -10,6 +10,8 @@ class RegistroColeta extends Model
 {
     use BelongsToFazenda;
 
+    protected $table = 'registros_coleta';
+
     protected $fillable = ['template_id','fazenda_id','dados','animal_id','lote_id','pastagem_id','user_id','data_coleta'];
     protected $casts = ['dados' => 'array'];
 

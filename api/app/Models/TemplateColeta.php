@@ -11,6 +11,8 @@ class TemplateColeta extends Model
 {
     use BelongsToFazenda;
 
+    protected $table = 'templates_coleta';
+
     protected $fillable = ['fazenda_id','nome','descricao','campos','ativo'];
     protected $casts = ['campos' => 'array'];
 
