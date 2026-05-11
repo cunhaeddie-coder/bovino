@@ -24,7 +24,6 @@ class GestaoPastoController extends Controller
     {
         $fazenda = $this->fazenda($request);
         $pastagens = \App\Models\Pastagem::where('fazenda_id', $fazenda->id)
-            ->withCount('animais')
             ->get()
             ->map(fn($p) => [
                 'id'          => $p->id,
@@ -33,8 +32,8 @@ class GestaoPastoController extends Controller
                 'tipo'        => $p->tipo_capim,
                 'capacidade'  => $p->capacidade_ua,
                 'status'      => $p->status,
-                'lotes_count' => $p->animais_count,
-                'ocupada'     => $p->animais_count > 0,
+                'lotes_count' => 0,
+                'ocupada'     => $p->status === 'ocupada',
                 'posicao_x'   => null,
                 'posicao_y'   => null,
             ]);
