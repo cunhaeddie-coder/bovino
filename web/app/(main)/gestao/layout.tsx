@@ -1,80 +1,110 @@
 "use client";
 
-import Link from "next/link";
+import { useState, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
-import {
-  LayoutDashboard, Beef, Layers, Syringe, Scale, Wallet,
-  Package, Users, ClipboardList, AlertTriangle, Sprout,
-  Warehouse, Bot, Lightbulb, type LucideIcon,
-} from "lucide-react";
-import { useAuthStore } from "@/lib/store";
-import { CowIcon } from "@/components/ui/CowIcon";
+import { Menu } from "lucide-react";
+import { GestaoSidebar, NAV_GESTOR } from "@/components/gestao/GestaoSidebar";
 
-type NavItem = { href: string; label: string; Icon: LucideIcon | typeof CowIcon; color: string };
+const LABEL_MAP = Object.fromEntries(NAV_GESTOR.map((n) => [n.href, n.label]));
 
-const NAV_GESTOR: NavItem[] = [
-  { href: "/gestao",              label: "Dashboard",   Icon: LayoutDashboard, color: "text-green-700"  },
-  { href: "/gestao/animais",      label: "Rebanho",     Icon: Beef,            color: "text-green-700"  },
-  { href: "/gestao/lotes",        label: "Lotes",       Icon: Layers,          color: "text-blue-600"   },
-  { href: "/gestao/saude",        label: "Saúde",       Icon: Syringe,         color: "text-red-600"    },
-  { href: "/gestao/pesagens",     label: "Pesagens",    Icon: Scale,           color: "text-amber-600"  },
-  { href: "/gestao/financeiro",   label: "Financeiro",  Icon: Wallet,          color: "text-emerald-600"},
-  { href: "/gestao/insumos",      label: "Estoque",     Icon: Package,         color: "text-orange-600" },
-  { href: "/gestao/funcionarios", label: "Equipe",      Icon: Users,           color: "text-violet-600" },
-  { href: "/gestao/ordens",       label: "OS",          Icon: ClipboardList,   color: "text-slate-600"  },
-  { href: "/gestao/eventos",      label: "Ocorrências", Icon: AlertTriangle,   color: "text-yellow-600" },
-  { href: "/gestao/pasto",        label: "App Pasto",   Icon: Sprout,          color: "text-lime-600"   },
-  { href: "/gestao/curral",       label: "App Curral",  Icon: Warehouse,       color: "text-amber-800"  },
-  { href: "/gestao/gestor",       label: "IA Gestor",   Icon: Bot,             color: "text-violet-700" },
-  { href: "/gestao/sugestoes",    label: "Sugestões",   Icon: Lightbulb,       color: "text-yellow-500" },
-];
-
-const NAV_VAQUEIRO: NavItem[] = [
-  { href: "/gestao/curral", label: "App Curral", Icon: Warehouse, color: "text-amber-800" },
-  { href: "/gestao/pasto",  label: "App Pasto",  Icon: Sprout,    color: "text-lime-600"  },
-];
+function currentLabel(pathname: string): string {
+  if (pathname === "/gestao") return "Dashboard";
+  const match = Object.entries(LABEL_MAP).find(
+    ([k]) => k !== "/gestao" && pathname.startsWith(k)
+  );
+  return match?.[1] ?? "Gestão";
+}
 
 export default function GestaoLayout({ children }: { children: React.ReactNode }) {
-  const path       = usePathname();
-  const user       = useAuthStore((s) => s.user);
-  const isVaqueiro = user?.papel === "vaqueiro";
-  const nav        = isVaqueiro ? NAV_VAQUEIRO : NAV_GESTOR;
+  const pathname   = usePathname();
+  const [collapsed, setCollapsed] = useState(false);
+  const [drawer, setDrawer]       = useState(false);
+
+  // Restaura estado do sidebar do localStorage
+  useEffect(() => {
+    if (localStorage.getItem("gestao_sidebar_collapsed") === "true") {
+      setCollapsed(true);
+    }
+  }, []);
+
+  function toggleCollapsed() {
+    const next = !collapsed;
+    setCollapsed(next);
+    localStorage.setItem("gestao_sidebar_collapsed", String(next));
+  }
+
+  // Fecha drawer ao navegar
+  useEffect(() => { setDrawer(false); }, [pathname]);
+
+  // Swipe para fechar o drawer
+  const touchX = useRef(0);
+  function onTouchStart(e: React.TouchEvent) { touchX.current = e.targetTouches[0].clientX; }
+  function onTouchEnd(e: React.TouchEvent) {
+    if (touchX.current - e.changedTouches[0].clientX > 50) setDrawer(false);
+  }
+
+  const sectionLabel = currentLabel(pathname);
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4">
-          {isVaqueiro && (
-            <div className="py-1.5 flex items-center gap-2 border-b border-amber-100">
-              <CowIcon size={14} className="text-amber-700" />
-              <span className="text-xs font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full">App Vaqueiro</span>
-              <span className="text-xs text-gray-400">{user?.nome}</span>
-            </div>
-          )}
-          <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide py-1">
-            {nav.map((item) => {
-              const active = path === item.href || (item.href !== "/gestao" && path.startsWith(item.href));
-              const { Icon } = item;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-                    active
-                      ? "bg-green-50 text-green-700"
-                      : "text-gray-500 hover:text-gray-800 hover:bg-gray-50"
-                  }`}
-                >
-                  <Icon size={14} className={active ? "text-green-700" : item.color} />
-                  {item.label}
-                </Link>
-              );
-            })}
-          </div>
-        </div>
+
+      {/* ── MOBILE ── */}
+
+      {/* Barra superior com hambúrguer */}
+      <div className="lg:hidden sticky top-14 z-20 bg-white border-b border-gray-200 h-11 flex items-center gap-3 px-4">
+        <button
+          onClick={() => setDrawer(true)}
+          className="p-1.5 -ml-1 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
+          aria-label="Abrir menu"
+        >
+          <Menu size={20} />
+        </button>
+        <span className="text-sm font-semibold text-gray-700">{sectionLabel}</span>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-6">{children}</div>
+      {/* Overlay + Drawer */}
+      {drawer && (
+        <>
+          <div
+            className="lg:hidden fixed inset-0 z-[60] bg-black/40 backdrop-blur-[1px]"
+            onClick={() => setDrawer(false)}
+          />
+          <div
+            className="lg:hidden fixed left-0 top-0 bottom-0 z-[70] w-[78%] max-w-xs shadow-2xl"
+            onTouchStart={onTouchStart}
+            onTouchEnd={onTouchEnd}
+          >
+            <GestaoSidebar mode="drawer" onClose={() => setDrawer(false)} />
+          </div>
+        </>
+      )}
+
+      {/* Conteúdo mobile */}
+      <div className="lg:hidden px-4 py-5">
+        {children}
+      </div>
+
+      {/* ── DESKTOP ── */}
+      <div className="hidden lg:flex">
+
+        {/* Sidebar retrátil */}
+        <aside
+          className={`sticky top-14 h-[calc(100vh-56px)] shrink-0 overflow-hidden transition-[width] duration-200 ease-in-out ${
+            collapsed ? "w-[64px]" : "w-[220px]"
+          }`}
+        >
+          <GestaoSidebar
+            mode="sidebar"
+            collapsed={collapsed}
+            onToggle={toggleCollapsed}
+          />
+        </aside>
+
+        {/* Conteúdo principal */}
+        <main className="flex-1 min-w-0 py-6 px-6">
+          {children}
+        </main>
+      </div>
     </div>
   );
 }
