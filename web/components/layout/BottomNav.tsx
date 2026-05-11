@@ -2,15 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Warehouse, Sprout } from "lucide-react";
 import { useAuthStore } from "@/lib/store";
 import { temPlano } from "@/lib/auth";
 
 type NavItem = { href: string; icon: string; label: string; highlight?: boolean; auth?: boolean };
-
-const NAV_VAQUEIRO: NavItem[] = [
-  { href: "/gestao/curral", icon: "🔒", label: "Curral" },
-  { href: "/gestao/pasto",  icon: "🌿", label: "Pasto"  },
-];
 
 export function BottomNav() {
   const pathname = usePathname();
@@ -18,22 +14,26 @@ export function BottomNav() {
   const isPremium = temPlano(user);
   const isVaqueiro = user?.papel === "vaqueiro";
 
-  // Vaqueiro: nav dedicado só com Curral e Pasto
+  // Vaqueiro: nav dedicado com Lucide icons
   if (isVaqueiro) {
+    const vaqueiro = [
+      { href: "/gestao/curral", Icon: Warehouse, label: "Curral" },
+      { href: "/gestao/pasto",  Icon: Sprout,    label: "Pasto"  },
+    ];
     return (
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-amber-800 border-t border-amber-700 safe-area-pb">
         <div className="flex">
-          {NAV_VAQUEIRO.map((item) => {
-            const active = pathname === item.href || pathname.startsWith(item.href + "/");
+          {vaqueiro.map(({ href, Icon, label }) => {
+            const active = pathname === href || pathname.startsWith(href + "/");
             return (
               <Link
-                key={item.href}
-                href={item.href}
+                key={href}
+                href={href}
                 className={`flex-1 flex flex-col items-center justify-center py-3 gap-1 text-xs font-semibold transition-colors
                   ${active ? "text-white" : "text-amber-300 hover:text-white"}`}
               >
-                <span className={`text-2xl leading-none ${active ? "drop-shadow-[0_0_6px_rgba(255,255,255,0.6)]" : ""}`}>{item.icon}</span>
-                <span>{item.label}</span>
+                <Icon size={22} className={active ? "drop-shadow-[0_0_6px_rgba(255,255,255,0.6)]" : ""} />
+                <span>{label}</span>
               </Link>
             );
           })}

@@ -2,6 +2,11 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import {
+  Beef, Layers, Syringe, Scale, Wallet, Package,
+  Users, AlertTriangle, Home, Sprout, Warehouse, Bot,
+  BarChart2, type LucideIcon,
+} from "lucide-react";
 import { api } from "@/lib/api";
 import { TourButton } from "@/components/ui/TourButton";
 import type { DriveStep } from "driver.js";
@@ -293,25 +298,29 @@ export default function GestaoDashboard() {
       <div id="gestao-modulos">
         <h2 className="text-sm font-semibold text-gray-700 mb-3">Módulos</h2>
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
-          {[
-            { href: "/gestao/animais",        icon: "🐄",  label: "Rebanho" },
-            { href: "/gestao/lotes",          icon: "🗂️", label: "Lotes" },
-            { href: "/gestao/saude",          icon: "💉",  label: "Saúde" },
-            { href: "/gestao/pesagens",       icon: "⚖️",  label: "Pesagens" },
-            { href: "/gestao/financeiro",     icon: "💰",  label: "Financeiro" },
-            { href: "/gestao/insumos",        icon: "📦",  label: "Estoque" },
-            { href: "/gestao/funcionarios",   icon: "👷",  label: "Equipe" },
-            { href: "/gestao/eventos",        icon: "📣",  label: "Ocorrências" },
-            { href: "/gestao/arrendamentos",  icon: "🏡",  label: "Arrendamentos" },
-            { href: "/gestao/pasto",          icon: "🌿",  label: "App Pasto" },
-            { href: "/gestao/curral",         icon: "🔒",  label: "App Curral" },
-            { href: "/gestao/gestor",         icon: "🤖",  label: "IA Gestor" },
-            { href: "/inteligencia",          icon: "📊",  label: "Inteligência" },
-          ].map((item) => (
-            <Link key={item.href} href={item.href}
-              className="bg-white border border-gray-100 rounded-xl p-4 text-center hover:border-green-300 hover:shadow-sm transition-all">
-              <p className="text-2xl mb-1">{item.icon}</p>
-              <p className="text-xs font-medium text-gray-700">{item.label}</p>
+          {(
+            [
+              { href: "/gestao/animais",       Icon: Beef,          label: "Rebanho",       color: "text-green-700 bg-green-50"   },
+              { href: "/gestao/lotes",         Icon: Layers,        label: "Lotes",         color: "text-blue-700 bg-blue-50"     },
+              { href: "/gestao/saude",         Icon: Syringe,       label: "Saúde",         color: "text-red-600 bg-red-50"       },
+              { href: "/gestao/pesagens",      Icon: Scale,         label: "Pesagens",      color: "text-amber-700 bg-amber-50"   },
+              { href: "/gestao/financeiro",    Icon: Wallet,        label: "Financeiro",    color: "text-emerald-700 bg-emerald-50"},
+              { href: "/gestao/insumos",       Icon: Package,       label: "Estoque",       color: "text-orange-700 bg-orange-50" },
+              { href: "/gestao/funcionarios",  Icon: Users,         label: "Equipe",        color: "text-violet-700 bg-violet-50" },
+              { href: "/gestao/eventos",       Icon: AlertTriangle, label: "Ocorrências",   color: "text-yellow-700 bg-yellow-50" },
+              { href: "/gestao/arrendamentos", Icon: Home,          label: "Arrendamentos", color: "text-teal-700 bg-teal-50"     },
+              { href: "/gestao/pasto",         Icon: Sprout,        label: "App Pasto",     color: "text-lime-700 bg-lime-50"     },
+              { href: "/gestao/curral",        Icon: Warehouse,     label: "App Curral",    color: "text-amber-800 bg-amber-100"  },
+              { href: "/gestao/gestor",        Icon: Bot,           label: "IA Gestor",     color: "text-violet-700 bg-violet-50" },
+              { href: "/inteligencia",         Icon: BarChart2,     label: "Inteligência",  color: "text-sky-700 bg-sky-50"       },
+            ] as { href: string; Icon: LucideIcon; label: string; color: string }[]
+          ).map(({ href, Icon, label, color }) => (
+            <Link key={href} href={href}
+              className="bg-white border border-gray-100 rounded-xl p-4 text-center hover:border-green-300 hover:shadow-sm transition-all group">
+              <div className={`w-11 h-11 rounded-xl flex items-center justify-center mx-auto mb-2 ${color} group-hover:scale-105 transition-transform`}>
+                <Icon size={22} />
+              </div>
+              <p className="text-xs font-medium text-gray-700">{label}</p>
             </Link>
           ))}
         </div>
