@@ -2,35 +2,43 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import {
+  LayoutDashboard, Beef, Layers, Syringe, Scale, Wallet,
+  Package, Users, ClipboardList, AlertTriangle, Sprout,
+  Warehouse, Bot, Lightbulb, type LucideIcon,
+} from "lucide-react";
 import { useAuthStore } from "@/lib/store";
+import { CowIcon } from "@/components/ui/CowIcon";
 
-const NAV_GESTOR = [
-  { href: "/gestao",              label: "Dashboard",   icon: "📊" },
-  { href: "/gestao/animais",      label: "Rebanho",     icon: "🐄" },
-  { href: "/gestao/lotes",        label: "Lotes",       icon: "🗂️" },
-  { href: "/gestao/saude",        label: "Saúde",       icon: "💉" },
-  { href: "/gestao/pesagens",     label: "Pesagens",    icon: "⚖️" },
-  { href: "/gestao/financeiro",   label: "Financeiro",  icon: "💰" },
-  { href: "/gestao/insumos",      label: "Estoque",     icon: "📦" },
-  { href: "/gestao/funcionarios", label: "Equipe",      icon: "👷" },
-  { href: "/gestao/ordens",       label: "OS",          icon: "📋" },
-  { href: "/gestao/eventos",      label: "Ocorrências", icon: "📣" },
-  { href: "/gestao/pasto",        label: "App Pasto",   icon: "🌿" },
-  { href: "/gestao/curral",       label: "App Curral",  icon: "🔒" },
-  { href: "/gestao/gestor",       label: "IA Gestor",   icon: "🤖" },
-  { href: "/gestao/sugestoes",    label: "Sugestões",   icon: "💡" },
+type NavItem = { href: string; label: string; Icon: LucideIcon | typeof CowIcon; color: string };
+
+const NAV_GESTOR: NavItem[] = [
+  { href: "/gestao",              label: "Dashboard",   Icon: LayoutDashboard, color: "text-green-700"  },
+  { href: "/gestao/animais",      label: "Rebanho",     Icon: Beef,            color: "text-green-700"  },
+  { href: "/gestao/lotes",        label: "Lotes",       Icon: Layers,          color: "text-blue-600"   },
+  { href: "/gestao/saude",        label: "Saúde",       Icon: Syringe,         color: "text-red-600"    },
+  { href: "/gestao/pesagens",     label: "Pesagens",    Icon: Scale,           color: "text-amber-600"  },
+  { href: "/gestao/financeiro",   label: "Financeiro",  Icon: Wallet,          color: "text-emerald-600"},
+  { href: "/gestao/insumos",      label: "Estoque",     Icon: Package,         color: "text-orange-600" },
+  { href: "/gestao/funcionarios", label: "Equipe",      Icon: Users,           color: "text-violet-600" },
+  { href: "/gestao/ordens",       label: "OS",          Icon: ClipboardList,   color: "text-slate-600"  },
+  { href: "/gestao/eventos",      label: "Ocorrências", Icon: AlertTriangle,   color: "text-yellow-600" },
+  { href: "/gestao/pasto",        label: "App Pasto",   Icon: Sprout,          color: "text-lime-600"   },
+  { href: "/gestao/curral",       label: "App Curral",  Icon: Warehouse,       color: "text-amber-800"  },
+  { href: "/gestao/gestor",       label: "IA Gestor",   Icon: Bot,             color: "text-violet-700" },
+  { href: "/gestao/sugestoes",    label: "Sugestões",   Icon: Lightbulb,       color: "text-yellow-500" },
 ];
 
-const NAV_VAQUEIRO = [
-  { href: "/gestao/curral", label: "App Curral", icon: "🔒" },
-  { href: "/gestao/pasto",  label: "App Pasto",  icon: "🌿" },
+const NAV_VAQUEIRO: NavItem[] = [
+  { href: "/gestao/curral", label: "App Curral", Icon: Warehouse, color: "text-amber-800" },
+  { href: "/gestao/pasto",  label: "App Pasto",  Icon: Sprout,    color: "text-lime-600"  },
 ];
 
 export default function GestaoLayout({ children }: { children: React.ReactNode }) {
-  const path  = usePathname();
-  const user  = useAuthStore((s) => s.user);
+  const path       = usePathname();
+  const user       = useAuthStore((s) => s.user);
   const isVaqueiro = user?.papel === "vaqueiro";
-  const nav   = isVaqueiro ? NAV_VAQUEIRO : NAV_GESTOR;
+  const nav        = isVaqueiro ? NAV_VAQUEIRO : NAV_GESTOR;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -38,13 +46,15 @@ export default function GestaoLayout({ children }: { children: React.ReactNode }
         <div className="max-w-7xl mx-auto px-4">
           {isVaqueiro && (
             <div className="py-1.5 flex items-center gap-2 border-b border-amber-100">
-              <span className="text-xs font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full">🤠 App Vaqueiro</span>
+              <CowIcon size={14} className="text-amber-700" />
+              <span className="text-xs font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full">App Vaqueiro</span>
               <span className="text-xs text-gray-400">{user?.nome}</span>
             </div>
           )}
           <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide py-1">
             {nav.map((item) => {
               const active = path === item.href || (item.href !== "/gestao" && path.startsWith(item.href));
+              const { Icon } = item;
               return (
                 <Link
                   key={item.href}
@@ -55,7 +65,7 @@ export default function GestaoLayout({ children }: { children: React.ReactNode }
                       : "text-gray-500 hover:text-gray-800 hover:bg-gray-50"
                   }`}
                 >
-                  <span>{item.icon}</span>
+                  <Icon size={14} className={active ? "text-green-700" : item.color} />
                   {item.label}
                 </Link>
               );
