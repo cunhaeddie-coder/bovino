@@ -16,15 +16,12 @@ function currentLabel(pathname: string): string {
 }
 
 export default function GestaoLayout({ children }: { children: React.ReactNode }) {
-  const pathname   = usePathname();
+  const pathname  = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const [drawer, setDrawer]       = useState(false);
 
-  // Restaura estado do sidebar do localStorage
   useEffect(() => {
-    if (localStorage.getItem("gestao_sidebar_collapsed") === "true") {
-      setCollapsed(true);
-    }
+    if (localStorage.getItem("gestao_sidebar_collapsed") === "true") setCollapsed(true);
   }, []);
 
   function toggleCollapsed() {
@@ -36,33 +33,51 @@ export default function GestaoLayout({ children }: { children: React.ReactNode }
   // Fecha drawer ao navegar
   useEffect(() => { setDrawer(false); }, [pathname]);
 
-  // Swipe para fechar o drawer
+  // Swipe esquerdo para fechar
   const touchX = useRef(0);
   function onTouchStart(e: React.TouchEvent) { touchX.current = e.targetTouches[0].clientX; }
   function onTouchEnd(e: React.TouchEvent) {
     if (touchX.current - e.changedTouches[0].clientX > 50) setDrawer(false);
   }
 
-  const sectionLabel = currentLabel(pathname);
-
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex">
 
-      {/* ── MOBILE ── */}
+      {/* ── Sidebar desktop (oculto no mobile) ── */}
+      <aside
+        className={`hidden lg:flex flex-col sticky top-14 h-[calc(100vh-56px)] shrink-0 overflow-hidden transition-[width] duration-200 ease-in-out ${
+          collapsed ? "w-[64px]" : "w-[220px]"
+        }`}
+      >
+        <GestaoSidebar
+          mode="sidebar"
+          collapsed={collapsed}
+          onToggle={toggleCollapsed}
+        />
+      </aside>
 
-      {/* Barra superior com hambúrguer */}
-      <div className="lg:hidden sticky top-14 z-20 bg-white border-b border-gray-200 h-11 flex items-center gap-3 px-4">
-        <button
-          onClick={() => setDrawer(true)}
-          className="p-1.5 -ml-1 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
-          aria-label="Abrir menu"
-        >
-          <Menu size={20} />
-        </button>
-        <span className="text-sm font-semibold text-gray-700">{sectionLabel}</span>
+      {/* ── Área de conteúdo (mobile + desktop) ── */}
+      <div className="flex-1 min-w-0 flex flex-col">
+
+        {/* Barra superior mobile com hambúrguer */}
+        <div className="lg:hidden sticky top-14 z-20 bg-white border-b border-gray-200 h-11 flex items-center gap-3 px-4 shrink-0">
+          <button
+            onClick={() => setDrawer(true)}
+            className="p-1.5 -ml-1 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
+            aria-label="Abrir menu"
+          >
+            <Menu size={20} />
+          </button>
+          <span className="text-sm font-semibold text-gray-700">{currentLabel(pathname)}</span>
+        </div>
+
+        {/* Conteúdo — renderizado UMA vez, funciona em mobile e desktop */}
+        <main className="flex-1 px-4 lg:px-6 py-5 lg:py-6">
+          {children}
+        </main>
       </div>
 
-      {/* Overlay + Drawer */}
+      {/* ── Drawer mobile ── */}
       {drawer && (
         <>
           <div
@@ -78,33 +93,6 @@ export default function GestaoLayout({ children }: { children: React.ReactNode }
           </div>
         </>
       )}
-
-      {/* Conteúdo mobile */}
-      <div className="lg:hidden px-4 py-5">
-        {children}
-      </div>
-
-      {/* ── DESKTOP ── */}
-      <div className="hidden lg:flex">
-
-        {/* Sidebar retrátil */}
-        <aside
-          className={`sticky top-14 h-[calc(100vh-56px)] shrink-0 overflow-hidden transition-[width] duration-200 ease-in-out ${
-            collapsed ? "w-[64px]" : "w-[220px]"
-          }`}
-        >
-          <GestaoSidebar
-            mode="sidebar"
-            collapsed={collapsed}
-            onToggle={toggleCollapsed}
-          />
-        </aside>
-
-        {/* Conteúdo principal */}
-        <main className="flex-1 min-w-0 py-6 px-6">
-          {children}
-        </main>
-      </div>
     </div>
   );
 }
