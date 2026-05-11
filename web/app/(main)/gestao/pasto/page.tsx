@@ -280,16 +280,19 @@ function PastagensModal({ pastagem, onClose, onDone }: { pastagem: Pastagem | nu
     tipo:        pastagem?.tipo        ?? "",
     capacidade:  pastagem?.capacidade  ? String(pastagem.capacidade) : "",
   });
-  const [saving, setSaving]   = useState(false);
+  const [saving, setSaving]     = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [erro, setErro]         = useState("");
 
   async function submit(e: React.FormEvent) {
-    e.preventDefault(); setSaving(true);
+    e.preventDefault();
+    setSaving(true);
+    setErro("");
     const payload = {
       nome:       form.nome,
-      area_ha:    form.area_ha    ? parseFloat(form.area_ha)    : null,
+      area_ha:    form.area_ha    ? parseFloat(form.area_ha)  : null,
       tipo:       form.tipo       || null,
-      capacidade: form.capacidade ? parseInt(form.capacidade)   : null,
+      capacidade: form.capacidade ? parseFloat(form.capacidade) : null,
     };
     try {
       if (pastagem) {
@@ -297,8 +300,15 @@ function PastagensModal({ pastagem, onClose, onDone }: { pastagem: Pastagem | nu
       } else {
         await api.post("/gestao/pasto/pastagens", payload);
       }
-      onDone(); onClose();
-    } catch { setSaving(false); }
+      onDone();
+      onClose();
+    } catch (err: any) {
+      const msg = err?.response?.data?.message
+        ?? Object.values(err?.response?.data?.errors ?? {}).flat().join(" ")
+        ?? "Erro ao salvar. Tente novamente.";
+      setErro(String(msg));
+      setSaving(false);
+    }
   }
 
   async function deletar() {
@@ -306,7 +316,10 @@ function PastagensModal({ pastagem, onClose, onDone }: { pastagem: Pastagem | nu
     if (!confirm(`Remover "${pastagem.nome}"? Esta ação não pode ser desfeita.`)) return;
     setDeleting(true);
     try { await api.delete(`/gestao/pasto/pastagens/${pastagem.id}`); onDone(); onClose(); }
-    catch { setDeleting(false); }
+    catch (err: any) {
+      setErro(err?.response?.data?.message ?? "Erro ao remover.");
+      setDeleting(false);
+    }
   }
 
   return (
@@ -353,6 +366,9 @@ function PastagensModal({ pastagem, onClose, onDone }: { pastagem: Pastagem | nu
               <option value="outro">Outro</option>
             </select>
           </div>
+          {erro && (
+            <p className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2">{erro}</p>
+          )}
           <div className="flex gap-2 pt-2">
             {pastagem && (
               <button type="button" onClick={deletar} disabled={deleting}
