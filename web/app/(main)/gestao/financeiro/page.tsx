@@ -64,18 +64,28 @@ export default function FinanceiroPage() {
   const [mes, setMes]   = useState(new Date().getMonth() + 1);
   const [ano, setAno]   = useState(new Date().getFullYear());
 
+  function toArray<T>(v: unknown): T[] {
+    if (Array.isArray(v)) return v as T[];
+    if (v && typeof v === "object" && Array.isArray((v as any).data)) return (v as any).data as T[];
+    return [];
+  }
+
   async function carregar() {
     setLoading(true);
     const [r2, rv, ct, cpag, crec, custosData] = await Promise.all([
       api.get(`/gestao/financeiro2/resumo?mes=${mes}&ano=${ano}`).then(r => r.data).catch(() => null),
       api.get("/gestao/financeiro/resumo").then(r => r.data).catch(() => null),
       api.get("/gestao/financeiro").then(r => r.data).catch(() => []),
-      api.get("/gestao/financeiro2/contas-pagar").then(r => r.data.data || []).catch(() => []),
-      api.get("/gestao/financeiro2/contas-receber").then(r => r.data.data || []).catch(() => []),
-      api.get("/gestao/financeiro2/receitas").then(r => r.data.data || []).catch(() => []),
+      api.get("/gestao/financeiro2/contas-pagar").then(r => r.data?.data ?? r.data).catch(() => []),
+      api.get("/gestao/financeiro2/contas-receber").then(r => r.data?.data ?? r.data).catch(() => []),
+      api.get("/gestao/financeiro2/receitas").then(r => r.data?.data ?? r.data).catch(() => []),
     ]);
-    setResumo(r2); setResumoAntigo(rv); setCustos(ct);
-    setContasPagar(cpag); setContasReceber(crec); setReceitas(custosData);
+    setResumo(r2);
+    setResumoAntigo(rv);
+    setCustos(toArray(ct));
+    setContasPagar(toArray(cpag));
+    setContasReceber(toArray(crec));
+    setReceitas(toArray(custosData));
     setLoading(false);
   }
 
