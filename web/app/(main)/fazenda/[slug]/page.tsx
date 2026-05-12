@@ -1,6 +1,10 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import Link from "next/link";
 import AvaliacaoSection from "@/components/fazenda/AvaliacaoSection";
+import ContatoFazenda from "@/components/fazenda/ContatoFazenda";
+
+const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
 
 type Avaliacao = {
   id: number;
@@ -8,16 +12,25 @@ type Avaliacao = {
   comentario: string | null;
   resposta_vendedor: string | null;
   created_at: string;
-  comprador: { nome: string };
+  comprador_nome: string;
+  comprador_verificado: boolean;
+};
+
+type AnuncioFazenda = {
+  id: number;
+  titulo: string;
+  preco_unitario: number;
+  aceita_negociacao: boolean;
+  views: number;
+  animal: { raca: string; sexo: string; idade_meses: number | null; quantidade: number; status: string } | null;
+  fotos: { url: string }[];
 };
 
 type Fazenda = {
   id: number;
   user_id: number;
-  nome: string;
   slug: string;
-  logo_url: string | null;
-  fotos: string[] | null;
+  nome: string;
   descricao: string | null;
   estado: string;
   municipio: string;
@@ -27,18 +40,16 @@ type Fazenda = {
   gta_numero: string | null;
   sisbov_numero: string | null;
   website: string | null;
-  whatsapp: string | null;
+  logo_url: string | null;
   nota_media: number;
   total_vendas: number;
   avaliacoes: Avaliacao[];
+  anuncios: AnuncioFazenda[];
 };
 
 async function getFazenda(slug: string): Promise<Fazenda | null> {
   try {
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api"}/fazendas/${slug}`,
-      { cache: "no-store" }
-    );
+    const res = await fetch(`${API}/fazendas/${slug}`, { cache: "no-store" });
     if (!res.ok) return null;
     return res.json();
   } catch {
@@ -70,9 +81,9 @@ export default async function FazendaPage({ params }: { params: Promise<{ slug: 
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-10 space-y-10">
-      {/* Header da fazenda */}
+
+      {/* Header */}
       <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
-        {/* Banner verde */}
         <div className="h-24 bg-gradient-to-br from-green-800 to-green-600" />
         <div className="px-6 pb-6">
           <div className="flex items-end gap-4 -mt-10 mb-4">
@@ -106,7 +117,7 @@ export default async function FazendaPage({ params }: { params: Promise<{ slug: 
             )}
             {fazenda.area_ha && (
               <span className="bg-gray-50 border border-gray-200 text-gray-600 text-xs font-semibold px-3 py-1 rounded-full">
-                📐 {fazenda.area_ha.toLocaleString("pt-BR")} ha
+                📐 {Number(fazenda.area_ha).toLocaleString("pt-BR")} ha
               </span>
             )}
           </div>
@@ -115,7 +126,6 @@ export default async function FazendaPage({ params }: { params: Promise<{ slug: 
             <p className="text-gray-600 text-sm leading-relaxed max-w-2xl">{fazenda.descricao}</p>
           )}
 
-          {/* Raças */}
           {fazenda.racas_principais && fazenda.racas_principais.length > 0 && (
             <div className="mt-4">
               <p className="text-xs font-semibold text-gray-500 mb-1.5">Raças principais</p>
@@ -127,20 +137,54 @@ export default async function FazendaPage({ params }: { params: Promise<{ slug: 
             </div>
           )}
 
-          {/* Contato */}
-          {fazenda.whatsapp && (
-            <div className="mt-5">
-              <a
-                href={`https://wa.me/${fazenda.whatsapp.replace(/\D/g, "")}`}
-                target="_blank"
-                className="inline-flex items-center gap-2 bg-green-700 hover:bg-green-800 text-white font-semibold px-5 py-2.5 rounded-full text-sm transition"
-              >
-                💬 Falar no WhatsApp
-              </a>
-            </div>
-          )}
+          <div className="mt-5">
+            <ContatoFazenda slug={fazenda.slug} />
+          </div>
         </div>
       </div>
+
+      {/* Anúncios ativos */}
+      {fazenda.anuncios.length > 0 && (
+        <div>
+          <h2 className="text-lg font-bold text-gray-900 mb-4">
+            Anúncios disponíveis
+            <span className="ml-2 text-sm font-normal text-gray-400">({fazenda.anuncios.length})</span>
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {fazenda.anuncios.map(a => (
+              <Link
+                key={a.id}
+                href={`/anuncios/${a.id}`}
+                className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all"
+              >
+                <div className="aspect-[4/3] bg-gray-100 relative overflow-hidden">
+                  {a.fotos?.[0]
+                    ? <img src={a.fotos[0].url} alt={a.titulo} className="w-full h-full object-cover" />
+                    : <div className="w-full h-full flex items-center justify-center text-5xl">🐄</div>}
+                </div>
+                <div className="p-4">
+                  <p className="font-semibold text-gray-900 text-sm mb-1 line-clamp-1">{a.titulo}</p>
+                  {a.animal && (
+                    <p className="text-xs text-gray-500 mb-2">
+                      {a.animal.raca} · {a.animal.quantidade} cab.
+                      {a.animal.idade_meses ? ` · ${a.animal.idade_meses} meses` : ""}
+                    </p>
+                  )}
+                  <div className="flex items-center justify-between">
+                    <p className="text-green-700 font-bold text-sm">
+                      R$ {a.preco_unitario.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                      <span className="text-xs font-normal text-gray-400">/cab.</span>
+                    </p>
+                    {a.aceita_negociacao && (
+                      <span className="text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded-full">Aceita proposta</span>
+                    )}
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Reputação */}
       <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6">

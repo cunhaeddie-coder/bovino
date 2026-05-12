@@ -23,17 +23,19 @@ class Anuncio extends Model
         'preco_unitario',
         'aceita_negociacao',
         'destaque',
+        'exibir_na_fazenda',
         'expira_em',
     ];
 
     protected function casts(): array
     {
         return [
-            'preco_unitario' => 'float',
+            'preco_unitario'    => 'float',
             'aceita_negociacao' => 'boolean',
-            'destaque' => 'boolean',
-            'expira_em' => 'datetime',
-            'views' => 'integer',
+            'destaque'          => 'boolean',
+            'exibir_na_fazenda' => 'boolean',
+            'expira_em'         => 'datetime',
+            'views'             => 'integer',
         ];
     }
 

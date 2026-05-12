@@ -14,7 +14,8 @@ type Props = {
     comentario: string | null;
     resposta_vendedor: string | null;
     created_at: string;
-    comprador: { nome: string };
+    comprador_nome: string;
+    comprador_verificado: boolean;
   }[];
 };
 
@@ -124,7 +125,14 @@ export default function AvaliacaoSection({ vendedorUserId, avaliacoesIniciais }:
           {avaliacoes.map(av => (
             <div key={av.id} className="border border-gray-100 rounded-xl p-4">
               <div className="flex items-center justify-between mb-1">
-                <p className="text-sm font-semibold text-gray-800">{av.comprador.nome}</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-semibold text-gray-800">{av.comprador_nome}</p>
+                  {av.comprador_verificado && (
+                    <span className="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full font-medium">
+                      Comprador verificado
+                    </span>
+                  )}
+                </div>
                 <Estrelas nota={av.nota} />
               </div>
               {av.comentario && (

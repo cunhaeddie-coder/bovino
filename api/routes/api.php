@@ -169,6 +169,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('fazenda/minha', [FazendaController::class, 'show']);
     Route::post('fazenda', [FazendaController::class, 'store']);
     Route::put('fazenda', [FazendaController::class, 'update']);
+    Route::get('fazendas/{slug}/contato', [FazendaController::class, 'contato']);
+    Route::post('fazenda/anuncios/{anuncioId}/toggle', [FazendaController::class, 'toggleAnuncio']);
 
     // Visitas (marketplace — não precisa de fazenda.context)
     Route::get('visitas', [VisitaController::class, 'minhas']);
