@@ -27,6 +27,7 @@ export interface Anuncio {
   preco_unitario: number;
   aceita_negociacao: boolean;
   destaque: boolean;
+  is_elite: boolean | null;
   views: number;
   expira_em: string | null;
   created_at: string;
@@ -38,6 +39,7 @@ export interface Anuncio {
     nome: string;
     estado: string;
     municipio: string;
+    plano: string;
     verificado_cpf: boolean;
     verificado_celular: boolean;
   };

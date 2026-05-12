@@ -28,10 +28,20 @@ export function AnuncioCard({ anuncio }: { anuncio: Anuncio }) {
         )}
 
         {/* Badges */}
-        <div className="absolute top-2 left-2 flex gap-1.5">
+        <div className="absolute top-2 left-2 flex flex-wrap gap-1.5">
+          {anuncio.is_elite && (
+            <span className="bg-gradient-to-r from-amber-500 to-yellow-400 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm tracking-wide">
+              👑 ELITE
+            </span>
+          )}
           {anuncio.destaque && (
             <span className="bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-0.5 rounded-full shadow-sm">
               ⭐ Destaque
+            </span>
+          )}
+          {anuncio.user?.verificado_cpf && (
+            <span className="bg-green-700 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
+              ✓ Rastreável
             </span>
           )}
           {anuncio.animal.status !== "disponivel" && (

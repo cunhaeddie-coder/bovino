@@ -13,37 +13,58 @@ class AnuncioController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $query = Anuncio::with(['animal', 'fotos', 'user:id,nome,estado,municipio'])
+        $query = Anuncio::with(['animal', 'fotos', 'user:id,nome,estado,municipio,verificado_cpf,plano'])
+            ->addSelect([
+                'is_elite' => \DB::table('assinaturas')
+                    ->join('planos', 'planos.id', '=', 'assinaturas.plano_id')
+                    ->whereColumn('assinaturas.user_id', 'anuncios.user_id')
+                    ->where('assinaturas.status', 'ativa')
+                    ->whereRaw("(LOWER(planos.slug) LIKE '%elite%' OR LOWER(planos.nome) LIKE '%elite%')")
+                    ->selectRaw('1')
+                    ->limit(1),
+            ])
             ->where(function ($q) {
-                $q->whereNull('expira_em')
-                  ->orWhere('expira_em', '>', now());
+                $q->whereNull('anuncios.expira_em')
+                  ->orWhere('anuncios.expira_em', '>', now());
             });
 
         if ($request->filled('raca')) {
             $query->whereHas('animal', fn($q) => $q->where('raca', 'like', '%' . $request->raca . '%'));
         }
-
         if ($request->filled('estado')) {
             $query->whereHas('animal', fn($q) => $q->where('estado', $request->estado));
         }
-
         if ($request->filled('municipio')) {
             $query->whereHas('animal', fn($q) => $q->where('municipio', 'like', '%' . $request->municipio . '%'));
         }
-
         if ($request->filled('sexo')) {
             $query->whereHas('animal', fn($q) => $q->where('sexo', $request->sexo));
         }
-
         if ($request->filled('preco_min')) {
             $query->where('preco_unitario', '>=', $request->preco_min);
         }
-
         if ($request->filled('preco_max')) {
             $query->where('preco_unitario', '<=', $request->preco_max);
         }
 
-        $query->orderByDesc('destaque')->orderByDesc('created_at');
+        // Elite → 1, qualquer assinatura ativa → 2, free → 3
+        $query->orderByRaw("
+            CASE
+                WHEN (SELECT 1 FROM assinaturas
+                        JOIN planos ON planos.id = assinaturas.plano_id
+                       WHERE assinaturas.user_id = anuncios.user_id
+                         AND assinaturas.status = 'ativa'
+                         AND (LOWER(planos.slug) LIKE '%elite%' OR LOWER(planos.nome) LIKE '%elite%')
+                       LIMIT 1) = 1 THEN 1
+                WHEN (SELECT 1 FROM assinaturas
+                       WHERE assinaturas.user_id = anuncios.user_id
+                         AND assinaturas.status = 'ativa'
+                       LIMIT 1) = 1 THEN 2
+                ELSE 3
+            END ASC
+        ")
+        ->orderByDesc('anuncios.destaque')
+        ->orderByDesc('anuncios.created_at');
 
         return response()->json($query->paginate(20));
     }
