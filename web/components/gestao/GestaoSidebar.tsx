@@ -16,7 +16,7 @@ type NavItem = { href: string; label: string; Icon: LucideIcon | typeof CowIcon;
 
 export const NAV_GESTOR: NavItem[] = [
   { href: "/gestao",              label: "Tela Inicial", Icon: LayoutDashboard, color: "text-green-600"   },
-  { href: "/inteligencia",        label: "Inteligência", Icon: TrendingUp,      color: "text-cyan-600"    },
+  { href: "/gestao/inteligencia", label: "Inteligência", Icon: TrendingUp,      color: "text-cyan-600"    },
   { href: "/gestao/animais",      label: "Rebanho",     Icon: Beef,            color: "text-green-700"   },
   { href: "/gestao/lotes",        label: "Lotes",       Icon: Layers,          color: "text-blue-600"    },
   { href: "/gestao/saude",        label: "Saúde",       Icon: Syringe,         color: "text-red-600"     },

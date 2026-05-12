@@ -8,7 +8,7 @@ import { GestaoSidebar, NAV_GESTOR } from "@/components/gestao/GestaoSidebar";
 const LABEL_MAP = Object.fromEntries(NAV_GESTOR.map((n) => [n.href, n.label]));
 
 function currentLabel(pathname: string): string {
-  if (pathname === "/gestao") return "Dashboard";
+  if (pathname === "/gestao") return "Tela Inicial";
   const match = Object.entries(LABEL_MAP).find(
     ([k]) => k !== "/gestao" && pathname.startsWith(k)
   );
