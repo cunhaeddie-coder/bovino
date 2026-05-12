@@ -25,18 +25,42 @@ class GestaoPastoController extends Controller
         $fazenda = $this->fazenda($request);
         $pastagens = \App\Models\Pastagem::where('fazenda_id', $fazenda->id)
             ->get()
-            ->map(fn($p) => [
-                'id'          => $p->id,
-                'nome'        => $p->nome,
-                'area_ha'     => $p->area_ha,
-                'tipo'        => $p->tipo_capim,
-                'capacidade'  => $p->capacidade_ua,
-                'status'      => $p->status,
-                'lotes_count' => 0,
-                'ocupada'     => $p->status === 'ocupada',
-                'posicao_x'   => null,
-                'posicao_y'   => null,
-            ]);
+            ->map(function ($p) use ($fazenda) {
+                $cabecas     = null;
+                $diasDescanso = null;
+
+                if ($p->status === 'ocupada') {
+                    $troca = TrocaPiquete::where('fazenda_id', $fazenda->id)
+                        ->where('pastagem_destino_id', $p->id)
+                        ->with('lote')
+                        ->latest('data_troca')
+                        ->first();
+                    $cabecas = $troca?->lote?->qtd_cabecas;
+                } elseif ($p->status === 'descanso') {
+                    $troca = TrocaPiquete::where('fazenda_id', $fazenda->id)
+                        ->where('pastagem_origem_id', $p->id)
+                        ->latest('data_troca')
+                        ->first();
+                    if ($troca) {
+                        $diasDescanso = (int) now()->diffInDays($troca->data_troca);
+                    }
+                }
+
+                return [
+                    'id'            => $p->id,
+                    'nome'          => $p->nome,
+                    'area_ha'       => $p->area_ha,
+                    'tipo'          => $p->tipo_capim,
+                    'capacidade'    => $p->capacidade_ua ? (int) $p->capacidade_ua : null,
+                    'status'        => $p->status,
+                    'lotes_count'   => 0,
+                    'ocupada'       => $p->status === 'ocupada',
+                    'cabecas_atual' => $cabecas,
+                    'dias_descanso' => $diasDescanso,
+                    'posicao_x'     => null,
+                    'posicao_y'     => null,
+                ];
+            });
 
         return response()->json($pastagens);
     }

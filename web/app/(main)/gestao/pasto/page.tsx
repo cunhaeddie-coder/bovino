@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 
-type Pastagem = { id: number; nome: string; area_ha: number | null; tipo: string | null; capacidade: number | null; lotes_count: number; ocupada: boolean; posicao_x: number | null; posicao_y: number | null };
+type Pastagem = { id: number; nome: string; area_ha: number | null; tipo: string | null; capacidade: number | null; lotes_count: number; ocupada: boolean; status: string; cabecas_atual: number | null; dias_descanso: number | null; posicao_x: number | null; posicao_y: number | null };
 type Lote     = { id: number; nome: string; raca: string; qtd_cabecas: number };
 type Troca    = { id: number; data_troca: string; lote: { nome: string }; pastagOrigem: { nome: string } | null; pastagDestino: { nome: string } };
 type Aplicacao = { id: number; descricao: string; tipo: string; quantidade_total: number; unidade: string; custo_total: number | null; data_aplicacao: string; lote: { nome: string } | null; pastagem: { nome: string } | null };
@@ -123,9 +123,27 @@ export default function PastoPage() {
                           {p.ocupada && <span className="text-[10px] bg-amber-100 text-amber-700 font-bold px-1.5 py-0.5 rounded-full mr-8">OCUPADA</span>}
                         </div>
                         <p className="font-semibold text-gray-800 text-sm truncate">{p.nome}</p>
-                        {p.area_ha && <p className="text-xs text-gray-500">{p.area_ha} ha</p>}
+                        {p.area_ha != null && (
+                          <p className="text-xs text-gray-500">{Number(p.area_ha) % 1 === 0 ? Number(p.area_ha) : Number(p.area_ha).toFixed(1)} ha</p>
+                        )}
                         {p.tipo && <p className="text-xs text-gray-400 capitalize">{p.tipo}</p>}
-                        {p.capacidade && <p className="text-xs text-gray-500">Cap: {p.capacidade} cab.</p>}
+                        {p.ocupada && p.cabecas_atual != null && p.capacidade != null && (
+                          <p className="text-xs font-semibold text-amber-700">{p.cabecas_atual}/{p.capacidade} cab.</p>
+                        )}
+                        {p.ocupada && p.cabecas_atual != null && p.capacidade == null && (
+                          <p className="text-xs font-semibold text-amber-700">{p.cabecas_atual} cab.</p>
+                        )}
+                        {!p.ocupada && p.status === 'descanso' && (
+                          <p className="text-xs text-blue-600 font-medium">
+                            {p.dias_descanso != null ? `Descansando há ${p.dias_descanso} dia${p.dias_descanso !== 1 ? 's' : ''}` : 'Em descanso'}
+                          </p>
+                        )}
+                        {!p.ocupada && p.status !== 'descanso' && (
+                          <p className="text-xs text-green-600 font-medium">Disponível</p>
+                        )}
+                        {p.capacidade != null && !p.ocupada && (
+                          <p className="text-xs text-gray-400">Cap: {p.capacidade} cab.</p>
+                        )}
                       </button>
                     </div>
                   );
