@@ -387,8 +387,8 @@ export default function GestaoFazendaPage() {
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="text-base font-semibold text-gray-800">Anúncios exibidos na página</h2>
-              <p className="text-xs text-gray-500 mt-0.5">{anunciosExibidos} de {anuncios.length} anúncios visíveis</p>
+              <h2 className="text-base font-semibold text-gray-800">Anúncios na página pública</h2>
+              <p className="text-xs text-gray-500 mt-0.5">{anunciosExibidos} de {anuncios.length} visíveis — clique para ocultar</p>
             </div>
           </div>
 
