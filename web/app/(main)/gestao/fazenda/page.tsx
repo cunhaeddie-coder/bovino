@@ -13,7 +13,8 @@ const RACAS = [
   "Canchim", "Bonsmara", "Limousin", "Cruzamento Industrial",
 ];
 
-const PLANOS_FAZENDA = ["produtor-premium", "produtor-elite"];
+// 'premium' é valor legado gravado antes da correção do checkout
+const PLANOS_FAZENDA = ["produtor-premium", "produtor-elite", "premium"];
 
 type Fazenda = {
   id: number;

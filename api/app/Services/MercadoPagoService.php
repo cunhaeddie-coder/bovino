@@ -204,15 +204,7 @@ class MercadoPagoService
         );
 
         if ($status === 'aprovado') {
-            // Só estende a assinatura se ainda não estava ativa com data futura
-            $novaExpiracao = now()->addMonth();
-            $assinatura->update([
-                'status'    => 'ativa',
-                'inicia_em' => $assinatura->inicia_em ?? now(),
-                'expira_em' => $assinatura->expira_em && $assinatura->expira_em->isFuture()
-                    ? $assinatura->expira_em->addMonth()
-                    : $novaExpiracao,
-            ]);
+            $assinatura->ativar();
         } elseif ($status === 'recusado') {
             $assinatura->update(['status' => 'cancelada']);
         }

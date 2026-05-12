@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -46,5 +47,23 @@ class Assinatura extends Model
     {
         return $this->status === 'ativa'
             && ($this->expira_em === null || $this->expira_em->isFuture());
+    }
+
+    // Ativa a assinatura e sincroniza o campo plano no usuário
+    public function ativar(?\Carbon\Carbon $expiraEm = null): void
+    {
+        $this->update([
+            'status'    => 'ativa',
+            'inicia_em' => $this->inicia_em ?? now(),
+            'expira_em' => $expiraEm ?? ($this->expira_em && $this->expira_em->isFuture()
+                ? $this->expira_em->addMonth()
+                : now()->addMonth()),
+        ]);
+
+        $assinante = $this->assinante;
+        if ($assinante && method_exists($assinante, 'update')) {
+            $this->loadMissing('plano');
+            $assinante->update(['plano' => $this->plano->slug]);
+        }
     }
 }

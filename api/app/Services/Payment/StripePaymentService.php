@@ -134,11 +134,7 @@ class StripePaymentService implements PaymentServiceInterface
             ]
         );
 
-        $assinatura->update([
-            'status'    => 'ativa',
-            'inicia_em' => now(),
-            'expira_em' => now()->addMonth(),
-        ]);
+        $assinatura->ativar(now()->addMonth());
     }
 
     private function handleInvoicePaid(array $invoice): void
@@ -159,13 +155,7 @@ class StripePaymentService implements PaymentServiceInterface
             ]
         );
 
-        $assinatura->update([
-            'status'    => 'ativa',
-            'inicia_em' => $assinatura->inicia_em ?? now(),
-            'expira_em' => $assinatura->expira_em?->isFuture()
-                ? $assinatura->expira_em->addMonth()
-                : now()->addMonth(),
-        ]);
+        $assinatura->ativar();
     }
 
     private function handleInvoiceFailed(array $invoice): void

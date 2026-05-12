@@ -95,15 +95,8 @@ class CheckoutSimuladoController extends Controller
             'pago_em'          => now(),
         ]);
 
-        // Ativa a assinatura
-        $assinatura->update([
-            'status'    => 'ativa',
-            'inicia_em' => now(),
-            'expira_em' => now()->addMonth(),
-        ]);
-
-        // Atualiza o campo plano do usuário para refletir a assinatura ativa
-        $assinatura->assinante->update(['plano' => 'premium']);
+        // Ativa a assinatura e sincroniza user.plano com o slug real
+        $assinatura->ativar(now()->addMonth());
 
         return response()->json([
             'message'       => 'Pagamento confirmado com sucesso.',
