@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ExternalLink, Star, MessageSquare, Eye, EyeOff, Crown, ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 import { useAuthStore } from "@/lib/store";
+import type { User } from "@/lib/auth";
 import { api } from "@/lib/api";
 
 const RACAS = [
@@ -13,8 +14,14 @@ const RACAS = [
   "Canchim", "Bonsmara", "Limousin", "Cruzamento Industrial",
 ];
 
-// 'premium' é valor legado gravado antes da correção do checkout
-const PLANOS_FAZENDA = ["produtor-premium", "produtor-elite", "premium"];
+function temPlanoFazenda(user: User | null): boolean {
+  if (!user) return false;
+  // Fonte primária: assinatura_ativa vem fresca do servidor a cada login
+  const slug = user.assinatura_ativa?.plano_slug ?? "";
+  if (slug.includes("premium") || slug.includes("elite")) return true;
+  // Fallback: campo plano legado no localStorage
+  return ["produtor-premium", "produtor-elite", "premium"].includes(user.plano ?? "");
+}
 
 type Fazenda = {
   id: number;
@@ -103,7 +110,7 @@ export default function GestaoFazendaPage() {
   const [resposta, setResposta] = useState("");
   const [enviandoResposta, setEnviandoResposta] = useState(false);
 
-  const temPlano = user ? PLANOS_FAZENDA.includes(user.plano ?? "") : false;
+  const temPlano = temPlanoFazenda(user);
 
   useEffect(() => {
     if (!user) { router.replace("/login"); return; }
