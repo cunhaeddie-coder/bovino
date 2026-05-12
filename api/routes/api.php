@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\GestaoFinanceiroFazendaController;
 use App\Http\Controllers\Api\GestaoFornecedorController;
 use App\Http\Controllers\Api\GestaoFuncionarioController;
 use App\Http\Controllers\Api\GestaoIAController;
+use App\Http\Controllers\Api\GestaoReproducaoController;
 use App\Http\Controllers\Api\GestaoInsumoController;
 use App\Http\Controllers\Api\GestaoLoteController;
 use App\Http\Controllers\Api\GestaoPastoController;
@@ -329,6 +330,15 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     // App Curral — dentro do fazenda.context para gestores
+
+    // Módulo Reprodutivo
+    Route::prefix('gestao/reproducao')->group(function () {
+        Route::get('/dashboard',      [GestaoReproducaoController::class, 'dashboard']);
+        Route::get('/proximos-partos',[GestaoReproducaoController::class, 'proximosPartos']);
+        Route::get('/',               [GestaoReproducaoController::class, 'index']);
+        Route::post('/',              [GestaoReproducaoController::class, 'store']);
+        Route::delete('/{id}',        [GestaoReproducaoController::class, 'destroy']);
+    });
 
     // App Gestor — IA e valor do rebanho
     Route::prefix('gestao/ia')->group(function () {

@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Beef, Layers, Syringe, Scale, Wallet,
   Package, Users, ClipboardList, AlertTriangle, Sprout,
   Warehouse, Bot, Lightbulb, ChevronLeft, ChevronRight,
-  X, LogOut, type LucideIcon,
+  X, LogOut, Dna, type LucideIcon,
 } from "lucide-react";
 import { CowIcon } from "@/components/ui/CowIcon";
 import { useAuthStore } from "@/lib/store";
@@ -25,6 +25,7 @@ export const NAV_GESTOR: NavItem[] = [
   { href: "/gestao/funcionarios", label: "Equipe",      Icon: Users,           color: "text-violet-600"  },
   { href: "/gestao/ordens",       label: "OS",          Icon: ClipboardList,   color: "text-slate-600"   },
   { href: "/gestao/eventos",      label: "Ocorrências", Icon: AlertTriangle,   color: "text-yellow-600"  },
+  { href: "/gestao/reproducao",   label: "Reprodução",  Icon: Dna,             color: "text-pink-600"    },
   { href: "/gestao/pasto",        label: "App Pasto",   Icon: Sprout,          color: "text-lime-600"    },
   { href: "/gestao/curral",       label: "App Curral",  Icon: Warehouse,       color: "text-amber-800"   },
   { href: "/gestao/gestor",       label: "IA Gestor",   Icon: Bot,             color: "text-violet-700"  },

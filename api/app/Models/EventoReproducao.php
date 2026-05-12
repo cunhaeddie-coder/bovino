@@ -38,4 +38,12 @@ class EventoReproducao extends Model
     {
         return $this->belongsTo(Rebanho::class, 'bezerro_id');
     }
+
+    // Verifica se já existe um parto registrado para este animal após a cobertura
+    public function partoSubsequente()
+    {
+        return $this->hasMany(self::class, 'animal_id', 'animal_id')
+            ->where('tipo', 'parto')
+            ->whereColumn('data_evento', '>', 'eventos_reproducao.data_evento');
+    }
 }
