@@ -13,11 +13,14 @@ class AnuncioController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
+        $userType = addslashes(\App\Models\User::class);
+
         $query = Anuncio::with(['animal', 'fotos', 'user:id,nome,estado,municipio,verificado_cpf,plano'])
             ->addSelect([
                 'is_elite' => \DB::table('assinaturas')
                     ->join('planos', 'planos.id', '=', 'assinaturas.plano_id')
-                    ->whereColumn('assinaturas.user_id', 'anuncios.user_id')
+                    ->whereColumn('assinaturas.assinante_id', 'anuncios.user_id')
+                    ->where('assinaturas.assinante_type', \App\Models\User::class)
                     ->where('assinaturas.status', 'ativa')
                     ->whereRaw("(LOWER(planos.slug) LIKE '%elite%' OR LOWER(planos.nome) LIKE '%elite%')")
                     ->selectRaw('1')
@@ -52,12 +55,14 @@ class AnuncioController extends Controller
             CASE
                 WHEN (SELECT 1 FROM assinaturas
                         JOIN planos ON planos.id = assinaturas.plano_id
-                       WHERE assinaturas.user_id = anuncios.user_id
+                       WHERE assinaturas.assinante_id = anuncios.user_id
+                         AND assinaturas.assinante_type = '{$userType}'
                          AND assinaturas.status = 'ativa'
                          AND (LOWER(planos.slug) LIKE '%elite%' OR LOWER(planos.nome) LIKE '%elite%')
                        LIMIT 1) = 1 THEN 1
                 WHEN (SELECT 1 FROM assinaturas
-                       WHERE assinaturas.user_id = anuncios.user_id
+                       WHERE assinaturas.assinante_id = anuncios.user_id
+                         AND assinaturas.assinante_type = '{$userType}'
                          AND assinaturas.status = 'ativa'
                        LIMIT 1) = 1 THEN 2
                 ELSE 3
