@@ -1,8 +1,19 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import AvaliacaoSection from "@/components/fazenda/AvaliacaoSection";
+
+type Avaliacao = {
+  id: number;
+  nota: number;
+  comentario: string | null;
+  resposta_vendedor: string | null;
+  created_at: string;
+  comprador: { nome: string };
+};
 
 type Fazenda = {
   id: number;
+  user_id: number;
   nome: string;
   slug: string;
   logo_url: string | null;
@@ -19,13 +30,7 @@ type Fazenda = {
   whatsapp: string | null;
   nota_media: number;
   total_vendas: number;
-  avaliacoes: {
-    id: number;
-    nota: number;
-    comentario: string | null;
-    created_at: string;
-    comprador: { nome: string };
-  }[];
+  avaliacoes: Avaliacao[];
 };
 
 async function getFazenda(slug: string): Promise<Fazenda | null> {
@@ -152,22 +157,10 @@ export default async function FazendaPage({ params }: { params: Promise<{ slug: 
           </div>
         </div>
 
-        {fazenda.avaliacoes.length === 0 ? (
-          <p className="text-gray-400 text-sm text-center py-6">Ainda sem avaliações</p>
-        ) : (
-          <div className="space-y-4">
-            {fazenda.avaliacoes.map(av => (
-              <div key={av.id} className="border border-gray-100 rounded-xl p-4">
-                <div className="flex items-center justify-between mb-1">
-                  <p className="text-sm font-semibold text-gray-800">{av.comprador.nome}</p>
-                  <Estrelas nota={av.nota} />
-                </div>
-                {av.comentario && <p className="text-sm text-gray-600">{av.comentario}</p>}
-                <p className="text-xs text-gray-400 mt-1">{new Date(av.created_at).toLocaleDateString("pt-BR")}</p>
-              </div>
-            ))}
-          </div>
-        )}
+        <AvaliacaoSection
+          vendedorUserId={fazenda.user_id}
+          avaliacoesIniciais={fazenda.avaliacoes}
+        />
       </div>
     </div>
   );

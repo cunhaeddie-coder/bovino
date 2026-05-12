@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Negociacao extends Model
 {
@@ -47,5 +48,10 @@ class Negociacao extends Model
     public function mensagens(): HasMany
     {
         return $this->hasMany(Mensagem::class)->orderBy('created_at');
+    }
+
+    public function avaliacao(): HasOne
+    {
+        return $this->hasOne(Avaliacao::class);
     }
 }

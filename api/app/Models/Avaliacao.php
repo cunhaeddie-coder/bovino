@@ -10,7 +10,7 @@ class Avaliacao extends Model
     protected $table = 'avaliacoes';
 
     protected $fillable = [
-        'anuncio_id', 'vendedor_id', 'comprador_id',
+        'negociacao_id', 'anuncio_id', 'vendedor_id', 'comprador_id',
         'nota', 'comentario', 'resposta_vendedor', 'negociacao_confirmada',
     ];
 

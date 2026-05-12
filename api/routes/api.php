@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AlertaDemandaController;
+use App\Http\Controllers\Api\AvaliacaoController;
 use App\Http\Controllers\Api\AnunciantePainelController;
 use App\Http\Controllers\Api\AnuncioController;
 use App\Http\Controllers\Api\AssinaturaController;
@@ -379,6 +380,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/sessoes/{id}/sincronizar', [GestaoCurralController::class, 'sincronizar']);
         Route::post('/sincronizar', [GestaoCurralController::class, 'sincronizarDireto']);
     });
+
+    // Avaliações
+    Route::get('avaliacoes/recebidas',  [AvaliacaoController::class, 'recebidas']);
+    Route::get('avaliacoes/pendentes',  [AvaliacaoController::class, 'negociacoesPendentes']);
+    Route::post('avaliacoes',           [AvaliacaoController::class, 'store']);
+    Route::put('avaliacoes/{id}/responder', [AvaliacaoController::class, 'responder']);
 
     Route::get('minhas-ordens', [OrdemServicoController::class, 'minhasOrdens']);
     Route::put('minhas-ordens/{osId}/animais/{animalId}', [OrdemServicoController::class, 'vaqueirAtualizarAnimal']);
