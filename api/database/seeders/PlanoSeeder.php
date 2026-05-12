@@ -126,7 +126,6 @@ class PlanoSeeder extends Seeder
                     'Alertas de demanda ilimitados',
                     'Agendamento de visitas com confirmação',
                     'Selo de rastreabilidade (GTA/SISBOV) no anúncio',
-                    'Relatórios semanais de desempenho',
                     'Prioridade máxima nas buscas',
                     'Suporte prioritário 7 dias por semana',
                 ],
