@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ExternalLink, Star, MessageSquare, Eye, EyeOff, Crown, ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 import { useAuthStore } from "@/lib/store";
+import { getMe } from "@/lib/auth";
 import type { User } from "@/lib/auth";
 import { api } from "@/lib/api";
 
@@ -88,7 +89,7 @@ function BannerUpgrade() {
 
 export default function GestaoFazendaPage() {
   const router = useRouter();
-  const { user } = useAuthStore();
+  const { user, setAuth } = useAuthStore();
 
   const [fazenda, setFazenda] = useState<Fazenda | null>(null);
   const [anuncios, setAnuncios] = useState<AnuncioItem[]>([]);
@@ -113,39 +114,45 @@ export default function GestaoFazendaPage() {
   const temPlano = temPlanoFazenda(user);
 
   useEffect(() => {
-    if (!user) { router.replace("/login"); return; }
-    if (!temPlano) { setLoading(false); return; }
+    const { token } = useAuthStore.getState();
+    if (!token) { router.replace("/login"); return; }
 
-    Promise.all([
-      api.get<Fazenda | null>("/fazenda/minha"),
-      api.get<AnuncioItem[]>("/anuncios/meus").catch(() => ({ data: [] })),
-      api.get<Avaliacao[]>("/avaliacoes/recebidas").catch(() => ({ data: [] })),
-    ]).then(([fazRes, anunciosRes, avRes]) => {
-      const f = fazRes.data;
-      if (f) {
-        setFazenda(f);
-        setForm({
-          nome: f.nome ?? "", descricao: f.descricao ?? "",
-          estado: f.estado ?? "", municipio: f.municipio ?? "",
-          area_ha: f.area_ha != null ? String(f.area_ha) : "",
-          gta_numero: f.gta_numero ?? "", sisbov_numero: f.sisbov_numero ?? "",
-          website: f.website ?? "", whatsapp: f.whatsapp ?? "",
-          anos_atividade: f.anos_atividade != null ? String(f.anos_atividade) : "",
-          logo_url: f.logo_url ?? "",
+    // Busca user fresco do servidor — evita decisão de plano com dado stale do localStorage
+    getMe()
+      .then((freshUser) => {
+        setAuth(freshUser, token);
+        if (!temPlanoFazenda(freshUser)) { setLoading(false); return; }
+
+        return Promise.all([
+          api.get<Fazenda | null>("/fazenda/minha"),
+          api.get<AnuncioItem[]>("/anuncios/meus").catch(() => ({ data: [] })),
+          api.get<Avaliacao[]>("/avaliacoes/recebidas").catch(() => ({ data: [] })),
+        ]).then(([fazRes, anunciosRes, avRes]) => {
+          const f = fazRes.data;
+          if (f) {
+            setFazenda(f);
+            setForm({
+              nome: f.nome ?? "", descricao: f.descricao ?? "",
+              estado: f.estado ?? "", municipio: f.municipio ?? "",
+              area_ha: f.area_ha != null ? String(f.area_ha) : "",
+              gta_numero: f.gta_numero ?? "", sisbov_numero: f.sisbov_numero ?? "",
+              website: f.website ?? "", whatsapp: f.whatsapp ?? "",
+              anos_atividade: f.anos_atividade != null ? String(f.anos_atividade) : "",
+              logo_url: f.logo_url ?? "",
+            });
+            setRacasSel(f.racas_principais ?? []);
+          }
+          const lista = Array.isArray(anunciosRes.data)
+            ? anunciosRes.data
+            : (anunciosRes.data as { data: AnuncioItem[] }).data ?? [];
+          setAnuncios(lista);
+          const avData = avRes.data;
+          setAvaliacoes(Array.isArray(avData) ? avData : (avData as { data: Avaliacao[] }).data ?? []);
         });
-        setRacasSel(f.racas_principais ?? []);
-      }
-
-      const anunciosData = anunciosRes.data;
-      const lista = Array.isArray(anunciosData)
-        ? anunciosData
-        : (anunciosData as { data: AnuncioItem[] }).data ?? [];
-      setAnuncios(lista);
-
-      const avData = avRes.data;
-      setAvaliacoes(Array.isArray(avData) ? avData : (avData as { data: Avaliacao[] }).data ?? []);
-    }).finally(() => setLoading(false));
-  }, [user]);
+      })
+      .catch(() => router.replace("/login"))
+      .finally(() => setLoading(false));
+  }, []);
 
   function toggle(raca: string) {
     setRacasSel(prev => prev.includes(raca) ? prev.filter(r => r !== raca) : [...prev, raca]);
