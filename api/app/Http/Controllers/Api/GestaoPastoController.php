@@ -132,10 +132,17 @@ class GestaoPastoController extends Controller
             'user_id'    => $request->user()->id,
         ] + $data);
 
-        // Atualiza pastagem_id no lote
-        \App\Models\LoteGestao::where('id', $data['lote_id'])
-            ->where('fazenda_id', $fazenda->id)
-            ->update(['pastagem_id' => $data['pastagem_destino_id']]);
+        // Piquete destino → ocupada
+        \App\Models\Pastagem::where('fazenda_id', $fazenda->id)
+            ->where('id', $data['pastagem_destino_id'])
+            ->update(['status' => 'ocupada']);
+
+        // Piquete origem → descanso (se informado)
+        if (!empty($data['pastagem_origem_id'])) {
+            \App\Models\Pastagem::where('fazenda_id', $fazenda->id)
+                ->where('id', $data['pastagem_origem_id'])
+                ->update(['status' => 'descanso']);
+        }
 
         return response()->json($troca->load(['lote','pastagDestino']), 201);
     }

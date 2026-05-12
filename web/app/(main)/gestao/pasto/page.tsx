@@ -390,10 +390,14 @@ function PastagensModal({ pastagem, onClose, onDone }: { pastagem: Pastagem | nu
 function TrocaModal({ pastagens, lotes, onClose, onDone }: { pastagens: Pastagem[]; lotes: Lote[]; onClose: () => void; onDone: () => void }) {
   const [form, setForm] = useState({ lote_id: "", pastagem_origem_id: "", pastagem_destino_id: "", data_troca: new Date().toISOString().split("T")[0], observacoes: "" });
   const [saving, setSaving] = useState(false);
+  const [erro, setErro]     = useState("");
   async function submit(e: React.FormEvent) {
-    e.preventDefault(); setSaving(true);
+    e.preventDefault(); setSaving(true); setErro("");
     try { await api.post("/gestao/pasto/trocas", form); onDone(); onClose(); }
-    catch { setSaving(false); }
+    catch (err: any) {
+      setErro(err?.response?.data?.message ?? "Erro ao registrar troca.");
+      setSaving(false);
+    }
   }
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
@@ -434,6 +438,7 @@ function TrocaModal({ pastagens, lotes, onClose, onDone }: { pastagens: Pastagem
             <input type="date" value={form.data_troca} onChange={e => setForm({...form, data_troca: e.target.value})}
               className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400" />
           </div>
+          {erro && <p className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2">{erro}</p>}
           <div className="flex gap-2 pt-1">
             <button type="button" onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 font-semibold">Cancelar</button>
             <button type="submit" disabled={saving} className="flex-1 py-2.5 rounded-xl bg-green-600 hover:bg-green-700 text-white text-sm font-semibold disabled:opacity-50">{saving ? "Salvando..." : "Confirmar troca"}</button>
