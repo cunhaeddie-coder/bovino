@@ -55,6 +55,11 @@ class LoteGestao extends Model
         return $this->hasMany(Custo::class, 'lote_id');
     }
 
+    public function receitasFazenda(): HasMany
+    {
+        return $this->hasMany(ReceitaFazenda::class, 'lote_id');
+    }
+
     public function getCustoTotalAttribute(): float
     {
         return $this->custos()->sum('valor');

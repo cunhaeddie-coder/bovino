@@ -10,6 +10,8 @@ class ReceitaFazenda extends Model
 {
     use BelongsToFazenda;
 
+    protected $table = 'receitas_fazenda';
+
     protected $fillable = ['fazenda_id','descricao','categoria','valor','data','lote_id','observacoes','user_id'];
 
     public function fazenda(): BelongsTo { return $this->belongsTo(Fazenda::class); }

@@ -40,6 +40,12 @@ type Resumo2 = {
 type ContaPagar  = { id: number; descricao: string; categoria: string | null; valor: number; vencimento: string; status: string; fornecedor?: { nome: string } | null };
 type ContaReceber= { id: number; descricao: string; cliente_nome: string | null; valor: number; vencimento: string; status: string };
 type Receita     = { id: number; descricao: string; categoria: string; valor: number; data: string; lote?: { nome: string } | null };
+type LoteFinanceiro = {
+  id: number; nome: string; raca: string | null; categoria: string;
+  qtd_cabecas: number; total_custos: number; total_receitas: number;
+  resultado: number; custo_por_cabeca: number;
+  custos_por_categoria: Record<string, number>;
+};
 
 const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
@@ -49,7 +55,7 @@ const STATUS_COR: Record<string, string> = {
 };
 
 export default function FinanceiroPage() {
-  const [aba, setAba]               = useState<"dashboard"|"custos"|"receitas"|"pagar"|"receber">("dashboard");
+  const [aba, setAba]               = useState<"dashboard"|"custos"|"receitas"|"pagar"|"receber"|"lotes">("dashboard");
   const [resumo, setResumo]         = useState<Resumo2 | null>(null);
   const [resumoAntigo, setResumoAntigo] = useState<ResumoAntigo | null>(null);
   const [custos, setCustos]         = useState<Custo[]>([]);
@@ -57,6 +63,7 @@ export default function FinanceiroPage() {
   const [contasPagar, setContasPagar]   = useState<ContaPagar[]>([]);
   const [contasReceber, setContasReceber] = useState<ContaReceber[]>([]);
   const [loading, setLoading]       = useState(true);
+  const [loteRelatorio, setLoteRelatorio] = useState<LoteFinanceiro[]>([]);
   const [showCusto, setShowCusto]   = useState(false);
   const [showReceita, setShowReceita]   = useState(false);
   const [showPagar, setShowPagar]       = useState(false);
@@ -72,13 +79,14 @@ export default function FinanceiroPage() {
 
   async function carregar() {
     setLoading(true);
-    const [r2, rv, ct, cpag, crec, custosData] = await Promise.all([
+    const [r2, rv, ct, cpag, crec, custosData, lotes] = await Promise.all([
       api.get(`/gestao/financeiro2/resumo?mes=${mes}&ano=${ano}`).then(r => r.data).catch(() => null),
       api.get("/gestao/financeiro/resumo").then(r => r.data).catch(() => null),
       api.get("/gestao/financeiro").then(r => r.data).catch(() => []),
       api.get("/gestao/financeiro2/contas-pagar").then(r => r.data?.data ?? r.data).catch(() => []),
       api.get("/gestao/financeiro2/contas-receber").then(r => r.data?.data ?? r.data).catch(() => []),
       api.get("/gestao/financeiro2/receitas").then(r => r.data?.data ?? r.data).catch(() => []),
+      api.get("/gestao/financeiro/por-lote").then(r => r.data).catch(() => []),
     ]);
     setResumo(r2);
     setResumoAntigo(rv);
@@ -86,6 +94,7 @@ export default function FinanceiroPage() {
     setContasPagar(toArray(cpag));
     setContasReceber(toArray(crec));
     setReceitas(toArray(custosData));
+    setLoteRelatorio(Array.isArray(lotes) ? lotes : []);
     setLoading(false);
   }
 
@@ -120,6 +129,7 @@ export default function FinanceiroPage() {
           { k: "custos",    label: "💸 Custos" },
           { k: "pagar",     label: `📤 A Pagar${resumo?.contas_vencidas ? ` ⚠️${resumo.contas_vencidas}` : ""}` },
           { k: "receber",   label: "📥 A Receber" },
+          { k: "lotes",     label: "🗂️ Por Lote" },
         ] as const).map(({ k, label }) => (
           <button key={k} onClick={() => setAba(k)}
             className={`px-4 py-2 text-sm font-medium whitespace-nowrap transition ${aba === k ? "border-b-2 border-green-600 text-green-700" : "text-gray-500 hover:text-gray-700"}`}>
@@ -355,6 +365,90 @@ export default function FinanceiroPage() {
       )}
 
       {/* Modais */}
+      {/* POR LOTE */}
+      {aba === "lotes" && (
+        <div className="space-y-4">
+          {loteRelatorio.length === 0 ? (
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-12 text-center">
+              <p className="text-3xl mb-3">🗂️</p>
+              <p className="text-gray-500">Nenhum lote com movimentação financeira</p>
+              <p className="text-gray-400 text-sm mt-1">Registre custos ou receitas vinculando a um lote</p>
+            </div>
+          ) : (
+            <>
+              {/* Totais consolidados */}
+              <div className="grid grid-cols-3 gap-4">
+                {[
+                  { label: "Total custos",   value: loteRelatorio.reduce((s,l) => s + l.total_custos,   0), cor: "text-red-600"   },
+                  { label: "Total receitas", value: loteRelatorio.reduce((s,l) => s + l.total_receitas, 0), cor: "text-green-700" },
+                  { label: "Resultado",      value: loteRelatorio.reduce((s,l) => s + l.resultado,      0), cor: loteRelatorio.reduce((s,l) => s + l.resultado, 0) >= 0 ? "text-green-700" : "text-red-600" },
+                ].map(k => (
+                  <div key={k.label} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+                    <p className={`text-xl font-bold ${k.cor}`}>{fmt(k.value)}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">{k.label}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Cards por lote */}
+              {loteRelatorio.map(lote => {
+                const positivo = lote.resultado >= 0;
+                return (
+                  <div key={lote.id} className={`bg-white rounded-2xl border shadow-sm p-5 ${positivo ? "border-green-100" : "border-red-100"}`}>
+                    <div className="flex items-start justify-between mb-3">
+                      <div>
+                        <p className="font-bold text-gray-800">{lote.nome}</p>
+                        <p className="text-xs text-gray-400">{lote.raca ?? "—"} · {lote.qtd_cabecas} cab. · {lote.categoria}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className={`text-lg font-extrabold ${positivo ? "text-green-700" : "text-red-600"}`}>
+                          {positivo ? "+" : ""}{fmt(lote.resultado)}
+                        </p>
+                        <p className="text-[10px] text-gray-400">resultado</p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-3 mb-3">
+                      <div className="bg-red-50 rounded-xl p-3">
+                        <p className="text-xs text-red-500 font-semibold">Custos</p>
+                        <p className="font-bold text-red-700">{fmt(lote.total_custos)}</p>
+                        {lote.qtd_cabecas > 0 && (
+                          <p className="text-[10px] text-red-400">{fmt(lote.custo_por_cabeca)}/cab</p>
+                        )}
+                      </div>
+                      <div className="bg-green-50 rounded-xl p-3">
+                        <p className="text-xs text-green-600 font-semibold">Receitas</p>
+                        <p className="font-bold text-green-700">{fmt(lote.total_receitas)}</p>
+                      </div>
+                      <div className={`rounded-xl p-3 ${positivo ? "bg-green-50" : "bg-red-50"}`}>
+                        <p className={`text-xs font-semibold ${positivo ? "text-green-600" : "text-red-500"}`}>Margem</p>
+                        <p className={`font-bold ${positivo ? "text-green-700" : "text-red-600"}`}>
+                          {lote.total_receitas > 0 ? Math.round((lote.resultado / lote.total_receitas) * 100) : 0}%
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Custos por categoria */}
+                    {Object.keys(lote.custos_por_categoria).length > 0 && (
+                      <div>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Custos por categoria</p>
+                        <div className="flex flex-wrap gap-2">
+                          {Object.entries(lote.custos_por_categoria).map(([cat, val]) => (
+                            <span key={cat} className="text-[11px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                              {cat.replace("_", " ")}: {fmt(val as number)}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </>
+          )}
+        </div>
+      )}
+
       {showCusto    && <CustoModal    onClose={() => setShowCusto(false)}    onDone={carregar} />}
       {showReceita  && <ReceitaModal  onClose={() => setShowReceita(false)}  onDone={carregar} />}
       {showPagar    && <ContaPagarModal  onClose={() => setShowPagar(false)}   onDone={carregar} />}

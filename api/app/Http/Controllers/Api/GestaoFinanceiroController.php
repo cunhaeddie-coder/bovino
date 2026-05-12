@@ -4,7 +4,11 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Custo;
+use App\Models\LoteGestao;
+use App\Models\ReceitaFazenda;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class GestaoFinanceiroController extends Controller
 {
@@ -29,6 +33,46 @@ class GestaoFinanceiroController extends Controller
                 ->orderBy('data', 'desc')
                 ->paginate(30)
         );
+    }
+
+    public function porLote(Request $request): JsonResponse
+    {
+        $fazenda = $this->fazenda($request);
+
+        $lotes = LoteGestao::where('fazenda_id', $fazenda->id)
+            ->withSum('custos as total_custos', 'valor')
+            ->withSum('receitasFazenda as total_receitas', 'valor')
+            ->get()
+            ->map(function ($lote) use ($fazenda) {
+                $totalCustos   = (float) ($lote->total_custos   ?? 0);
+                $totalReceitas = (float) ($lote->total_receitas ?? 0);
+
+                // Custos por categoria para este lote
+                $custosCat = Custo::where('lote_id', $lote->id)
+                    ->select('categoria', DB::raw('SUM(valor) as total'))
+                    ->groupBy('categoria')
+                    ->pluck('total', 'categoria')
+                    ->map(fn($v) => (float) $v);
+
+                return [
+                    'id'                    => $lote->id,
+                    'nome'                  => $lote->nome,
+                    'raca'                  => $lote->raca,
+                    'categoria'             => $lote->categoria,
+                    'qtd_cabecas'           => $lote->qtd_cabecas,
+                    'total_custos'          => $totalCustos,
+                    'total_receitas'        => $totalReceitas,
+                    'resultado'             => round($totalReceitas - $totalCustos, 2),
+                    'custo_por_cabeca'      => $lote->qtd_cabecas > 0
+                        ? round($totalCustos / $lote->qtd_cabecas, 2)
+                        : 0,
+                    'custos_por_categoria'  => $custosCat,
+                ];
+            })
+            ->sortByDesc('total_custos')
+            ->values();
+
+        return response()->json($lotes);
     }
 
     public function store(Request $request)

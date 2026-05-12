@@ -235,6 +235,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Gestão pecuária — financeiro
     Route::prefix('gestao/financeiro')->group(function () {
+        Route::get('/por-lote', [GestaoFinanceiroController::class, 'porLote']);
         Route::get('/', [GestaoFinanceiroController::class, 'index']);
         Route::post('/', [GestaoFinanceiroController::class, 'store']);
         Route::delete('/{id}', [GestaoFinanceiroController::class, 'destroy']);
