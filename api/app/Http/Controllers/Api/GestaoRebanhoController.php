@@ -195,6 +195,55 @@ class GestaoRebanhoController extends Controller
         ]);
     }
 
+    public function inventario(Request $request)
+    {
+        $fazenda   = $this->fazenda($request);
+        $dataRef   = $request->get('data', now()->toDateString());
+        $fazendaNome = $fazenda->nome;
+
+        // Animais ativos na data de referência:
+        // - status ativo, OU
+        // - vendido/morto/transferido depois da data de referência
+        $q = $fazenda->rebanho()
+            ->where(function ($query) use ($dataRef) {
+                $query->where('status', 'ativo')
+                      ->orWhere(function ($q2) use ($dataRef) {
+                          $q2->whereIn('status', ['vendido', 'morto', 'transferido'])
+                             ->whereDate('updated_at', '>', $dataRef);
+                      });
+            })
+            ->whereDate('created_at', '<=', $dataRef);
+
+        $categorias = (clone $q)
+            ->selectRaw('
+                categoria,
+                COUNT(*) as total,
+                SUM(CASE WHEN sexo = "macho" THEN 1 ELSE 0 END) as machos,
+                SUM(CASE WHEN sexo = "femea" THEN 1 ELSE 0 END) as femeas,
+                ROUND(AVG(CASE WHEN peso_atual > 0 THEN peso_atual END), 1) as peso_medio,
+                ROUND(SUM(COALESCE(peso_atual, 0)), 0) as peso_total
+            ')
+            ->groupBy('categoria')
+            ->orderByRaw("FIELD(categoria,'vaca','novilha','bezerra','touro','boi','novilho','bezerro')")
+            ->get();
+
+        $total      = (clone $q)->count();
+        $pesoTotal  = (clone $q)->sum('peso_atual');
+        $pesoMedio  = $total > 0 ? round($pesoTotal / $total, 1) : 0;
+
+        return response()->json([
+            'fazenda_nome'  => $fazendaNome,
+            'data_ref'      => $dataRef,
+            'gerado_em'     => now()->toDateTimeString(),
+            'total_cabecas' => $total,
+            'total_machos'  => (clone $q)->where('sexo', 'macho')->count(),
+            'total_femeas'  => (clone $q)->where('sexo', 'femea')->count(),
+            'peso_medio'    => $pesoMedio,
+            'peso_total'    => round($pesoTotal, 0),
+            'categorias'    => $categorias,
+        ]);
+    }
+
     public function dashboard(Request $request)
     {
         $fazenda = $this->fazenda($request);

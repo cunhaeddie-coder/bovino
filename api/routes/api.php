@@ -211,8 +211,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/', [GestaoRebanhoController::class, 'index']);
         Route::post('/', [GestaoRebanhoController::class, 'store']);
         Route::post('/grupo', [GestaoRebanhoController::class, 'storeGrupo']);
-        Route::get('/resumo', [GestaoRebanhoController::class, 'resumo']);
-        Route::get('/dashboard', [GestaoRebanhoController::class, 'dashboard']);
+        Route::get('/resumo',     [GestaoRebanhoController::class, 'resumo']);
+        Route::get('/inventario', [GestaoRebanhoController::class, 'inventario']);
+        Route::get('/dashboard',  [GestaoRebanhoController::class, 'dashboard']);
         Route::get('/{id}', [GestaoRebanhoController::class, 'show']);
         Route::put('/{id}', [GestaoRebanhoController::class, 'update']);
         Route::delete('/{id}', [GestaoRebanhoController::class, 'destroy']);
