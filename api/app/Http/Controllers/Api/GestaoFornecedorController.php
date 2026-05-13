@@ -27,20 +27,26 @@ class GestaoFornecedorController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $fazenda = $this->fazenda($request);
-        $data = $request->validate([
-            'nome'         => ['required','string','max:200'],
-            'cnpj_cpf'     => ['nullable','string','max:20'],
-            'telefone'     => ['nullable','string','max:20'],
-            'email'        => ['nullable','email'],
-            'categoria'    => ['required','in:insumos,medicamentos,servicos,equipamentos,outros'],
-            'contato_nome' => ['nullable','string'],
-            'estado'       => ['nullable','string','size:2'],
-            'municipio'    => ['nullable','string'],
-            'observacoes'  => ['nullable','string'],
-        ]);
-        $fornecedor = Fornecedor::create(['fazenda_id' => $fazenda->id] + $data);
-        return response()->json($fornecedor, 201);
+        try {
+            $fazenda = $this->fazenda($request);
+            $data = $request->validate([
+                'nome'         => ['required','string','max:200'],
+                'cnpj_cpf'     => ['nullable','string','max:20'],
+                'telefone'     => ['nullable','string','max:20'],
+                'email'        => ['nullable','email'],
+                'categoria'    => ['required','in:insumos,medicamentos,servicos,equipamentos,outros'],
+                'contato_nome' => ['nullable','string'],
+                'estado'       => ['nullable','string','size:2'],
+                'municipio'    => ['nullable','string'],
+                'observacoes'  => ['nullable','string'],
+            ]);
+            $fornecedor = Fornecedor::create(['fazenda_id' => $fazenda->id] + $data);
+            return response()->json($fornecedor, 201);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            throw $e;
+        } catch (\Throwable $e) {
+            return response()->json(['message' => $e->getMessage(), 'line' => $e->getLine(), 'file' => basename($e->getFile())], 500);
+        }
     }
 
     public function update(Request $request, int $id): JsonResponse
