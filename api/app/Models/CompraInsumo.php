@@ -11,6 +11,7 @@ class CompraInsumo extends Model
 {
     use BelongsToFazenda;
 
+    protected $table = 'compras_insumos';
     protected $fillable = ['fazenda_id','fornecedor_id','data_compra','valor_total','status','nota_fiscal','forma_pagamento','data_vencimento','observacoes','user_id'];
 
     public function fazenda(): BelongsTo { return $this->belongsTo(Fazenda::class); }

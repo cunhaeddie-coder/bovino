@@ -11,6 +11,7 @@ class Fornecedor extends Model
 {
     use BelongsToFazenda;
 
+    protected $table = 'fornecedores';
     protected $fillable = ['fazenda_id','nome','cnpj_cpf','telefone','email','categoria','contato_nome','estado','municipio','observacoes','ativo'];
 
     public function fazenda(): BelongsTo { return $this->belongsTo(Fazenda::class); }

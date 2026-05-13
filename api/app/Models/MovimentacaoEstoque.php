@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class MovimentacaoEstoque extends Model
 {
+    protected $table = 'movimentacoes_estoque';
     public $timestamps = false;
     protected $fillable = ['insumo_id','fazenda_id','tipo','quantidade','custo_unitario','motivo','compra_id','user_id','created_at'];
 

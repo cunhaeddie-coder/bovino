@@ -136,44 +136,38 @@ class GestaoInsumoController extends Controller
 
     public function movimentar(Request $request, int $insumoId): JsonResponse
     {
-        try {
-            $fazenda = $this->fazenda($request);
-            $insumo  = Insumo::where('fazenda_id', $fazenda->id)->findOrFail($insumoId);
-            $data = $request->validate([
-                'tipo'           => ['required','in:saida,ajuste,perda'],
-                'quantidade'     => ['required','numeric','min:0.001'],
-                'motivo'         => ['nullable','string'],
-                'custo_unitario' => ['nullable','numeric'],
-            ]);
+        $fazenda = $this->fazenda($request);
+        $insumo  = Insumo::where('fazenda_id', $fazenda->id)->findOrFail($insumoId);
+        $data = $request->validate([
+            'tipo'           => ['required','in:saida,ajuste,perda'],
+            'quantidade'     => ['required','numeric','min:0.001'],
+            'motivo'         => ['nullable','string'],
+            'custo_unitario' => ['nullable','numeric'],
+        ]);
 
-            $estoque = EstoqueInsumo::withoutGlobalScope('fazenda')
-                ->where('insumo_id', $insumo->id)
-                ->where('fazenda_id', $fazenda->id)
-                ->firstOrFail();
+        $estoque = EstoqueInsumo::withoutGlobalScope('fazenda')
+            ->where('insumo_id', $insumo->id)
+            ->where('fazenda_id', $fazenda->id)
+            ->firstOrFail();
 
-            if ($data['tipo'] === 'saida' || $data['tipo'] === 'perda') {
-                $estoque->decrement('quantidade_atual', $data['quantidade']);
-            } else {
-                $estoque->update(['quantidade_atual' => $data['quantidade']]);
-            }
-
-            MovimentacaoEstoque::create([
-                'insumo_id'      => $insumo->id,
-                'fazenda_id'     => $fazenda->id,
-                'tipo'           => $data['tipo'],
-                'quantidade'     => $data['quantidade'],
-                'custo_unitario' => $data['custo_unitario'] ?? null,
-                'motivo'         => $data['motivo'] ?? null,
-                'user_id'        => $request->user()->id,
-                'created_at'     => now(),
-            ]);
-
-            return response()->json(['message' => 'Movimentação registrada.', 'estoque' => $estoque->fresh()]);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            throw $e;
-        } catch (\Throwable $e) {
-            return response()->json(['message' => $e->getMessage(), 'line' => $e->getLine(), 'file' => basename($e->getFile())], 500);
+        if ($data['tipo'] === 'saida' || $data['tipo'] === 'perda') {
+            $estoque->decrement('quantidade_atual', $data['quantidade']);
+        } else {
+            $estoque->update(['quantidade_atual' => $data['quantidade']]);
         }
+
+        MovimentacaoEstoque::create([
+            'insumo_id'      => $insumo->id,
+            'fazenda_id'     => $fazenda->id,
+            'tipo'           => $data['tipo'],
+            'quantidade'     => $data['quantidade'],
+            'custo_unitario' => $data['custo_unitario'] ?? null,
+            'motivo'         => $data['motivo'] ?? null,
+            'user_id'        => $request->user()->id,
+            'created_at'     => now(),
+        ]);
+
+        return response()->json(['message' => 'Movimentação registrada.', 'estoque' => $estoque->fresh()]);
     }
 
     public function resumoEstoque(Request $request): JsonResponse
