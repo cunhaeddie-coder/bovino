@@ -13,6 +13,8 @@ use App\Http\Controllers\Api\GestaoCurralController;
 use App\Http\Controllers\Api\GestaoEventoCampoController;
 use App\Http\Controllers\Api\GestaoFinanceiroController;
 use App\Http\Controllers\Api\GestaoFinanceiroFazendaController;
+use App\Http\Controllers\Api\ContadorAcessoController;
+use App\Http\Controllers\Api\ContadorViewController;
 use App\Http\Controllers\Api\LancamentoFiscalController;
 use App\Http\Controllers\Api\GestaoFornecedorController;
 use App\Http\Controllers\Api\GestaoFuncionarioController;
@@ -114,6 +116,12 @@ Route::get('cotacoes', [CotacaoController::class, 'index']);
 Route::get('cotacoes/ultima', [CotacaoController::class, 'ultima']);
 
 Route::get('fazendas/{slug}', [FazendaController::class, 'showBySlug']);
+
+// Acesso do contador — rotas públicas (sem autenticação)
+Route::get('contador/{token}',           [ContadorViewController::class, 'show']);
+Route::post('contador/{token}/verificar',[ContadorViewController::class, 'verificarPin']);
+Route::get('contador/{token}/dados',     [ContadorViewController::class, 'dados']);
+Route::get('contador/{token}/exportar',  [ContadorViewController::class, 'exportar']);
 
 // Inteligência de mercado (público — log de buscas e cotações realizadas)
 Route::post('inteligencia/busca', [IntelligenciaController::class, 'logBusca']);
@@ -310,6 +318,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/',         [LancamentoFiscalController::class, 'index']);
         Route::post('/',        [LancamentoFiscalController::class, 'store']);
         Route::delete('/{id}',  [LancamentoFiscalController::class, 'destroy']);
+        // Acesso do contador
+        Route::get('/contador-acesso',         [ContadorAcessoController::class, 'show']);
+        Route::post('/contador-acesso',        [ContadorAcessoController::class, 'salvar']);
+        Route::delete('/contador-acesso',      [ContadorAcessoController::class, 'revogar']);
+        Route::post('/contador-acesso/renovar',[ContadorAcessoController::class, 'renovarToken']);
     });
 
     // Gestão — financeiro completo (receitas, contas)

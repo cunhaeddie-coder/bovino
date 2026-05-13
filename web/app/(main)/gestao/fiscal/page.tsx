@@ -18,6 +18,11 @@ type Resumo = {
 
 type Paginado<T> = { data: T[]; total: number; current_page: number; last_page: number };
 
+type ContadorAcesso = {
+  token: string; nome: string | null; expira_em: string | null;
+  tem_pin: boolean; ultimo_acesso: string | null;
+} | null;
+
 // ── Categorias ────────────────────────────────────────────────────────────────
 
 const CATEGORIAS_RECEITA: [string, string][] = [
@@ -180,10 +185,14 @@ export default function FiscalPage() {
   const [mes, setMes]         = useState(mesAtual());
   const [resumo, setResumo]   = useState<Resumo | null>(null);
   const [lista, setLista]     = useState<Paginado<Lancamento> | null>(null);
-  const [aba, setAba]         = useState<"visao" | "lista">("visao");
+  const [aba, setAba]         = useState<"visao" | "lista" | "contador">("visao");
   const [filtroTipo, setFiltroTipo] = useState("");
   const [modal, setModal]     = useState<"receita" | "despesa" | null>(null);
   const [exportando, setExportando] = useState(false);
+  const [acesso, setAcesso]   = useState<ContadorAcesso>(undefined as any);
+  const [acessoForm, setAcessoForm] = useState({ nome: "", pin: "", expira_em: "" });
+  const [acessoSaving, setAcessoSaving] = useState(false);
+  const [acessoCopiado, setAcessoCopiado] = useState(false);
 
   async function carregarResumo() {
     const { data } = await api.get(`/gestao/fiscal/resumo?mes=${mes}`);
@@ -197,8 +206,50 @@ export default function FiscalPage() {
     setLista(data);
   }
 
+  async function carregarAcesso() {
+    try {
+      const { data } = await api.get("/gestao/fiscal/contador-acesso");
+      setAcesso(data);
+      if (data) setAcessoForm(f => ({ ...f, nome: data.nome ?? "", expira_em: data.expira_em ?? "" }));
+    } catch { setAcesso(null); }
+  }
+
   useEffect(() => { carregarResumo(); }, [mes]);
   useEffect(() => { if (aba === "lista") carregarLista(); }, [aba, mes, filtroTipo]);
+  useEffect(() => { if (aba === "contador") carregarAcesso(); }, [aba]);
+
+  const urlContador = (token: string) =>
+    `${typeof window !== "undefined" ? window.location.origin : ""}/contador/${token}`;
+
+  async function salvarAcesso(e: React.FormEvent) {
+    e.preventDefault();
+    setAcessoSaving(true);
+    try {
+      const payload: any = { nome: acessoForm.nome || null, expira_em: acessoForm.expira_em || null };
+      if (acessoForm.pin) payload.pin = acessoForm.pin;
+      await api.post("/gestao/fiscal/contador-acesso", payload);
+      setAcessoForm(f => ({ ...f, pin: "" }));
+      await carregarAcesso();
+    } finally { setAcessoSaving(false); }
+  }
+
+  async function revogarAcesso() {
+    if (!confirm("Revogar o link? O contador perderá o acesso imediatamente.")) return;
+    await api.delete("/gestao/fiscal/contador-acesso");
+    setAcesso(null);
+  }
+
+  async function renovarToken() {
+    if (!confirm("Gerar um novo link? O link antigo deixará de funcionar.")) return;
+    const { data } = await api.post("/gestao/fiscal/contador-acesso/renovar");
+    await carregarAcesso();
+  }
+
+  function copiarLink(token: string) {
+    navigator.clipboard?.writeText(urlContador(token));
+    setAcessoCopiado(true);
+    setTimeout(() => setAcessoCopiado(false), 2500);
+  }
 
   async function excluir(id: number) {
     if (!confirm("Excluir este lançamento?")) return;
@@ -272,7 +323,7 @@ export default function FiscalPage() {
 
       {/* Abas */}
       <div className="flex gap-1 bg-slate-100 rounded-xl p-1 w-fit">
-        {([["visao", "Visão Geral"], ["lista", "Lançamentos"]] as const).map(([k, l]) => (
+        {([["visao", "Visão Geral"], ["lista", "Lançamentos"], ["contador", "Acesso Contador"]] as const).map(([k, l]) => (
           <button key={k} onClick={() => setAba(k)}
             className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition ${aba === k ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
             {l}
@@ -412,6 +463,134 @@ export default function FiscalPage() {
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* ── Acesso do Contador ── */}
+      {aba === "contador" && (
+        <div className="space-y-4 max-w-lg">
+          {acesso === undefined ? (
+            <p className="text-slate-400 text-sm">Carregando...</p>
+          ) : acesso ? (
+            <>
+              {/* Link ativo */}
+              <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-bold text-slate-800">Link ativo</h3>
+                  <span className="text-[10px] bg-green-100 text-green-700 font-bold px-2 py-0.5 rounded-full">Ativo</span>
+                </div>
+
+                <div className="bg-slate-50 rounded-xl px-3 py-2.5 flex items-center gap-2">
+                  <span className="text-xs text-slate-600 truncate flex-1 font-mono">{urlContador(acesso.token)}</span>
+                  <button onClick={() => copiarLink(acesso.token)}
+                    className="text-xs font-semibold text-green-600 hover:text-green-700 shrink-0 transition">
+                    {acessoCopiado ? "✓ Copiado!" : "Copiar"}
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-xs text-slate-500">
+                  <div><span className="text-slate-400">Nome:</span> {acesso.nome ?? <span className="italic text-slate-300">não definido</span>}</div>
+                  <div><span className="text-slate-400">PIN:</span> {acesso.tem_pin ? "🔒 Configurado" : <span className="text-orange-500">⚠ Sem PIN</span>}</div>
+                  <div><span className="text-slate-400">Expira:</span> {acesso.expira_em ? new Date(acesso.expira_em + "T12:00:00").toLocaleDateString("pt-BR") : "Nunca"}</div>
+                  <div><span className="text-slate-400">Último acesso:</span> {acesso.ultimo_acesso ? new Date(acesso.ultimo_acesso).toLocaleDateString("pt-BR") : "Nunca"}</div>
+                </div>
+
+                {!acesso.tem_pin && (
+                  <p className="text-[11px] text-orange-600 bg-orange-50 rounded-lg px-3 py-2">
+                    ⚠ Recomendado: configure um PIN para proteger o link caso ele seja encaminhado para outra pessoa.
+                  </p>
+                )}
+
+                <div className="flex gap-2 pt-1">
+                  <button onClick={renovarToken}
+                    className="flex-1 py-2 rounded-xl border border-slate-200 text-xs text-slate-600 hover:bg-slate-50 font-semibold">
+                    🔄 Novo link
+                  </button>
+                  <button onClick={revogarAcesso}
+                    className="flex-1 py-2 rounded-xl border border-red-200 text-xs text-red-500 hover:bg-red-50 font-semibold">
+                    Revogar acesso
+                  </button>
+                </div>
+              </div>
+
+              {/* Editar configurações */}
+              <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+                <h3 className="text-sm font-bold text-slate-800 mb-4">Configurações</h3>
+                <form onSubmit={salvarAcesso} className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 mb-1">Nome do contador</label>
+                    <input type="text" value={acessoForm.nome}
+                      onChange={e => setAcessoForm(f => ({ ...f, nome: e.target.value }))}
+                      placeholder="Ex: Contador João Silva"
+                      className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 mb-1">
+                        PIN <span className="text-slate-400 font-normal">(4–6 dígitos)</span>
+                      </label>
+                      <input type="password" inputMode="numeric" minLength={4} maxLength={6}
+                        value={acessoForm.pin}
+                        onChange={e => setAcessoForm(f => ({ ...f, pin: e.target.value.replace(/\D/g, "") }))}
+                        placeholder={acesso.tem_pin ? "••••" : "Definir PIN"}
+                        className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 mb-1">Validade</label>
+                      <input type="date" value={acessoForm.expira_em}
+                        onChange={e => setAcessoForm(f => ({ ...f, expira_em: e.target.value }))}
+                        className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400" />
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-slate-400">💡 Envie o link e o PIN por canais separados (ex: WhatsApp + SMS)</p>
+                  <button type="submit" disabled={acessoSaving}
+                    className="w-full py-2.5 rounded-xl bg-green-600 hover:bg-green-700 text-white text-sm font-bold disabled:opacity-50">
+                    {acessoSaving ? "Salvando..." : "Salvar configurações"}
+                  </button>
+                </form>
+              </div>
+            </>
+          ) : (
+            /* Nenhum link criado ainda */
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-8 text-center space-y-4">
+              <div className="w-14 h-14 bg-indigo-50 rounded-2xl flex items-center justify-center mx-auto">
+                <span className="text-2xl">🔗</span>
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-slate-800">Compartilhar com contador</h3>
+                <p className="text-xs text-slate-400 mt-1">Gere um link para seu contador acessar os lançamentos sem precisar de uma conta.</p>
+              </div>
+              <form onSubmit={salvarAcesso} className="space-y-3 text-left">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">Nome do contador <span className="text-slate-400 font-normal">(opcional)</span></label>
+                  <input type="text" value={acessoForm.nome}
+                    onChange={e => setAcessoForm(f => ({ ...f, nome: e.target.value }))}
+                    placeholder="Ex: Contador João Silva"
+                    className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400" />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 mb-1">PIN <span className="text-slate-400 font-normal">(recomendado)</span></label>
+                    <input type="password" inputMode="numeric" minLength={4} maxLength={6}
+                      value={acessoForm.pin}
+                      onChange={e => setAcessoForm(f => ({ ...f, pin: e.target.value.replace(/\D/g, "") }))}
+                      placeholder="4–6 dígitos"
+                      className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 mb-1">Validade</label>
+                    <input type="date" value={acessoForm.expira_em}
+                      onChange={e => setAcessoForm(f => ({ ...f, expira_em: e.target.value }))}
+                      className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400" />
+                  </div>
+                </div>
+                <button type="submit" disabled={acessoSaving}
+                  className="w-full py-2.5 rounded-xl bg-green-600 hover:bg-green-700 text-white text-sm font-bold disabled:opacity-50">
+                  {acessoSaving ? "Gerando..." : "Gerar link de acesso"}
+                </button>
+              </form>
+            </div>
+          )}
         </div>
       )}
 
