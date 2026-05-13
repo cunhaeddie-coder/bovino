@@ -61,17 +61,22 @@ export default function InsumosPage() {
 
   async function carregar() {
     setLoading(true);
-    const [ins, forn, res] = await Promise.all([
-      api.get("/gestao/insumos").then(r => r.data),
-      api.get("/gestao/fornecedores").then(r => r.data),
-      api.get("/gestao/insumos/estoque/resumo").then(r => r.data).catch(() => null),
-    ]);
-    setInsumos(ins); setFornecedores(forn); setResumo(res);
-    if (aba === "compras") {
-      const c = await api.get("/gestao/compras").then(r => r.data.data || []).catch(() => []);
-      setCompras(c);
+    try {
+      const [ins, forn, res] = await Promise.all([
+        api.get("/gestao/insumos").then(r => r.data).catch(() => []),
+        api.get("/gestao/fornecedores").then(r => r.data).catch(() => []),
+        api.get("/gestao/insumos/estoque/resumo").then(r => r.data).catch(() => null),
+      ]);
+      setInsumos(Array.isArray(ins) ? ins : []);
+      setFornecedores(Array.isArray(forn) ? forn : []);
+      setResumo(res);
+      if (aba === "compras") {
+        const c = await api.get("/gestao/compras").then(r => r.data.data || []).catch(() => []);
+        setCompras(c);
+      }
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   useEffect(() => { carregar(); }, []);
@@ -151,10 +156,10 @@ export default function InsumosPage() {
                     <td className="px-3 py-3 text-gray-500 capitalize">{i.categoria}</td>
                     <td className="px-3 py-3 text-gray-500">{i.unidade}</td>
                     <td className={`px-3 py-3 text-right font-semibold ${abaixo ? "text-red-600" : "text-gray-800"}`}>
-                      {i.estoque?.quantidade_atual?.toFixed(2) ?? "—"}
+                      {Number(i.estoque?.quantidade_atual ?? 0).toFixed(2) ?? "—"}
                       {abaixo && <span className="ml-1 text-xs text-red-500">⚠️</span>}
                     </td>
-                    <td className="px-3 py-3 text-right text-gray-500">{i.estoque?.quantidade_minima?.toFixed(2) ?? "—"}</td>
+                    <td className="px-3 py-3 text-right text-gray-500">{Number(i.estoque?.quantidade_minima ?? 0).toFixed(2) ?? "—"}</td>
                     <td className="px-3 py-3 text-right text-gray-700">{i.preco_unitario ? fmt(i.preco_unitario) : "—"}</td>
                     <td className="px-5 py-3 text-right">
                       <button onClick={() => setMovModal(i)}
