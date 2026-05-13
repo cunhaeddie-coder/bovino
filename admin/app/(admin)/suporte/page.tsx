@@ -14,6 +14,26 @@ type Mensagem = {
   conteudo: string; created_at: string; admin_nome: string | null;
 };
 
+function TextoComLinks({ texto, classLink }: { texto: string; classLink: string }) {
+  return (
+    <>
+      {texto.split("\n").map((linha, i, arr) => (
+        <span key={i}>
+          {linha.split(/(https?:\/\/[^\s]+)/g).map((p, j) =>
+            /^https?:\/\//.test(p) ? (
+              <a key={j} href={p} target="_blank" rel="noopener noreferrer"
+                className={`underline break-all ${classLink}`}>
+                {p}
+              </a>
+            ) : p
+          )}
+          {i < arr.length - 1 && <br />}
+        </span>
+      ))}
+    </>
+  );
+}
+
 type Paginado<T> = { data: T[]; total: number; current_page: number; last_page: number };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -135,9 +155,10 @@ function DetalheConversa({ id, onUpdate }: { id: number; onUpdate: () => void })
                   ? "bg-blue-600 text-white rounded-bl-sm"
                   : "bg-green-50 border border-green-100 text-green-900 rounded-bl-sm"
               }`}>
-                {m.conteudo.split("\n").map((l, i) => (
-                  <span key={i}>{l}{i < m.conteudo.split("\n").length-1 && <br />}</span>
-                ))}
+                <TextoComLinks
+                  texto={m.conteudo}
+                  classLink={m.papel === "admin" ? "text-blue-200 hover:text-white" : "text-blue-600 hover:text-blue-800"}
+                />
               </div>
               <p className={`text-[10px] text-slate-400 ${m.papel === "usuario" ? "text-right" : "ml-1"}`}>
                 {new Date(m.created_at).toLocaleTimeString("pt-BR", { hour:"2-digit", minute:"2-digit" })}

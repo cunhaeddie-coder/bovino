@@ -10,6 +10,28 @@ type Mensagem = {
   admin_nome?: string | null;
 };
 
+// Renderiza texto com URLs clicáveis e quebras de linha
+function TextoComLinks({ texto, classLink }: { texto: string; classLink: string }) {
+  const partes = texto.split(/(https?:\/\/[^\s]+)/g);
+  return (
+    <>
+      {texto.split("\n").map((linha, i, arr) => (
+        <span key={i}>
+          {linha.split(/(https?:\/\/[^\s]+)/g).map((p, j) =>
+            /^https?:\/\//.test(p) ? (
+              <a key={j} href={p} target="_blank" rel="noopener noreferrer"
+                className={`underline break-all ${classLink}`}>
+                {p}
+              </a>
+            ) : p
+          )}
+          {i < arr.length - 1 && <br />}
+        </span>
+      ))}
+    </>
+  );
+}
+
 type Conversa = {
   id: number;
   status: "aberta" | "em_atendimento" | "resolvida" | "escalada";
@@ -191,9 +213,10 @@ export default function SuportePage() {
                     ? "bg-blue-50 text-blue-900 border border-blue-100 rounded-bl-sm"
                     : "bg-slate-100 text-slate-800 rounded-bl-sm"
                 }`}>
-                  {m.conteudo.split("\n").map((line, j) => (
-                    <span key={j}>{line}{j < m.conteudo.split("\n").length - 1 && <br />}</span>
-                  ))}
+                  <TextoComLinks
+                    texto={m.conteudo}
+                    classLink={m.papel === "usuario" ? "text-green-100 hover:text-white" : "text-blue-600 hover:text-blue-800"}
+                  />
                 </div>
                 <p className={`text-[10px] text-slate-400 ${m.papel === "usuario" ? "text-right" : "ml-1"}`}>
                   {fmtHora(m.created_at)}
