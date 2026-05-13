@@ -48,11 +48,12 @@ const CAT_COLOR: Record<string, string> = {
   bezerro: "bg-amber-100 text-amber-700",
 };
 
-function fmtPeso(kg: number | null) {
-  if (!kg) return "—";
-  return kg >= 1000
-    ? `${(kg / 1000).toFixed(1)} t`
-    : `${kg.toFixed(0)} kg`;
+function fmtPeso(kg: number | string | null) {
+  const v = Number(kg);
+  if (!v || v === 0) return "—";
+  return v >= 1000
+    ? `${(v / 1000).toFixed(1)} t`
+    : `${v.toFixed(0)} kg`;
 }
 
 function fmtData(iso: string) {
@@ -200,8 +201,8 @@ export default function RelatoriosPage() {
                 </div>
                 <div className="bg-amber-50 rounded-xl p-4 text-center">
                   <p className="text-[10px] text-amber-600 font-semibold uppercase tracking-wide">Peso médio</p>
-                  <p className="text-2xl font-extrabold text-amber-700 mt-1">{inventario.peso_medio > 0 ? inventario.peso_medio : "—"}</p>
-                  <p className="text-[10px] text-amber-500">{inventario.peso_medio > 0 ? "kg/cabeça" : "sem dados"}</p>
+                  <p className="text-2xl font-extrabold text-amber-700 mt-1">{Number(inventario.peso_medio) > 0 ? `${Number(inventario.peso_medio).toFixed(1)}` : "—"}</p>
+                  <p className="text-[10px] text-amber-500">{Number(inventario.peso_medio) > 0 ? "kg/cabeça" : "sem dados"}</p>
                 </div>
               </div>
 
@@ -240,7 +241,7 @@ export default function RelatoriosPage() {
                       <td className="px-4 py-3 text-right text-slate-900">{inventario.total_cabecas}</td>
                       <td className="px-4 py-3 text-right text-blue-700">{inventario.total_machos}</td>
                       <td className="px-4 py-3 text-right text-pink-700">{inventario.total_femeas}</td>
-                      <td className="px-4 py-3 text-right text-slate-600 text-xs font-semibold">{inventario.peso_medio > 0 ? `${inventario.peso_medio} kg` : "—"}</td>
+                      <td className="px-4 py-3 text-right text-slate-600 text-xs font-semibold">{Number(inventario.peso_medio) > 0 ? `${Number(inventario.peso_medio).toFixed(1)} kg` : "—"}</td>
                       <td className="px-4 py-3 text-right text-amber-800">{fmtPeso(inventario.peso_total)}</td>
                     </tr>
                   </tbody>
