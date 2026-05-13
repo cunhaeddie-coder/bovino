@@ -174,6 +174,57 @@ class ContadorViewController extends Controller
         ]);
     }
 
+    // ── GET /contador/{token}/inventario — inventário do rebanho ─────────────
+
+    public function inventario(Request $request, string $token): JsonResponse
+    {
+        $acesso = $this->buscarAcesso($token);
+        $this->autorizarSessao($acesso, $request);
+
+        $dataRef = $request->get('data', now()->toDateString());
+
+        $fazenda = DB::table('fazendas')->find($acesso->fazenda_id);
+
+        $q = DB::table('rebanho')
+            ->where('fazenda_id', $acesso->fazenda_id)
+            ->where(function ($query) use ($dataRef) {
+                $query->where('status', 'ativo')
+                      ->orWhere(function ($q2) use ($dataRef) {
+                          $q2->whereIn('status', ['vendido', 'morto', 'transferido'])
+                             ->whereDate('updated_at', '>', $dataRef);
+                      });
+            })
+            ->whereDate('created_at', '<=', $dataRef);
+
+        $categorias = (clone $q)
+            ->selectRaw('
+                categoria,
+                COUNT(*) as total,
+                SUM(CASE WHEN sexo = "macho" THEN 1 ELSE 0 END) as machos,
+                SUM(CASE WHEN sexo = "femea" THEN 1 ELSE 0 END) as femeas,
+                ROUND(AVG(CASE WHEN peso_atual > 0 THEN peso_atual END), 1) as peso_medio,
+                ROUND(SUM(COALESCE(peso_atual, 0)), 0) as peso_total
+            ')
+            ->groupBy('categoria')
+            ->orderByRaw("FIELD(categoria,'vaca','novilha','bezerra','touro','boi','novilho','bezerro')")
+            ->get();
+
+        $total     = (clone $q)->count();
+        $pesoTotal = (clone $q)->sum('peso_atual');
+
+        return response()->json([
+            'fazenda_nome'  => $fazenda?->nome,
+            'data_ref'      => $dataRef,
+            'gerado_em'     => now()->toDateTimeString(),
+            'total_cabecas' => $total,
+            'total_machos'  => (clone $q)->where('sexo', 'macho')->count(),
+            'total_femeas'  => (clone $q)->where('sexo', 'femea')->count(),
+            'peso_medio'    => $total > 0 ? round($pesoTotal / $total, 1) : 0,
+            'peso_total'    => round($pesoTotal, 0),
+            'categorias'    => $categorias,
+        ]);
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private function criarSessao(int $acessoId): string

@@ -120,8 +120,9 @@ Route::get('fazendas/{slug}', [FazendaController::class, 'showBySlug']);
 // Acesso do contador — rotas públicas (sem autenticação)
 Route::get('contador/{token}',           [ContadorViewController::class, 'show']);
 Route::post('contador/{token}/verificar',[ContadorViewController::class, 'verificarPin']);
-Route::get('contador/{token}/dados',     [ContadorViewController::class, 'dados']);
+Route::get('contador/{token}/dados',      [ContadorViewController::class, 'dados']);
 Route::get('contador/{token}/exportar',  [ContadorViewController::class, 'exportar']);
+Route::get('contador/{token}/inventario',[ContadorViewController::class, 'inventario']);
 
 // Inteligência de mercado (público — log de buscas e cotações realizadas)
 Route::post('inteligencia/busca', [IntelligenciaController::class, 'logBusca']);
