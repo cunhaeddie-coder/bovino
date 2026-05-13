@@ -23,6 +23,10 @@ class AdminFinanceiroController extends Controller
             $query->where('plano_id', $request->plano_id);
         }
 
+        if ($request->filled('gateway')) {
+            $query->where('gateway', $request->gateway);
+        }
+
         return response()->json($query->paginate(25));
     }
 
