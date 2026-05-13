@@ -60,9 +60,9 @@ export function Header() {
         {/* Nav desktop */}
         <nav className="hidden md:flex items-center gap-5 ml-4 text-sm">
           <Link href="/busca" className={isActive("/busca")}>Buscar gado</Link>
-          <Link href="/cotacoes" className={isActive("/cotacoes")}>Cotações</Link>
           {isPremium && (
             <>
+              <Link href="/cotacoes" className={isActive("/cotacoes")}>Cotações</Link>
               <Link href="/gestao" className={isActive("/gestao")}>Gestão</Link>
               <Link href="/gestao/arrendamentos" className={isActive("/gestao/arrendamentos")}>Arrendamentos</Link>
               <Link href="/inteligencia" className={isActive("/inteligencia")}>Inteligência</Link>
@@ -129,6 +129,9 @@ export function Header() {
                         <>
                           <div className="border-t border-gray-100 my-1" />
                           <p className="px-4 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Ferramentas Premium</p>
+                          <Link href="/cotacoes" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-50">
+                            <span>📈</span> Cotações
+                          </Link>
                           <Link href="/gestao" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-50">
                             <span>🌾</span> Gestão da fazenda
                           </Link>
