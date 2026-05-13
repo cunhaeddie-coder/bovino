@@ -59,9 +59,10 @@ const CAT_COLOR: Record<string, string> = {
   bezerro: "bg-amber-100 text-amber-700",
 };
 
-function fmtPeso(kg: number | null) {
-  if (!kg || kg === 0) return "—";
-  return kg >= 1000 ? `${(kg / 1000).toFixed(1)} t` : `${kg.toFixed(0)} kg`;
+function fmtPeso(kg: number | string | null) {
+  const v = Number(kg);
+  if (!v || v === 0) return "—";
+  return v >= 1000 ? `${(v / 1000).toFixed(1)} t` : `${v.toFixed(0)} kg`;
 }
 
 function mesAtual() {
@@ -410,7 +411,7 @@ export default function ContadorPage() {
                     <p className="text-[10px] text-blue-500 font-semibold uppercase">Machos</p>
                     <p className="text-2xl font-extrabold text-blue-700 mt-1">{inventario.total_machos}</p>
                     <p className="text-[10px] text-blue-400">
-                      {inventario.total_cabecas > 0 ? `${((inventario.total_machos / inventario.total_cabecas) * 100).toFixed(0)}%` : "0%"}
+                      {Number(inventario.total_cabecas) > 0 ? `${((Number(inventario.total_machos) / Number(inventario.total_cabecas)) * 100).toFixed(0)}%` : "0%"}
                     </p>
                   </div>
                   <div className="bg-pink-50 rounded-xl p-4 text-center">
