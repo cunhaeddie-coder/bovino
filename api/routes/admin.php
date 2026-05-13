@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\Admin\AdminAnuncianteController;
+use App\Http\Controllers\Api\Admin\AdminAtendimentoController;
 use App\Http\Controllers\Api\Admin\AdminPlanoController;
 use App\Http\Controllers\Api\Admin\AdminBannerController;
 use App\Http\Controllers\Api\Admin\AdminAnuncioController;
@@ -100,6 +101,23 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('banners/{id}',                 [AdminBannerController::class, 'update']);
     Route::post('banners/{id}/toggle-ativo',   [AdminBannerController::class, 'toggleAtivo']);
     Route::delete('banners/{id}',              [AdminBannerController::class, 'destroy']);
+
+    // Atendimento ao cliente
+    Route::get('atendimento/servicos',                    [AdminAtendimentoController::class, 'indexServicos']);
+    Route::post('atendimento/servicos',                   [AdminAtendimentoController::class, 'storeServico']);
+    Route::put('atendimento/servicos/{id}',               [AdminAtendimentoController::class, 'updateServico']);
+    Route::get('atendimento/ordens',                      [AdminAtendimentoController::class, 'indexOrdens']);
+    Route::post('atendimento/ordens',                     [AdminAtendimentoController::class, 'storeOrdem']);
+    Route::put('atendimento/ordens/{id}',                 [AdminAtendimentoController::class, 'updateOrdem']);
+    Route::post('atendimento/ordens/{id}/aceitar',        [AdminAtendimentoController::class, 'aceitar']);
+    Route::post('atendimento/ordens/{id}/recusar',        [AdminAtendimentoController::class, 'recusar']);
+    Route::post('atendimento/ordens/{id}/iniciar',        [AdminAtendimentoController::class, 'iniciar']);
+    Route::post('atendimento/ordens/{id}/concluir',       [AdminAtendimentoController::class, 'concluir']);
+    Route::post('atendimento/ordens/{id}/pago-cliente',   [AdminAtendimentoController::class, 'confirmarPagamentoCliente']);
+    Route::post('atendimento/ordens/{id}/pago-tecnico',   [AdminAtendimentoController::class, 'confirmarPagamentoTecnico']);
+    Route::get('atendimento/agenda',                      [AdminAtendimentoController::class, 'agenda']);
+    Route::get('atendimento/saldo-tecnicos',              [AdminAtendimentoController::class, 'saldoTecnicos']);
+    Route::get('atendimento/tecnicos',                    [AdminAtendimentoController::class, 'tecnicos']);
 
     // Sugestões dos clientes
     Route::get('sugestoes',               [AdminSugestaoController::class, 'index']);

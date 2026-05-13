@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Users, Tag, CalendarClock, Star, MapPin,
   CreditCard, Banknote, Building2, Image as ImageIcon, PiggyBank,
   TrendingUp, MessageSquare, ShieldCheck, LogOut, PackageOpen,
-  UserCheck, Settings, type LucideIcon,
+  UserCheck, Headset, ClipboardList, Calendar, type LucideIcon,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { useAdmin, canAccess, roleLabel, roleColor, AdminPapel } from "@/lib/admin-context";
@@ -40,6 +40,11 @@ const NAV: NavEntry[] = [
 
   { group: "Inteligência" },
   { href: "/inteligencia", label: "Mercado",             Icon: TrendingUp },
+
+  { group: "Atendimento" },
+  { href: "/atendimento/agenda",   label: "Agenda",        Icon: Calendar },
+  { href: "/atendimento/ordens",   label: "Ordens",        Icon: ClipboardList },
+  { href: "/atendimento/catalogo", label: "Catálogo",      Icon: Headset },
 
   { group: "Suporte" },
   { href: "/sugestoes",    label: "Sugestões",           Icon: MessageSquare },

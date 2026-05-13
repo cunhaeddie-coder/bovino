@@ -16,14 +16,15 @@ type AdminMember = {
 
 type Paginated<T> = { data: T[]; total: number; current_page: number; last_page: number };
 
-const PAPEIS: AdminPapel[] = ["super", "operador", "ti", "vendas", "treinamento"];
+const PAPEIS: AdminPapel[] = ["super", "operador", "ti", "vendas", "treinamento", "tecnico"];
 
 const PAPEL_DESC: Record<AdminPapel, string> = {
   super:       "Acesso total ao sistema",
   operador:    "Acesso a todas as seções, exceto equipe",
   ti:          "Dashboard, usuários, anúncios, inteligência, fazendas",
   vendas:      "Dashboard, assinaturas, pagamentos, anunciantes",
-  treinamento: "Dashboard, usuários, anúncios, avaliações (leitura)",
+  treinamento: "Dashboard, usuários, anúncios, avaliações, atendimento",
+  tecnico:     "Dashboard e atendimento (agenda + ordens próprias)",
 };
 
 function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {

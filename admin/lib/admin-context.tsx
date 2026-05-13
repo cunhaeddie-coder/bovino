@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { api } from "@/lib/api";
 
-export type AdminPapel = "super" | "operador" | "ti" | "vendas" | "treinamento";
+export type AdminPapel = "super" | "operador" | "ti" | "vendas" | "treinamento" | "tecnico";
 
 export type AdminUser = {
   id: number;
@@ -20,6 +20,7 @@ const ROLE_LABELS: Record<AdminPapel, string> = {
   ti:          "Equipe TI",
   vendas:      "Equipe Vendas",
   treinamento: "Treinamento",
+  tecnico:     "Técnico / Freelancer",
 };
 
 const ROLE_COLORS: Record<AdminPapel, string> = {
@@ -28,14 +29,16 @@ const ROLE_COLORS: Record<AdminPapel, string> = {
   ti:          "bg-cyan-100 text-cyan-700",
   vendas:      "bg-green-100 text-green-700",
   treinamento: "bg-amber-100 text-amber-700",
+  tecnico:     "bg-orange-100 text-orange-700",
 };
 
 const ROLE_ROUTES: Record<AdminPapel, string[]> = {
   super:       ["*"],
-  operador:    ["/dashboard", "/clientes", "/assinaturas", "/planos", "/anuncios", "/fazendas", "/visitas", "/avaliacoes", "/anunciantes", "/banners", "/pagamentos", "/custos", "/inteligencia", "/sugestoes"],
-  ti:          ["/dashboard", "/clientes", "/anuncios", "/fazendas", "/visitas", "/avaliacoes", "/inteligencia", "/sugestoes"],
-  vendas:      ["/dashboard", "/clientes", "/assinaturas", "/planos", "/anunciantes", "/banners", "/inteligencia"],
-  treinamento: ["/dashboard", "/clientes", "/anuncios", "/avaliacoes", "/sugestoes"],
+  operador:    ["/dashboard", "/clientes", "/assinaturas", "/planos", "/anuncios", "/fazendas", "/visitas", "/avaliacoes", "/anunciantes", "/banners", "/pagamentos", "/custos", "/inteligencia", "/sugestoes", "/atendimento"],
+  ti:          ["/dashboard", "/clientes", "/anuncios", "/fazendas", "/visitas", "/avaliacoes", "/inteligencia", "/sugestoes", "/atendimento"],
+  vendas:      ["/dashboard", "/clientes", "/assinaturas", "/planos", "/anunciantes", "/banners", "/inteligencia", "/atendimento"],
+  treinamento: ["/dashboard", "/clientes", "/anuncios", "/avaliacoes", "/sugestoes", "/atendimento"],
+  tecnico:     ["/dashboard", "/atendimento"],
 };
 
 export function roleLabel(papel: AdminPapel): string { return ROLE_LABELS[papel] ?? papel; }
