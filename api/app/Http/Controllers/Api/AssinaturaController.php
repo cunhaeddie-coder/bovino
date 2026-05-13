@@ -20,13 +20,19 @@ class AssinaturaController extends Controller
     {
         $data = $request->validate([
             'plano_slug' => ['required', 'string', 'exists:planos,slug'],
+            'periodo'    => ['sometimes', 'in:mensal,anual'],
         ]);
 
         $plano     = Plano::where('slug', $data['plano_slug'])->firstOrFail();
         $assinante = $request->user();
+        $periodo   = $data['periodo'] ?? 'mensal';
 
         if ($plano->tipo === 'anunciante' && !($assinante instanceof \App\Models\Anunciante)) {
             return response()->json(['message' => 'Este plano é exclusivo para anunciantes.'], 403);
+        }
+
+        if ($periodo === 'anual' && !$plano->preco_anual) {
+            return response()->json(['message' => 'Este plano não oferece cobrança anual.'], 422);
         }
 
         $assinante->assinaturas()
@@ -39,7 +45,8 @@ class AssinaturaController extends Controller
             'assinante_id'   => $assinante->id,
             'plano_id'       => $plano->id,
             'status'         => 'pendente',
-            'valor'          => $plano->preco,
+            'periodo'        => $periodo,
+            'valor'          => $periodo === 'anual' ? $plano->preco_anual : $plano->preco,
         ]);
 
         return response()->json([

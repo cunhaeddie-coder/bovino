@@ -13,7 +13,7 @@ class Assinatura extends Model
     protected $table = 'assinaturas';
 
     protected $fillable = [
-        'assinante_type', 'assinante_id', 'plano_id', 'status',
+        'assinante_type', 'assinante_id', 'plano_id', 'status', 'periodo',
         'gateway', 'valor', 'gateway_id', 'gateway_subscription_id',
         'stripe_subscription_id', 'inicia_em', 'expira_em', 'cancelada_em',
     ];
@@ -49,15 +49,23 @@ class Assinatura extends Model
             && ($this->expira_em === null || $this->expira_em->isFuture());
     }
 
-    // Ativa a assinatura e sincroniza o campo plano no usuário
+    // Ativa a assinatura e sincroniza o campo plano no usuário.
+    // Se $expiraEm for null, usa o período da assinatura (mensal/anual).
     public function ativar(?\Carbon\Carbon $expiraEm = null): void
     {
+        if ($expiraEm === null) {
+            $base = ($this->expira_em && $this->expira_em->isFuture())
+                ? $this->expira_em
+                : now();
+            $expiraEm = $this->periodo === 'anual'
+                ? $base->copy()->addYear()
+                : $base->copy()->addMonth();
+        }
+
         $this->update([
             'status'    => 'ativa',
             'inicia_em' => $this->inicia_em ?? now(),
-            'expira_em' => $expiraEm ?? ($this->expira_em && $this->expira_em->isFuture()
-                ? $this->expira_em->addMonth()
-                : now()->addMonth()),
+            'expira_em' => $expiraEm,
         ]);
 
         $assinante = $this->assinante;

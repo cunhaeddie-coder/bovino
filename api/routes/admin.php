@@ -36,7 +36,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('usuarios/{id}/desbloquear',  [AdminUsuarioController::class, 'desbloquear']);
     Route::delete('usuarios/{id}',             [AdminUsuarioController::class, 'desativar']);
     Route::post('usuarios/{id}/reativar',      [AdminUsuarioController::class, 'reativar']);
-    Route::post('usuarios/{id}/simular-plano', [AdminUsuarioController::class, 'simularPlano']);
+    Route::post('usuarios/{id}/simular-plano',      [AdminUsuarioController::class, 'simularPlano']);
+    Route::post('usuarios',                          [AdminUsuarioController::class, 'cadastrar']);
+    Route::post('assinaturas/manual',                [AdminUsuarioController::class, 'criarAssinaturaManual']);
+    Route::post('assinaturas/{id}/confirmar-pix',    [AdminUsuarioController::class, 'confirmarPix']);
 
     // Anúncios
     Route::get('anuncios',                [AdminAnuncioController::class, 'index']);

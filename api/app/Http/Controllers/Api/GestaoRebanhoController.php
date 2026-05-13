@@ -16,6 +16,25 @@ class GestaoRebanhoController extends Controller
         return $fazenda;
     }
 
+    private function verificarLimite(Request $request, int $novasAdicionadas = 1): void
+    {
+        $assinatura = $request->user()->assinaturaAtiva();
+        $maxCabecas = $assinatura?->plano?->max_cabecas;
+        if ($maxCabecas === null) return;
+
+        $atual = $request->user()->fazenda->rebanho()->count();
+        if ($atual + $novasAdicionadas > $maxCabecas) {
+            $planoAtual = $assinatura->plano->slug;
+            abort(response()->json([
+                'message'       => "Seu plano permite até {$maxCabecas} cabeças. Você possui {$atual}.",
+                'upgrade'       => true,
+                'max_cabecas'   => $maxCabecas,
+                'cabecas_atuais'=> $atual,
+                'plano_atual'   => $planoAtual,
+            ], 403));
+        }
+    }
+
     public function index(Request $request)
     {
         $fazenda = $this->fazenda($request);
@@ -63,6 +82,7 @@ class GestaoRebanhoController extends Controller
             'observacao'      => 'nullable|string|max:500',
         ]);
 
+        $this->verificarLimite($request, 1);
         $data['fazenda_id'] = $fazenda->id;
         $animal = Rebanho::create($data);
 
@@ -73,6 +93,10 @@ class GestaoRebanhoController extends Controller
     {
         $fazenda = $this->fazenda($request);
 
+        $data = $request->validate([
+            'quantidade'      => 'required|integer|min:1|max:500',
+        ]);
+        $this->verificarLimite($request, (int) $request->quantidade);
         $data = $request->validate([
             'quantidade'      => 'required|integer|min:1|max:500',
             'raca'            => 'required|string|max:60',

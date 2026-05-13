@@ -110,6 +110,7 @@ function CheckoutInner() {
   const router                = useRouter();
   const { token, setAuth, user } = useAuthStore();
   const planoSlug             = searchParams.get("plano") ?? "";
+  const periodo               = (searchParams.get("periodo") ?? "mensal") as "mensal" | "anual";
 
   const [plano, setPlano]             = useState<PlanoInfo | null>(null);
   const [assinaturaId, setAssinaturaId] = useState<number | null>(null);
@@ -139,7 +140,7 @@ function CheckoutInner() {
 
     Promise.all([
       api.get(`/planos/${planoSlug}`),
-      api.post("/assinar", { plano_slug: planoSlug }),
+      api.post("/assinar", { plano_slug: planoSlug, periodo }),
     ])
       .then(([planoRes, assRes]) => {
         setPlano(planoRes.data);
