@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard, Users, Tag, CalendarClock, Star, MapPin,
   CreditCard, Banknote, Building2, Image as ImageIcon, PiggyBank,
-  TrendingUp, MessageSquare, ShieldCheck, LogOut, type LucideIcon,
+  TrendingUp, MessageSquare, ShieldCheck, LogOut, PackageOpen, type LucideIcon,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { useAdmin, canAccess, roleLabel, roleColor, AdminPapel } from "@/lib/admin-context";
@@ -28,6 +28,7 @@ const NAV: NavEntry[] = [
   { href: "/fazendas",     label: "Fazendas",           Icon: MapPin },
 
   { group: "Financeiro" },
+  { href: "/planos",       label: "Planos",              Icon: PackageOpen },
   { href: "/assinaturas",  label: "Assinaturas",        Icon: CreditCard },
   { href: "/pagamentos",   label: "Pagamentos",         Icon: Banknote },
   { href: "/anunciantes",  label: "Anunciantes B2B",    Icon: Building2 },

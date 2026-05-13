@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\Admin\AdminAnuncianteController;
+use App\Http\Controllers\Api\Admin\AdminPlanoController;
 use App\Http\Controllers\Api\Admin\AdminBannerController;
 use App\Http\Controllers\Api\Admin\AdminAnuncioController;
 use App\Http\Controllers\Api\Admin\AdminAuthController;
@@ -55,6 +56,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('anunciantes/{id}/suspender',       [AdminAnuncianteController::class, 'suspender']);
     Route::post('anunciantes/{id}/reativar',        [AdminAnuncianteController::class, 'reativar']);
     Route::post('anunciantes/{id}/resetar-senha',   [AdminAnuncianteController::class, 'resetarSenha']);
+
+    // Planos
+    Route::get('planos',                        [AdminPlanoController::class, 'index']);
+    Route::put('planos/{id}',                   [AdminPlanoController::class, 'update']);
+    Route::post('planos/{id}/toggle-ativo',     [AdminPlanoController::class, 'toggleAtivo']);
 
     // Financeiro
     Route::get('assinaturas',                       [AdminFinanceiroController::class, 'assinaturas']);
