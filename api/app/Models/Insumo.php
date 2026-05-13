@@ -14,6 +14,11 @@ class Insumo extends Model
 
     protected $fillable = ['fazenda_id','nome','codigo','categoria','unidade','preco_unitario','fornecedor_padrao_id','descricao','ativo'];
 
+    protected $casts = [
+        'preco_unitario' => 'float',
+        'ativo'          => 'boolean',
+    ];
+
     public function fazenda(): BelongsTo { return $this->belongsTo(Fazenda::class); }
     public function fornecedor(): BelongsTo { return $this->belongsTo(Fornecedor::class, 'fornecedor_padrao_id'); }
     public function estoque(): HasOne { return $this->hasOne(EstoqueInsumo::class); }

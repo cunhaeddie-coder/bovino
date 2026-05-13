@@ -45,7 +45,9 @@ type Compra = {
 
 const CATEGORIAS = ["medicamento","vacina","nutricional","mineral","combustivel","ferramenta","semente","agrotóxico","outros"];
 
-function fmt(v: number) { return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }); }
+function fmt(v: number | string | null | undefined) {
+  return Number(v ?? 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
 
 export default function InsumosPage() {
   const [insumos, setInsumos]       = useState<Insumo[]>([]);
@@ -146,7 +148,9 @@ export default function InsumosPage() {
               ) : insumos.length === 0 ? (
                 <tr><td colSpan={7} className="text-center py-10 text-gray-400">Nenhum insumo cadastrado</td></tr>
               ) : insumos.map(i => {
-                const abaixo = i.estoque && i.estoque.quantidade_minima > 0 && i.estoque.quantidade_atual <= i.estoque.quantidade_minima;
+                const qtdAtual = Number(i.estoque?.quantidade_atual ?? 0);
+                const qtdMin   = Number(i.estoque?.quantidade_minima ?? 0);
+                const abaixo   = i.estoque && qtdMin > 0 && qtdAtual <= qtdMin;
                 return (
                   <tr key={i.id} className="border-t border-gray-50 hover:bg-gray-50">
                     <td className="px-5 py-3">
@@ -156,10 +160,10 @@ export default function InsumosPage() {
                     <td className="px-3 py-3 text-gray-500 capitalize">{i.categoria}</td>
                     <td className="px-3 py-3 text-gray-500">{i.unidade}</td>
                     <td className={`px-3 py-3 text-right font-semibold ${abaixo ? "text-red-600" : "text-gray-800"}`}>
-                      {Number(i.estoque?.quantidade_atual ?? 0).toFixed(2) ?? "—"}
+                      {qtdAtual > 0 ? qtdAtual.toFixed(2) : "—"}
                       {abaixo && <span className="ml-1 text-xs text-red-500">⚠️</span>}
                     </td>
-                    <td className="px-3 py-3 text-right text-gray-500">{Number(i.estoque?.quantidade_minima ?? 0).toFixed(2) ?? "—"}</td>
+                    <td className="px-3 py-3 text-right text-gray-500">{qtdMin > 0 ? qtdMin.toFixed(2) : "—"}</td>
                     <td className="px-3 py-3 text-right text-gray-700">{i.preco_unitario ? fmt(i.preco_unitario) : "—"}</td>
                     <td className="px-5 py-3 text-right">
                       <button onClick={() => setMovModal(i)}
@@ -447,7 +451,7 @@ function MovimentacaoModal({ insumo, onClose, onDone }: { insumo: Insumo; onClos
         <div className="flex items-center justify-between px-6 py-4 border-b">
           <div>
             <h2 className="font-bold text-gray-800">Movimentar Estoque</h2>
-            <p className="text-xs text-gray-400">{insumo.nome} · atual: {insumo.estoque?.quantidade_atual?.toFixed(2) ?? 0} {insumo.unidade}</p>
+            <p className="text-xs text-gray-400">{insumo.nome} · atual: {Number(insumo.estoque?.quantidade_atual ?? 0).toFixed(2)} {insumo.unidade}</p>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl">×</button>
         </div>
