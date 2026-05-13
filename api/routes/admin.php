@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\Admin\AdminStatsController;
 use App\Http\Controllers\Api\Admin\AdminUsuarioController;
 use App\Http\Controllers\Api\Admin\AdminVisitaController;
 use App\Http\Controllers\Api\Admin\AdminSugestaoController;
+use App\Http\Controllers\Api\Admin\AdminSupportController;
 use Illuminate\Support\Facades\Route;
 
 // Auth (público)
@@ -118,6 +119,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('atendimento/agenda',                      [AdminAtendimentoController::class, 'agenda']);
     Route::get('atendimento/saldo-tecnicos',              [AdminAtendimentoController::class, 'saldoTecnicos']);
     Route::get('atendimento/tecnicos',                    [AdminAtendimentoController::class, 'tecnicos']);
+
+    // Chat de suporte IA
+    Route::get('suporte/pendentes',          [AdminSupportController::class, 'pendentes']);
+    Route::get('suporte',                    [AdminSupportController::class, 'index']);
+    Route::get('suporte/{id}',               [AdminSupportController::class, 'show']);
+    Route::post('suporte/{id}/responder',    [AdminSupportController::class, 'responder']);
+    Route::post('suporte/{id}/resolver',     [AdminSupportController::class, 'resolver']);
+    Route::post('suporte/{id}/escalar',      [AdminSupportController::class, 'escalar']);
 
     // Sugestões dos clientes
     Route::get('sugestoes',               [AdminSugestaoController::class, 'index']);

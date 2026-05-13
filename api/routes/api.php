@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\GestaoFinanceiroController;
 use App\Http\Controllers\Api\GestaoFinanceiroFazendaController;
 use App\Http\Controllers\Api\ContadorAcessoController;
 use App\Http\Controllers\Api\ProducaoLeiteController;
+use App\Http\Controllers\Api\SupportChatController;
 use App\Http\Controllers\Api\ContadorViewController;
 use App\Http\Controllers\Api\LancamentoFiscalController;
 use App\Http\Controllers\Api\GestaoFornecedorController;
@@ -312,6 +313,13 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/', [GestaoEventoCampoController::class, 'store']);
         Route::post('/{id}/resolver', [GestaoEventoCampoController::class, 'resolver']);
         Route::delete('/{id}', [GestaoEventoCampoController::class, 'destroy']);
+    });
+
+    // Chat de suporte com IA
+    Route::prefix('suporte')->group(function () {
+        Route::get('/',         [SupportChatController::class, 'conversa']);
+        Route::post('/enviar',  [SupportChatController::class, 'enviar']);
+        Route::post('/nova',    [SupportChatController::class, 'nova']);
     });
 
     // Módulo Leiteiro

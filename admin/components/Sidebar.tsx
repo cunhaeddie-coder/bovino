@@ -47,6 +47,7 @@ const NAV: NavEntry[] = [
   { href: "/atendimento/catalogo", label: "Catálogo",      Icon: Headset },
 
   { group: "Suporte" },
+  { href: "/suporte",      label: "Chat IA",             Icon: MessageSquare },
   { href: "/sugestoes",    label: "Sugestões",           Icon: MessageSquare },
 
   { group: "Configurações" },
