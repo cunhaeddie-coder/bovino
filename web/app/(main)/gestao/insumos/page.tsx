@@ -254,12 +254,17 @@ export default function InsumosPage() {
 function NovoInsumoModal({ fornecedores, onClose, onDone }: { fornecedores: Fornecedor[]; onClose: () => void; onDone: () => void }) {
   const [form, setForm] = useState({ nome: "", categoria: "outros", unidade: "un", preco_unitario: "", quantidade_minima: "0", fornecedor_padrao_id: "" });
   const [saving, setSaving] = useState(false);
+  const [erro, setErro] = useState("");
   async function submit(e: React.FormEvent) {
-    e.preventDefault(); setSaving(true);
+    e.preventDefault(); setSaving(true); setErro("");
     try {
       await api.post("/gestao/insumos", { ...form, preco_unitario: form.preco_unitario || null });
       onDone(); onClose();
-    } catch { setSaving(false); }
+    } catch (err: any) {
+      const msgs = err.response?.data?.errors;
+      setErro(msgs ? Object.values(msgs).flat().join(" ") : (err.response?.data?.message ?? "Erro ao salvar."));
+      setSaving(false);
+    }
   }
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
@@ -289,6 +294,7 @@ function NovoInsumoModal({ fornecedores, onClose, onDone }: { fornecedores: Forn
               placeholder="Qtd mínima estoque" step="0.001" min="0"
               className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400" />
           </div>
+          {erro && <p className="text-xs text-red-500 bg-red-50 rounded-lg px-3 py-2">{erro}</p>}
           <div className="flex gap-2 pt-2">
             <button type="button" onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 font-semibold">Cancelar</button>
             <button type="submit" disabled={saving} className="flex-1 py-2.5 rounded-xl bg-green-600 hover:bg-green-700 text-white text-sm font-semibold disabled:opacity-50">
@@ -307,6 +313,7 @@ function NovaCompraModal({ insumos, fornecedores, onClose, onDone }: { insumos: 
   const [forma, setForma]           = useState("");
   const [itens, setItens]           = useState([{ insumo_id: "", quantidade: "", valor_unitario: "" }]);
   const [saving, setSaving]         = useState(false);
+  const [erro, setErro]             = useState("");
 
   function addItem() { setItens([...itens, { insumo_id: "", quantidade: "", valor_unitario: "" }]); }
   function removeItem(i: number) { setItens(itens.filter((_, idx) => idx !== i)); }
@@ -314,14 +321,18 @@ function NovaCompraModal({ insumos, fornecedores, onClose, onDone }: { insumos: 
   const total = itens.reduce((s, i) => s + (parseFloat(i.quantidade) || 0) * (parseFloat(i.valor_unitario) || 0), 0);
 
   async function submit(e: React.FormEvent) {
-    e.preventDefault(); setSaving(true);
+    e.preventDefault(); setSaving(true); setErro("");
     try {
       await api.post("/gestao/compras", {
         fornecedor_id: fornecedor || null, data_compra: data, forma_pagamento: forma || null,
         itens: itens.map(i => ({ insumo_id: parseInt(i.insumo_id), quantidade: parseFloat(i.quantidade), valor_unitario: parseFloat(i.valor_unitario) })),
       });
       onDone(); onClose();
-    } catch { setSaving(false); }
+    } catch (err: any) {
+      const msgs = err.response?.data?.errors;
+      setErro(msgs ? Object.values(msgs).flat().join(" ") : (err.response?.data?.message ?? "Erro ao registrar compra."));
+      setSaving(false);
+    }
   }
 
   return (
@@ -343,7 +354,7 @@ function NovaCompraModal({ insumos, fornecedores, onClose, onDone }: { insumos: 
               <select value={forma} onChange={e => setForma(e.target.value)}
                 className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400">
                 <option value="">Selecione</option>
-                {["dinheiro","pix","boleto","cartao","cheque","prazo"].map(f => <option key={f} value={f}>{f}</option>)}
+                {["dinheiro","pix","boleto","cartao","prazo"].map(f => <option key={f} value={f}>{f}</option>)}
               </select>
             </div>
           </div>
@@ -385,6 +396,7 @@ function NovaCompraModal({ insumos, fornecedores, onClose, onDone }: { insumos: 
             <p className="text-xs text-gray-500">Total da compra</p>
             <p className="text-xl font-bold text-green-700">{total.toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}</p>
           </div>
+          {erro && <p className="text-xs text-red-500 bg-red-50 rounded-lg px-3 py-2">{erro}</p>}
           <div className="flex gap-2">
             <button type="button" onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 font-semibold">Cancelar</button>
             <button type="submit" disabled={saving} className="flex-1 py-2.5 rounded-xl bg-green-600 hover:bg-green-700 text-white text-sm font-semibold disabled:opacity-50">
@@ -400,10 +412,15 @@ function NovaCompraModal({ insumos, fornecedores, onClose, onDone }: { insumos: 
 function NovoFornecedorModal({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
   const [form, setForm] = useState({ nome: "", telefone: "", email: "", categoria: "insumos", estado: "", municipio: "", contato_nome: "" });
   const [saving, setSaving] = useState(false);
+  const [erro, setErro] = useState("");
   async function submit(e: React.FormEvent) {
-    e.preventDefault(); setSaving(true);
+    e.preventDefault(); setSaving(true); setErro("");
     try { await api.post("/gestao/fornecedores", form); onDone(); onClose(); }
-    catch { setSaving(false); }
+    catch (err: any) {
+      const msgs = err.response?.data?.errors;
+      setErro(msgs ? Object.values(msgs).flat().join(" ") : (err.response?.data?.message ?? "Erro ao salvar."));
+      setSaving(false);
+    }
   }
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
@@ -425,6 +442,7 @@ function NovoFornecedorModal({ onClose, onDone }: { onClose: () => void; onDone:
           </div>
           <input value={form.email} onChange={e => setForm({...form, email: e.target.value})} placeholder="E-mail" type="email"
             className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400" />
+          {erro && <p className="text-xs text-red-500 bg-red-50 rounded-lg px-3 py-2">{erro}</p>}
           <div className="flex gap-2 pt-2">
             <button type="button" onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 font-semibold">Cancelar</button>
             <button type="submit" disabled={saving} className="flex-1 py-2.5 rounded-xl bg-green-600 hover:bg-green-700 text-white text-sm font-semibold disabled:opacity-50">
@@ -440,10 +458,15 @@ function NovoFornecedorModal({ onClose, onDone }: { onClose: () => void; onDone:
 function MovimentacaoModal({ insumo, onClose, onDone }: { insumo: Insumo; onClose: () => void; onDone: () => void }) {
   const [form, setForm] = useState({ tipo: "saida", quantidade: "", motivo: "" });
   const [saving, setSaving] = useState(false);
+  const [erro, setErro] = useState("");
   async function submit(e: React.FormEvent) {
-    e.preventDefault(); setSaving(true);
+    e.preventDefault(); setSaving(true); setErro("");
     try { await api.post(`/gestao/insumos/${insumo.id}/movimentar`, form); onDone(); onClose(); }
-    catch { setSaving(false); }
+    catch (err: any) {
+      const msgs = err.response?.data?.errors;
+      setErro(msgs ? Object.values(msgs).flat().join(" ") : (err.response?.data?.message ?? "Erro ao movimentar."));
+      setSaving(false);
+    }
   }
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
@@ -467,6 +490,7 @@ function MovimentacaoModal({ insumo, onClose, onDone }: { insumo: Insumo; onClos
             className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400" />
           <input value={form.motivo} onChange={e => setForm({...form, motivo: e.target.value})} placeholder="Motivo (opcional)"
             className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400" />
+          {erro && <p className="text-xs text-red-500 bg-red-50 rounded-lg px-3 py-2">{erro}</p>}
           <div className="flex gap-2 pt-1">
             <button type="button" onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 font-semibold">Cancelar</button>
             <button type="submit" disabled={saving} className="flex-1 py-2.5 rounded-xl bg-green-600 hover:bg-green-700 text-white text-sm font-semibold disabled:opacity-50">
