@@ -47,7 +47,8 @@ class GestaoRebanhoController extends Controller
             ->when($request->raca,      fn($q) => $q->where('raca', 'like', '%'.$request->raca.'%'))
             ->when($request->brinco,    fn($q) => $q->where('brinco', 'like', '%'.$request->brinco.'%'))
             ->when($request->peso_min,  fn($q) => $q->where('peso_atual', '>=', $request->peso_min))
-            ->when($request->peso_max,  fn($q) => $q->where('peso_atual', '<=', $request->peso_max))
+            ->when($request->peso_max,       fn($q) => $q->where('peso_atual', '<=', $request->peso_max))
+            ->when($request->status_leiteiro, fn($q) => $q->where('status_leiteiro', $request->status_leiteiro))
             ->when($request->faixa_etaria, function ($q) use ($request, $hoje) {
                 return match ($request->faixa_etaria) {
                     'ate_6m'    => $q->whereNotNull('data_nascimento')->whereDate('data_nascimento', '>=', $hoje->copy()->subMonths(6)),
@@ -73,14 +74,20 @@ class GestaoRebanhoController extends Controller
             'nome'            => 'nullable|string|max:60',
             'raca'            => 'required|string|max:60',
             'sexo'            => 'required|in:macho,femea',
-            'categoria'       => 'required|in:bezerro,bezerra,novilho,novilha,touro,vaca,boi',
-            'data_nascimento' => 'nullable|date',
-            'peso_atual'      => 'nullable|numeric|min:0',
-            'pastagem_id'     => 'nullable|exists:pastagens,id',
-            'pai'             => 'nullable|string|max:60',
-            'mae'             => 'nullable|string|max:60',
-            'observacao'      => 'nullable|string|max:500',
+            'categoria'        => 'required|in:bezerro,bezerra,novilho,novilha,touro,vaca,boi',
+            'status_leiteiro'  => 'nullable|in:em_lactacao,seca',
+            'data_nascimento'  => 'nullable|date',
+            'peso_atual'       => 'nullable|numeric|min:0',
+            'pastagem_id'      => 'nullable|exists:pastagens,id',
+            'pai'              => 'nullable|string|max:60',
+            'mae'              => 'nullable|string|max:60',
+            'observacao'       => 'nullable|string|max:500',
         ]);
+
+        // Limpa status_leiteiro se não for vaca
+        if (($data['categoria'] ?? '') !== 'vaca') {
+            $data['status_leiteiro'] = null;
+        }
 
         $this->verificarLimite($request, 1);
         $data['fazenda_id'] = $fazenda->id;
@@ -160,15 +167,19 @@ class GestaoRebanhoController extends Controller
             'nome'            => 'nullable|string|max:60',
             'raca'            => 'sometimes|string|max:60',
             'sexo'            => 'sometimes|in:macho,femea',
-            'categoria'       => 'sometimes|in:bezerro,bezerra,novilho,novilha,touro,vaca,boi',
-            'data_nascimento' => 'nullable|date',
-            'peso_atual'      => 'nullable|numeric|min:0',
-            'pastagem_id'     => 'nullable|exists:pastagens,id',
-            'status'          => 'sometimes|in:ativo,vendido,morto,transferido',
-            'pai'             => 'nullable|string|max:60',
-            'mae'             => 'nullable|string|max:60',
-            'observacao'      => 'nullable|string|max:500',
+            'categoria'        => 'sometimes|in:bezerro,bezerra,novilho,novilha,touro,vaca,boi',
+            'status_leiteiro'  => 'nullable|in:em_lactacao,seca',
+            'data_nascimento'  => 'nullable|date',
+            'peso_atual'       => 'nullable|numeric|min:0',
+            'pastagem_id'      => 'nullable|exists:pastagens,id',
+            'status'           => 'sometimes|in:ativo,vendido,morto,transferido',
+            'pai'              => 'nullable|string|max:60',
+            'mae'              => 'nullable|string|max:60',
+            'observacao'       => 'nullable|string|max:500',
         ]);
+
+        $categoria = $data['categoria'] ?? $animal->categoria;
+        if ($categoria !== 'vaca') $data['status_leiteiro'] = null;
 
         $animal->update($data);
         return response()->json($animal->fresh());

@@ -5,8 +5,8 @@ import { api } from "@/lib/api";
 
 type Animal = {
   id: number; brinco: string | null; nome: string | null; raca: string;
-  sexo: "macho" | "femea"; categoria: string; data_nascimento: string | null;
-  peso_atual: number | null; status: string; mae: string | null;
+  sexo: "macho" | "femea"; categoria: string; status_leiteiro: "em_lactacao" | "seca" | null;
+  data_nascimento: string | null; peso_atual: number | null; status: string; mae: string | null;
   pastagem?: { nome: string } | null;
 };
 type CatStat   = { categoria: string; total: number; peso_medio: number | null };
@@ -86,7 +86,7 @@ function SecaoAlerta<T>({ titulo, subtitulo, icone, cor, itens, vazio, renderIte
   );
 }
 
-const FORM_VAZIO = { brinco:"", nome:"", raca:"", sexo:"macho", categoria:"bezerro", data_nascimento:"", peso_atual:"", mae:"", pai:"", observacao:"" };
+const FORM_VAZIO = { brinco:"", nome:"", raca:"", sexo:"macho", categoria:"bezerro", status_leiteiro:"", data_nascimento:"", peso_atual:"", mae:"", pai:"", observacao:"" };
 
 export default function AnimaisPage() {
   const [aba, setAba] = useState<"dashboard"|"rebanho"|"alertas">("dashboard");
@@ -96,7 +96,7 @@ export default function AnimaisPage() {
   const [loadList, setLoadList] = useState(false);
   const [filtro, setFiltro]     = useState({
     categoria:"", sexo:"", status:"ativo",
-    raca:"", brinco:"", faixa_etaria:"", peso_min:"", peso_max:"",
+    raca:"", brinco:"", faixa_etaria:"", peso_min:"", peso_max:"", status_leiteiro:"",
   });
   const [showForm, setShowForm]   = useState(false);
   const [showGrupo, setShowGrupo] = useState(false);
@@ -126,7 +126,8 @@ export default function AnimaisPage() {
     setEditando(a);
     setForm({
       brinco: a.brinco??"", nome: a.nome??"", raca: a.raca, sexo: a.sexo,
-      categoria: a.categoria, data_nascimento: a.data_nascimento??"",
+      categoria: a.categoria, status_leiteiro: a.status_leiteiro ?? "",
+      data_nascimento: a.data_nascimento??"",
       peso_atual: a.peso_atual ? String(a.peso_atual) : "",
       mae: a.mae??"", pai: "", observacao: "",
     });
@@ -139,7 +140,7 @@ export default function AnimaisPage() {
   }
 
   function limparFiltros() {
-    setFiltro({ categoria:"", sexo:"", status:"ativo", raca:"", brinco:"", faixa_etaria:"", peso_min:"", peso_max:"" });
+    setFiltro({ categoria:"", sexo:"", status:"ativo", raca:"", brinco:"", faixa_etaria:"", peso_min:"", peso_max:"", status_leiteiro:"" });
   }
 
   const filtrosAtivos = Object.entries(filtro).filter(([k,v]) => v && !(k==="status" && v==="ativo")).length;
@@ -347,6 +348,12 @@ export default function AnimaisPage() {
                 <option value="transferido">Transferidos</option>
                 <option value="">Todos status</option>
               </select>
+              <select value={filtro.status_leiteiro} onChange={e=>setFiltro(f=>({...f,status_leiteiro:e.target.value}))}
+                className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-500">
+                <option value="">🐄 Todas as vacas</option>
+                <option value="em_lactacao">🥛 Em lactação</option>
+                <option value="seca">💤 Em descanso</option>
+              </select>
             </div>
 
             {totalResultados !== null && (
@@ -382,9 +389,17 @@ export default function AnimaisPage() {
                         </td>
                         <td className="px-4 py-3 text-gray-600">{a.raca}</td>
                         <td className="px-4 py-3">
-                          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${a.sexo==="femea"?"bg-pink-100 text-pink-700":"bg-blue-100 text-blue-700"}`}>
-                            {CAT_LABEL[a.categoria]??a.categoria}
-                          </span>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${a.sexo==="femea"?"bg-pink-100 text-pink-700":"bg-blue-100 text-blue-700"}`}>
+                              {CAT_LABEL[a.categoria]??a.categoria}
+                            </span>
+                            {a.status_leiteiro === "em_lactacao" && (
+                              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-sky-100 text-sky-700">🥛 Ativa</span>
+                            )}
+                            {a.status_leiteiro === "seca" && (
+                              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500">💤 Seca</span>
+                            )}
+                          </div>
                         </td>
                         <td className="px-4 py-3 text-gray-500 text-xs hidden sm:table-cell">{idadeTexto(a.data_nascimento)}</td>
                         <td className="px-4 py-3 hidden sm:table-cell">
@@ -527,6 +542,17 @@ export default function AnimaisPage() {
                     </select>
                   </div>
                   <Campo label="Peso atual (kg)" value={form.peso_atual} onChange={v=>setForm(f=>({...f,peso_atual:v}))} type="number" placeholder="280"/>
+                  {form.categoria === "vaca" && (
+                    <div className="col-span-2">
+                      <label className="text-xs font-semibold text-gray-600 block mb-1">Status leiteiro</label>
+                      <select value={form.status_leiteiro} onChange={e=>setForm(f=>({...f,status_leiteiro:e.target.value}))}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-500">
+                        <option value="">Vaca de corte (não leiteira)</option>
+                        <option value="em_lactacao">🥛 Em lactação — dando leite</option>
+                        <option value="seca">💤 Em descanso — período seco</option>
+                      </select>
+                    </div>
+                  )}
                   <div className="col-span-2">
                     <label className="text-xs font-semibold text-gray-600 block mb-1">Data de nascimento</label>
                     <input type="date" value={form.data_nascimento} onChange={e=>setForm(f=>({...f,data_nascimento:e.target.value}))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"/>
