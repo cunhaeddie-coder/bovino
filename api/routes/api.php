@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\GestaoEventoCampoController;
 use App\Http\Controllers\Api\GestaoFinanceiroController;
 use App\Http\Controllers\Api\GestaoFinanceiroFazendaController;
 use App\Http\Controllers\Api\ContadorAcessoController;
+use App\Http\Controllers\Api\ProducaoLeiteController;
 use App\Http\Controllers\Api\ContadorViewController;
 use App\Http\Controllers\Api\LancamentoFiscalController;
 use App\Http\Controllers\Api\GestaoFornecedorController;
@@ -311,6 +312,16 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/', [GestaoEventoCampoController::class, 'store']);
         Route::post('/{id}/resolver', [GestaoEventoCampoController::class, 'resolver']);
         Route::delete('/{id}', [GestaoEventoCampoController::class, 'destroy']);
+    });
+
+    // Módulo Leiteiro
+    Route::prefix('gestao/leite')->group(function () {
+        Route::get('/resumo',       [ProducaoLeiteController::class, 'resumo']);
+        Route::get('/exportar',     [ProducaoLeiteController::class, 'exportar']);
+        Route::get('/ultimo-preco', [ProducaoLeiteController::class, 'ultimoPreco']);
+        Route::get('/',             [ProducaoLeiteController::class, 'index']);
+        Route::post('/',            [ProducaoLeiteController::class, 'store']);
+        Route::delete('/{id}',      [ProducaoLeiteController::class, 'destroy']);
     });
 
     // Módulo Fiscal (LCDPR — lançamentos receita/despesa + exportação CSV)
