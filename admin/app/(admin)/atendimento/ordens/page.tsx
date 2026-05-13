@@ -5,7 +5,7 @@ import { api } from "@/lib/api";
 import { useAdmin } from "@/lib/admin-context";
 
 type Servico   = { id: number; nome: string; valor: number; percentual_tecnico: number; modalidade: string };
-type Tecnico   = { id: number; nome: string; papel: string };
+type Tecnico   = { id: number; nome: string; papel: string; tipo_contrato: string };
 type Cliente   = { id: number; nome: string; celular: string };
 type Ordem = {
   id: number; status: string; data_hora: string | null; link_reuniao: string | null;
@@ -147,10 +147,13 @@ function NovaOrdemModal({ onClose, onDone }: { onClose: () => void; onDone: () =
                 <option key={s.id} value={s.id}>{s.nome} — {fmt(s.valor)}</option>
               ))}
             </select>
-            {servicoSel && (
-              <p className="text-[10px] text-green-600 mt-0.5">
-                Técnico recebe: {fmt(+(servicoSel.valor * servicoSel.percentual_tecnico / 100).toFixed(2))} ({servicoSel.percentual_tecnico}%)
+            {servicoSel && tecnicoSel?.tipo_contrato === "freelancer" && (
+              <p className="text-[10px] text-orange-600 mt-0.5">
+                Comissão freelancer: {fmt(+(servicoSel.valor * servicoSel.percentual_tecnico / 100).toFixed(2))} ({servicoSel.percentual_tecnico}%)
               </p>
+            )}
+            {servicoSel && tecnicoSel && tecnicoSel.tipo_contrato !== "freelancer" && (
+              <p className="text-[10px] text-slate-400 mt-0.5">Funcionário — sem comissão por ordem</p>
             )}
           </div>
 
@@ -160,7 +163,11 @@ function NovaOrdemModal({ onClose, onDone }: { onClose: () => void; onDone: () =
             <select value={form.tecnico_id} onChange={e => setForm(p => ({ ...p, tecnico_id: e.target.value }))}
               className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400">
               <option value="">A definir</option>
-              {tecnicos.map(t => <option key={t.id} value={t.id}>{t.nome} ({t.papel})</option>)}
+              {tecnicos.map(t => (
+                <option key={t.id} value={t.id}>
+                  {t.nome} ({t.tipo_contrato === "freelancer" ? "Freelancer" : t.papel})
+                </option>
+              ))}
             </select>
           </div>
 
@@ -346,7 +353,10 @@ export default function OrdensPage() {
                   </td>
                   <td className="px-3 py-3 text-right">
                     <p className="text-xs font-bold text-slate-800">{fmt(o.valor_cliente)}</p>
-                    <p className="text-[10px] text-green-600">{fmt(o.valor_tecnico)} técnico</p>
+                    {o.valor_tecnico > 0
+                      ? <p className="text-[10px] text-orange-600">{fmt(o.valor_tecnico)} freelancer</p>
+                      : <p className="text-[10px] text-slate-400">funcionário</p>
+                    }
                   </td>
                   <td className="px-5 py-3">
                     <div className="flex flex-col gap-1 items-end">
@@ -365,13 +375,13 @@ export default function OrdensPage() {
                       {o.status === "concluida" && !isTecnico && (
                         <>
                           {!o.pago_cliente && <button onClick={() => acao("pago-cliente", o.id)} className="text-[10px] text-blue-600 hover:underline">Marcar pago ✓</button>}
-                          {!o.pago_tecnico && <button onClick={() => acao("pago-tecnico", o.id)} className="text-[10px] text-green-600 hover:underline">Pagar técnico ✓</button>}
+                          {!o.pago_tecnico && o.valor_tecnico > 0 && <button onClick={() => acao("pago-tecnico", o.id)} className="text-[10px] text-orange-600 hover:underline">Pagar freelancer ✓</button>}
                         </>
                       )}
                       {o.status === "concluida" && (
                         <div className="flex gap-1">
                           {o.pago_cliente && <span className="text-[9px] bg-blue-50 text-blue-600 px-1 rounded font-bold">Cliente ✓</span>}
-                          {o.pago_tecnico && <span className="text-[9px] bg-green-50 text-green-600 px-1 rounded font-bold">Técnico ✓</span>}
+                          {o.pago_tecnico && o.valor_tecnico > 0 && <span className="text-[9px] bg-orange-50 text-orange-600 px-1 rounded font-bold">Freelancer ✓</span>}
                         </div>
                       )}
                       {!isTecnico && !["concluida", "cancelada", "recusada"].includes(o.status) && (

@@ -10,7 +10,7 @@ class Admin extends Authenticatable
     use HasApiTokens;
 
     protected $fillable = [
-        'nome', 'email', 'password', 'papel', 'ativo', 'ultimo_acesso',
+        'nome', 'email', 'password', 'papel', 'tipo_contrato', 'ativo', 'ultimo_acesso',
     ];
 
     protected $hidden = ['password'];

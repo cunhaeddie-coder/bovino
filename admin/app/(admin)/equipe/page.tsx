@@ -4,14 +4,31 @@ import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { useAdmin, roleLabel, roleColor, AdminPapel } from "@/lib/admin-context";
 
+type TipoContrato = "clt" | "pj" | "freelancer" | "estagio";
+
 type AdminMember = {
   id: number;
   nome: string;
   email: string;
   papel: AdminPapel;
+  tipo_contrato: TipoContrato;
   ativo: boolean;
   ultimo_acesso: string | null;
   created_at: string;
+};
+
+const CONTRATO_LABEL: Record<TipoContrato, string> = {
+  clt:        "CLT",
+  pj:         "PJ",
+  freelancer: "Freelancer",
+  estagio:    "Estágio",
+};
+
+const CONTRATO_COLOR: Record<TipoContrato, string> = {
+  clt:        "bg-blue-100 text-blue-700",
+  pj:         "bg-purple-100 text-purple-700",
+  freelancer: "bg-orange-100 text-orange-700",
+  estagio:    "bg-teal-100 text-teal-700",
 };
 
 type Paginated<T> = { data: T[]; total: number; current_page: number; last_page: number };
@@ -41,8 +58,8 @@ function Modal({ title, onClose, children }: { title: string; onClose: () => voi
   );
 }
 
-type FormData = { nome: string; email: string; password: string; papel: AdminPapel };
-const emptyForm = (): FormData => ({ nome: "", email: "", password: "", papel: "operador" });
+type FormData = { nome: string; email: string; password: string; papel: AdminPapel; tipo_contrato: TipoContrato };
+const emptyForm = (): FormData => ({ nome: "", email: "", password: "", papel: "operador", tipo_contrato: "clt" });
 
 export default function EquipePage() {
   const { admin } = useAdmin();
@@ -71,7 +88,7 @@ export default function EquipePage() {
 
   function openEdit(m: AdminMember) {
     setSelected(m);
-    setForm({ nome: m.nome, email: m.email, password: "", papel: m.papel });
+    setForm({ nome: m.nome, email: m.email, password: "", papel: m.papel, tipo_contrato: m.tipo_contrato ?? "clt" });
     setError("");
     setModal("edit");
   }
@@ -81,7 +98,7 @@ export default function EquipePage() {
     setSaving(true);
     setError("");
     try {
-      const payload: Partial<FormData> = { nome: form.nome, email: form.email, papel: form.papel };
+      const payload: Partial<FormData> = { nome: form.nome, email: form.email, papel: form.papel, tipo_contrato: form.tipo_contrato };
       if (form.password) payload.password = form.password;
 
       if (modal === "create") {
@@ -146,6 +163,7 @@ export default function EquipePage() {
               <tr className="bg-slate-50 text-[11px] text-slate-500 font-semibold border-b border-slate-100 uppercase tracking-wide">
                 <th className="text-left px-5 py-3">Membro</th>
                 <th className="text-left px-3 py-3">Papel</th>
+                <th className="text-left px-3 py-3">Contrato</th>
                 <th className="text-left px-3 py-3">Último acesso</th>
                 <th className="text-left px-3 py-3">Status</th>
                 <th className="text-left px-3 py-3">Adicionado em</th>
@@ -154,9 +172,9 @@ export default function EquipePage() {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={6} className="text-center py-10 text-slate-400">Carregando...</td></tr>
+                <tr><td colSpan={7} className="text-center py-10 text-slate-400">Carregando...</td></tr>
               ) : data?.data.length === 0 ? (
-                <tr><td colSpan={6} className="text-center py-10 text-slate-400">Nenhum membro cadastrado.</td></tr>
+                <tr><td colSpan={7} className="text-center py-10 text-slate-400">Nenhum membro cadastrado.</td></tr>
               ) : data?.data.map((m) => (
                 <tr key={m.id} className="border-t border-slate-50 hover:bg-slate-50 transition">
                   <td className="px-5 py-3">
@@ -175,6 +193,11 @@ export default function EquipePage() {
                   <td className="px-3 py-3">
                     <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${roleColor(m.papel)}`}>
                       {roleLabel(m.papel)}
+                    </span>
+                  </td>
+                  <td className="px-3 py-3">
+                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${CONTRATO_COLOR[m.tipo_contrato ?? "clt"]}`}>
+                      {CONTRATO_LABEL[m.tipo_contrato ?? "clt"]}
                     </span>
                   </td>
                   <td className="px-3 py-3 text-xs text-slate-500">
@@ -246,6 +269,23 @@ export default function EquipePage() {
                 placeholder="email@empresa.com"
                 required
               />
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-slate-600 block mb-1">Tipo de contrato</label>
+              <select
+                value={form.tipo_contrato}
+                onChange={(e) => setForm({ ...form, tipo_contrato: e.target.value as TipoContrato })}
+                className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+              >
+                <option value="clt">CLT — Funcionário registrado</option>
+                <option value="pj">PJ — Pessoa jurídica</option>
+                <option value="freelancer">Freelancer — Comissão por atendimento</option>
+                <option value="estagio">Estágio</option>
+              </select>
+              {form.tipo_contrato === "freelancer" && (
+                <p className="text-[10px] text-orange-600 mt-1">Freelancer recebe comissão calculada por ordem de atendimento.</p>
+              )}
             </div>
 
             <div>

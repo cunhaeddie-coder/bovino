@@ -29,15 +29,17 @@ class AdminEquipeController extends Controller
             'nome'     => ['required', 'string', 'max:120'],
             'email'    => ['required', 'email', 'unique:admins,email'],
             'password' => ['required', 'string', 'min:8'],
-            'papel'    => ['required', Rule::in(['super', 'operador', 'ti', 'vendas', 'treinamento'])],
+            'papel'          => ['required', Rule::in(['super', 'operador', 'ti', 'vendas', 'treinamento', 'tecnico'])],
+            'tipo_contrato'  => ['sometimes', Rule::in(['clt', 'pj', 'freelancer', 'estagio'])],
         ]);
 
         $admin = Admin::create([
-            'nome'     => $data['nome'],
-            'email'    => $data['email'],
-            'password' => Hash::make($data['password']),
-            'papel'    => $data['papel'],
-            'ativo'    => true,
+            'nome'          => $data['nome'],
+            'email'         => $data['email'],
+            'password'      => Hash::make($data['password']),
+            'papel'         => $data['papel'],
+            'tipo_contrato' => $data['tipo_contrato'] ?? 'clt',
+            'ativo'         => true,
         ]);
 
         return response()->json($admin, 201);
@@ -57,7 +59,8 @@ class AdminEquipeController extends Controller
             'nome'     => ['sometimes', 'string', 'max:120'],
             'email'    => ['sometimes', 'email', Rule::unique('admins', 'email')->ignore($id)],
             'password' => ['sometimes', 'string', 'min:8'],
-            'papel'    => ['sometimes', Rule::in(['super', 'operador', 'ti', 'vendas', 'treinamento'])],
+            'papel'         => ['sometimes', Rule::in(['super', 'operador', 'ti', 'vendas', 'treinamento', 'tecnico'])],
+            'tipo_contrato' => ['sometimes', Rule::in(['clt', 'pj', 'freelancer', 'estagio'])],
         ]);
 
         if (isset($data['password'])) {

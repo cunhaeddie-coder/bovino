@@ -5,7 +5,7 @@ import Link from "next/link";
 import {
   Beef, Layers, Syringe, Scale, Wallet, Package,
   Users, AlertTriangle, Home, Sprout, Warehouse, Bot,
-  BarChart2, type LucideIcon,
+  BarChart2, Receipt, type LucideIcon,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { TourButton } from "@/components/ui/TourButton";
@@ -305,6 +305,7 @@ export default function GestaoDashboard() {
               { href: "/gestao/saude",         Icon: Syringe,       label: "Saúde",         color: "text-red-600 bg-red-50"       },
               { href: "/gestao/pesagens",      Icon: Scale,         label: "Pesagens",      color: "text-amber-700 bg-amber-50"   },
               { href: "/gestao/financeiro",    Icon: Wallet,        label: "Financeiro",    color: "text-emerald-700 bg-emerald-50"},
+              { href: "/gestao/fiscal",        Icon: Receipt,       label: "Fiscal",         color: "text-indigo-700 bg-indigo-50"  },
               { href: "/gestao/insumos",       Icon: Package,       label: "Estoque",       color: "text-orange-700 bg-orange-50" },
               { href: "/gestao/funcionarios",  Icon: Users,         label: "Equipe",        color: "text-violet-700 bg-violet-50" },
               { href: "/gestao/eventos",       Icon: AlertTriangle, label: "Ocorrências",   color: "text-yellow-700 bg-yellow-50" },

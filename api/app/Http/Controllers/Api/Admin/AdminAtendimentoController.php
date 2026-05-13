@@ -99,8 +99,11 @@ class AdminAtendimentoController extends Controller
         ]);
 
         $servico = DB::table('atendimento_servicos')->find($data['servico_id']);
+        $tecnico = isset($data['tecnico_id']) ? DB::table('admins')->find($data['tecnico_id']) : null;
         $data['valor_cliente'] = $servico->valor;
-        $data['valor_tecnico'] = round($servico->valor * ($servico->percentual_tecnico / 100), 2);
+        $data['valor_tecnico'] = ($tecnico && $tecnico->tipo_contrato === 'freelancer')
+            ? round($servico->valor * ($servico->percentual_tecnico / 100), 2)
+            : 0;
         $data['status']        = 'pendente';
         $data['created_at']    = now();
         $data['updated_at']    = now();
@@ -209,6 +212,7 @@ class AdminAtendimentoController extends Controller
         $saldos = DB::table('ordens_atendimento as oa')
             ->join('admins as a', 'a.id', '=', 'oa.tecnico_id')
             ->where('oa.status', 'concluida')
+            ->where('a.tipo_contrato', 'freelancer')
             ->select(
                 'a.id', 'a.nome',
                 DB::raw('SUM(oa.valor_tecnico) as total_gerado'),
@@ -227,7 +231,7 @@ class AdminAtendimentoController extends Controller
         $tecnicos = DB::table('admins')
             ->whereIn('papel', ['ti', 'treinamento', 'tecnico'])
             ->where('ativo', true)
-            ->select('id', 'nome', 'papel')
+            ->select('id', 'nome', 'papel', 'tipo_contrato')
             ->orderBy('nome')
             ->get();
 

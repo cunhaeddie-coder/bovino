@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\GestaoCurralController;
 use App\Http\Controllers\Api\GestaoEventoCampoController;
 use App\Http\Controllers\Api\GestaoFinanceiroController;
 use App\Http\Controllers\Api\GestaoFinanceiroFazendaController;
+use App\Http\Controllers\Api\LancamentoFiscalController;
 use App\Http\Controllers\Api\GestaoFornecedorController;
 use App\Http\Controllers\Api\GestaoFuncionarioController;
 use App\Http\Controllers\Api\GestaoIAController;
@@ -300,6 +301,15 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/', [GestaoEventoCampoController::class, 'store']);
         Route::post('/{id}/resolver', [GestaoEventoCampoController::class, 'resolver']);
         Route::delete('/{id}', [GestaoEventoCampoController::class, 'destroy']);
+    });
+
+    // Módulo Fiscal (LCDPR — lançamentos receita/despesa + exportação CSV)
+    Route::prefix('gestao/fiscal')->group(function () {
+        Route::get('/resumo',   [LancamentoFiscalController::class, 'resumo']);
+        Route::get('/exportar', [LancamentoFiscalController::class, 'exportar']);
+        Route::get('/',         [LancamentoFiscalController::class, 'index']);
+        Route::post('/',        [LancamentoFiscalController::class, 'store']);
+        Route::delete('/{id}',  [LancamentoFiscalController::class, 'destroy']);
     });
 
     // Gestão — financeiro completo (receitas, contas)
