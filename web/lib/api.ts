@@ -9,6 +9,10 @@ api.interceptors.request.use((config) => {
   if (typeof window !== "undefined") {
     const token = localStorage.getItem("bovino_token");
     if (token) config.headers.Authorization = `Bearer ${token}`;
+
+    // Multi-fazenda: envia a fazenda selecionada em todas as chamadas de gestão
+    const fazendaId = localStorage.getItem("bovino_fazenda_id");
+    if (fazendaId) config.headers["X-Fazenda-ID"] = fazendaId;
   }
   // Para FormData o browser deve definir o Content-Type com boundary automaticamente
   if (config.data instanceof FormData) {

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\FazendaContext;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -89,9 +90,18 @@ class User extends Authenticatable
             ->first();
     }
 
-    public function fazenda(): HasOne
+    public function fazendas(): HasMany
     {
-        return $this->hasOne(Fazenda::class);
+        return $this->hasMany(Fazenda::class);
+    }
+
+    // Retorna a fazenda selecionada via contexto (multi-fazenda) ou a primeira
+    public function getFazendaAttribute(): ?Fazenda
+    {
+        if ($id = FazendaContext::id()) {
+            return $this->fazendas()->find($id);
+        }
+        return $this->fazendas()->first();
     }
 
     public function alertasDemanda(): HasMany

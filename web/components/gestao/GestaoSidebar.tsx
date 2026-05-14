@@ -9,6 +9,7 @@ import {
   X, LogOut, Dna, Store, TrendingUp, Receipt, FileBarChart2, Milk, MessageCircle, FileCheck, type LucideIcon,
 } from "lucide-react";
 import { CowIcon } from "@/components/ui/CowIcon";
+import { FazendaSwitcher } from "@/components/gestao/FazendaSwitcher";
 import { useAuthStore } from "@/lib/store";
 import { logout } from "@/lib/auth";
 
@@ -93,6 +94,13 @@ export function GestaoSidebar({ mode, collapsed = false, onToggle, onClose }: Pr
           </button>
         )}
       </div>
+
+      {/* Seletor de fazenda (só para gestor, não vaqueiro) */}
+      {!isVaqueiro && !isCollapsed && (
+        <div className="bg-green-700 pt-2 pb-1">
+          <FazendaSwitcher />
+        </div>
+      )}
 
       {/* Nav */}
       <nav className={`flex-1 overflow-y-auto py-2 space-y-0.5 ${isCollapsed ? "px-1" : "px-2"}`}>

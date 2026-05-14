@@ -16,7 +16,7 @@ class GestaoFinanceiroFazendaController extends Controller
 {
     private function fazenda(Request $request): Fazenda
     {
-        return Fazenda::where('user_id', $request->user()->id)->firstOrFail();
+        return Fazenda::findOrFail(\App\Services\FazendaContext::id());
     }
 
     // ── DASHBOARD FINANCEIRO ─────────────────────────────────────────────────

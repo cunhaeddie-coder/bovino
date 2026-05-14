@@ -101,7 +101,7 @@ class FazendaController extends Controller
             ], 403);
         }
 
-        abort_if($request->user()->fazenda, 422, 'Você já possui uma página de fazenda.');
+        // Multi-fazenda: sem limite de fazendas por usuário
 
         $data = $request->validate([
             'nome'             => 'required|string|max:120',
@@ -150,6 +150,16 @@ class FazendaController extends Controller
 
         $fazenda->update($data);
         return response()->json($fazenda->fresh());
+    }
+
+    public function minhas(Request $request): JsonResponse
+    {
+        $fazendas = $request->user()->fazendas()
+            ->select('id', 'nome', 'slug', 'municipio', 'estado', 'logo_url', 'ativo')
+            ->orderBy('created_at')
+            ->get();
+
+        return response()->json($fazendas);
     }
 
     public function toggleAnuncio(Request $request, int $anuncioId): JsonResponse

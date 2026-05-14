@@ -182,6 +182,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Fazenda / perfil da propriedade
     Route::get('fazenda/minha', [FazendaController::class, 'show']);
+    Route::get('fazendas/minhas', [FazendaController::class, 'minhas']);
     Route::post('fazenda', [FazendaController::class, 'store']);
     Route::put('fazenda', [FazendaController::class, 'update']);
     Route::get('fazendas/{slug}/contato', [FazendaController::class, 'contato']);
