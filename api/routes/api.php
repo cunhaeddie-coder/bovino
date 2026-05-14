@@ -120,6 +120,7 @@ Route::get('usuarios/{id}/perfil', [PerfilController::class, 'publico']);
 Route::get('cotacoes', [CotacaoController::class, 'index']);
 Route::get('cotacoes/ultima', [CotacaoController::class, 'ultima']);
 
+Route::get('fazendas/minhas', [FazendaController::class, 'minhas'])->middleware('auth:sanctum');
 Route::get('fazendas/{slug}', [FazendaController::class, 'showBySlug']);
 
 // Acesso do contador — rotas públicas (sem autenticação)
@@ -182,7 +183,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Fazenda / perfil da propriedade
     Route::get('fazenda/minha', [FazendaController::class, 'show']);
-    Route::get('fazendas/minhas', [FazendaController::class, 'minhas']);
     Route::post('fazenda', [FazendaController::class, 'store']);
     Route::put('fazenda', [FazendaController::class, 'update']);
     Route::get('fazendas/{slug}/contato', [FazendaController::class, 'contato']);
