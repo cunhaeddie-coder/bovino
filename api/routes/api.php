@@ -181,6 +181,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('negociacoes/{negociacao}/status', [NegociacaoController::class, 'atualizarStatus']);
     Route::get('negociacoes/{negociacao}/mensagens', [NegociacaoController::class, 'mensagens']);
     Route::post('negociacoes/{negociacao}/mensagens', [NegociacaoController::class, 'enviarMensagem']);
+    Route::post('negociacoes/{negociacao}/contra-proposta', [NegociacaoController::class, 'contraPropostar']);
 
     // Fazenda / perfil da propriedade
     Route::get('fazenda/minha', [FazendaController::class, 'show']);

@@ -42,6 +42,8 @@ export interface Anuncio {
     plano: string;
     verificado_cpf: boolean;
     verificado_celular: boolean;
+    nota_media?: number;
+    total_avaliacoes?: number;
     kyc?: {
       kyc_status: string;
       status_receita: string;
@@ -66,10 +68,14 @@ export interface Negociacao {
   status: "aberta" | "aceita" | "recusada" | "concluida";
   preco_proposto: number | null;
   mensagem_inicial: string | null;
+  preco_contra_proposta: number | null;
+  contra_proposta_de: "comprador" | "vendedor" | null;
+  cotacao_arroba_momento: number | null;
   created_at: string;
-  anuncio?: Partial<Anuncio>;
-  comprador?: { id: number; nome: string };
-  vendedor?: { id: number; nome: string };
+  anuncio?: Partial<Anuncio> & { animal?: Animal };
+  comprador?: { id: number; nome: string; celular?: string };
+  vendedor?: { id: number; nome: string; celular?: string };
+  mensagens?: Mensagem[];
 }
 
 export interface Mensagem {

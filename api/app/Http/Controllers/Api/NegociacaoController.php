@@ -90,12 +90,20 @@ class NegociacaoController extends Controller
 
     public function atualizarStatus(Request $request, Negociacao $negociacao): JsonResponse
     {
+        $userId = $request->user()->id;
+        $isVendedor  = $negociacao->vendedor_id  === $userId;
+        $isComprador = $negociacao->comprador_id === $userId;
+
+        if (!$isVendedor && !$isComprador) {
+            return response()->json(['message' => 'Não autorizado.'], 403);
+        }
+
         $data = $request->validate([
             'status' => ['required', 'in:aceita,recusada,concluida'],
         ]);
 
-        if ($negociacao->vendedor_id !== $request->user()->id) {
-            return response()->json(['message' => 'Apenas o vendedor pode alterar o status.'], 403);
+        if ($data['status'] === 'concluida' && !$isVendedor) {
+            return response()->json(['message' => 'Apenas o vendedor pode concluir a negociação.'], 403);
         }
 
         $negociacao->update(['status' => $data['status']]);
@@ -105,7 +113,62 @@ class NegociacaoController extends Controller
             TransacaoConfirmada::dispatch($negociacao);
         }
 
+        $destinatario = $isVendedor ? $negociacao->comprador_id : $negociacao->vendedor_id;
+        $labels = ['aceita' => 'aceita', 'recusada' => 'recusada', 'concluida' => 'concluída'];
+        NotificacaoService::enviar(
+            $destinatario, 'negociacao',
+            'Negociação ' . ($labels[$data['status']] ?? $data['status']),
+            $request->user()->nome . ' ' . ($data['status'] === 'aceita' ? 'aceitou a proposta' : ($data['status'] === 'recusada' ? 'recusou a proposta' : 'concluiu a negociação')),
+            "/chat/{$negociacao->id}"
+        );
+
         return response()->json($negociacao);
+    }
+
+    public function contraPropostar(Request $request, Negociacao $negociacao): JsonResponse
+    {
+        $userId = $request->user()->id;
+
+        if ($negociacao->comprador_id !== $userId && $negociacao->vendedor_id !== $userId) {
+            return response()->json(['message' => 'Não autorizado.'], 403);
+        }
+
+        if ($negociacao->status !== 'aberta') {
+            return response()->json(['message' => 'Negociação não está aberta.'], 422);
+        }
+
+        $data = $request->validate([
+            'preco_contra_proposta' => ['required', 'numeric', 'min:0'],
+            'cotacao_arroba_momento' => ['nullable', 'numeric', 'min:0'],
+        ]);
+
+        $de = $negociacao->vendedor_id === $userId ? 'vendedor' : 'comprador';
+
+        $negociacao->update([
+            'preco_contra_proposta'  => $data['preco_contra_proposta'],
+            'contra_proposta_de'     => $de,
+            'cotacao_arroba_momento' => $data['cotacao_arroba_momento'] ?? null,
+        ]);
+
+        $preco = 'R$ ' . number_format($data['preco_contra_proposta'], 2, ',', '.');
+        Mensagem::create([
+            'negociacao_id' => $negociacao->id,
+            'remetente_id'  => $userId,
+            'corpo'         => "💰 Contra-proposta: {$preco}/cab",
+        ]);
+
+        $destinatario = $userId === $negociacao->comprador_id
+            ? $negociacao->vendedor_id
+            : $negociacao->comprador_id;
+
+        NotificacaoService::enviar(
+            $destinatario, 'negociacao',
+            'Nova contra-proposta',
+            $request->user()->nome . " propôs {$preco}/cab",
+            "/chat/{$negociacao->id}"
+        );
+
+        return response()->json($negociacao->fresh()->load(['mensagens.remetente:id,nome']));
     }
 
     public function mensagens(Request $request, Negociacao $negociacao): JsonResponse

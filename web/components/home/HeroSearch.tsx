@@ -8,13 +8,13 @@ const UFS   = ["AC","AL","AM","AP","BA","CE","DF","ES","GO","MA","MG","MS","MT",
 
 export function HeroSearch() {
   const router = useRouter();
-  const [raca, setRaca]     = useState("");
+  const [q, setQ]           = useState("");
   const [estado, setEstado] = useState("");
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
     const params = new URLSearchParams();
-    if (raca) params.set("raca", raca);
+    if (q.trim()) params.set("q", q.trim());
     if (estado) params.set("estado", estado);
     router.push(`/busca?${params.toString()}`);
   }
@@ -37,9 +37,9 @@ export function HeroSearch() {
 
           {/* Input de raça — ocupa largura total no mobile, flex-1 no desktop */}
           <input
-            value={raca}
-            onChange={e => setRaca(e.target.value)}
-            placeholder="Raça (Nelore, Angus...)"
+            value={q}
+            onChange={e => setQ(e.target.value)}
+            placeholder="Nelore, boi gordo, bezerro..."
             list="racas-list"
             className="w-full sm:flex-1 px-4 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500 border border-gray-200"
           />

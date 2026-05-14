@@ -81,6 +81,10 @@ export default function ChatPage() {
             const isVendedor = n.vendedor?.id === user.id;
             const contato = isVendedor ? n.comprador : n.vendedor;
 
+            const ultimaMensagem = n.mensagens?.[0];
+            const temContraProposta = !!n.preco_contra_proposta;
+            const precoAtivo = n.preco_contra_proposta ?? n.preco_proposto;
+
             return (
               <Link key={n.id} href={`/chat/${n.id}`}
                 className="block bg-white rounded-2xl border border-gray-100 shadow-sm p-4 hover:shadow-md transition-shadow">
@@ -93,18 +97,29 @@ export default function ChatPage() {
                       <p className="font-semibold text-gray-900 text-sm truncate">
                         {contato?.nome ?? "Usuário"}
                       </p>
-                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full shrink-0 ${color}`}>
-                        {label}
-                      </span>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {temContraProposta && n.status === "aberta" && (
+                          <span className="text-[10px] bg-amber-100 text-amber-700 font-bold px-1.5 py-0.5 rounded-full">💰 CP</span>
+                        )}
+                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${color}`}>
+                          {label}
+                        </span>
+                      </div>
                     </div>
-                    <p className="text-xs text-gray-500 mt-0.5 truncate">
+                    <p className="text-xs text-gray-400 mt-0.5 truncate">
                       {n.anuncio?.titulo ?? `Anúncio #${n.anuncio_id}`}
                     </p>
-                    {n.preco_proposto && (
-                      <p className="text-xs text-green-700 font-medium mt-1">
-                        Proposta: {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(n.preco_proposto)}
+                    {ultimaMensagem ? (
+                      <p className="text-xs text-gray-500 mt-1 truncate">
+                        {ultimaMensagem.remetente?.id === user.id ? "Você: " : ""}
+                        {ultimaMensagem.corpo}
                       </p>
-                    )}
+                    ) : precoAtivo ? (
+                      <p className="text-xs text-green-700 font-medium mt-1">
+                        {temContraProposta ? "Contra-proposta: " : "Proposta: "}
+                        {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(precoAtivo)}/cab
+                      </p>
+                    ) : null}
                   </div>
                 </div>
               </Link>

@@ -21,12 +21,17 @@ class Negociacao extends Model
         'status',
         'preco_proposto',
         'mensagem_inicial',
+        'preco_contra_proposta',
+        'contra_proposta_de',
+        'cotacao_arroba_momento',
     ];
 
     protected function casts(): array
     {
         return [
-            'preco_proposto' => 'float',
+            'preco_proposto'        => 'float',
+            'preco_contra_proposta' => 'float',
+            'cotacao_arroba_momento'=> 'float',
         ];
     }
 

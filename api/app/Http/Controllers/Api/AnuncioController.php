@@ -35,6 +35,15 @@ class AnuncioController extends Controller
                   ->orWhere('anuncios.expira_em', '>', now());
             });
 
+        if ($request->filled('q')) {
+            $termo = '%' . $request->q . '%';
+            $query->where(function ($q) use ($termo) {
+                $q->where('anuncios.titulo', 'like', $termo)
+                  ->orWhere('anuncios.descricao', 'like', $termo)
+                  ->orWhereHas('animal', fn($a) => $a->where('raca', 'like', $termo));
+            });
+        }
+
         if ($request->filled('raca')) {
             $query->whereHas('animal', fn($q) => $q->where('raca', 'like', '%' . $request->raca . '%'));
         }
@@ -87,6 +96,12 @@ class AnuncioController extends Controller
             'user:id,nome,estado,municipio,verificado_cpf,verificado_celular',
             'user.kyc:user_id,kyc_status,status_receita,status_ie,status_ibama',
         ]);
+
+        if ($anuncio->user) {
+            $anuncio->user->loadCount('avaliacoesRecebidas as total_avaliacoes');
+            $anuncio->user->loadAvg('avaliacoesRecebidas', 'nota');
+            $anuncio->user->nota_media = round((float) ($anuncio->user->avaliacoes_recebidas_avg_nota ?? 0), 1);
+        }
 
         return response()->json($anuncio);
     }
