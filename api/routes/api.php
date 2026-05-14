@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\GestaoEventoCampoController;
 use App\Http\Controllers\Api\GestaoFinanceiroController;
 use App\Http\Controllers\Api\GestaoFinanceiroFazendaController;
 use App\Http\Controllers\Api\ContadorAcessoController;
+use App\Http\Controllers\Api\NotificacaoController;
 use App\Http\Controllers\Api\ProducaoLeiteController;
 use App\Http\Controllers\Api\SupportChatController;
 use App\Http\Controllers\Api\ContadorViewController;
@@ -313,6 +314,14 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/', [GestaoEventoCampoController::class, 'store']);
         Route::post('/{id}/resolver', [GestaoEventoCampoController::class, 'resolver']);
         Route::delete('/{id}', [GestaoEventoCampoController::class, 'destroy']);
+    });
+
+    // Notificações
+    Route::prefix('notificacoes')->group(function () {
+        Route::get('/',                 [NotificacaoController::class, 'index']);
+        Route::get('/count',            [NotificacaoController::class, 'count']);
+        Route::put('/{id}/ler',         [NotificacaoController::class, 'marcarLida']);
+        Route::post('/marcar-todas-lidas', [NotificacaoController::class, 'marcarTodasLidas']);
     });
 
     // Chat de suporte com IA

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Events\NovaNegociacao;
 use App\Events\TransacaoConfirmada;
 use App\Http\Controllers\Controller;
+use App\Services\NotificacaoService;
 use App\Http\Requests\Negociacao\StoreNegociacaoRequest;
 use App\Models\Anuncio;
 use App\Models\Mensagem;
@@ -76,6 +77,14 @@ class NegociacaoController extends Controller
 
         NovaNegociacao::dispatch($negociacao);
 
+        // Notifica o vendedor
+        NotificacaoService::novaNegociacao(
+            $anuncio->user_id,
+            $request->user()->nome,
+            $anuncio->titulo ?? 'seu anúncio',
+            $negociacao->id
+        );
+
         return response()->json($negociacao->load('anuncio'), 201);
     }
 
@@ -133,6 +142,17 @@ class NegociacaoController extends Controller
             'remetente_id' => $userId,
             'corpo' => $data['corpo'],
         ]);
+
+        // Notifica o outro participante
+        $destinatario = $userId === $negociacao->comprador_id
+            ? $negociacao->vendedor_id
+            : $negociacao->comprador_id;
+
+        NotificacaoService::novaMensagemNegociacao(
+            $destinatario,
+            $request->user()->nome,
+            $negociacao->id
+        );
 
         return response()->json($mensagem->load('remetente:id,nome'), 201);
     }

@@ -7,6 +7,7 @@ import { CowIcon } from "@/components/ui/CowIcon";
 import { useAuthStore } from "@/lib/store";
 import { logout, temPlano } from "@/lib/auth";
 import { useState } from "react";
+import { NotificationBell } from "@/components/ui/NotificationBell";
 
 export function Header() {
   const { user, clearAuth } = useAuthStore();
@@ -86,6 +87,7 @@ export function Header() {
               >
                 + Anunciar
               </Link>
+              <NotificationBell />
               <div className="relative">
                 <button
                   onClick={() => setMenuOpen((v) => !v)}

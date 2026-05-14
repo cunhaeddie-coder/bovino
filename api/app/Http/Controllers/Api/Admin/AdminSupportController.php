@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Services\NotificacaoService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -99,6 +100,8 @@ class AdminSupportController extends Controller
             'admin_id'   => $admin->id,
             'updated_at' => now(),
         ]);
+
+        NotificacaoService::respostaSuporte($conversa->user_id, $admin->nome);
 
         return response()->json(['ok' => true]);
     }
