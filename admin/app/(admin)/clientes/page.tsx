@@ -89,6 +89,68 @@ function CadastrarModal({ onClose, onDone }: { onClose: () => void; onDone: () =
   );
 }
 
+type Evento = { tipo: string; icon: string; titulo: string; descricao: string | null; at: string };
+
+function HistoricoModal({ userId, userName, onClose }: { userId: number; userName: string; onClose: () => void }) {
+  const [eventos, setEventos] = useState<Evento[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api.get<Evento[]>(`/usuarios/${userId}/atividade`)
+      .then(({ data }) => setEventos(data))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [userId]);
+
+  const hora = (iso: string) => {
+    const d = new Date(iso);
+    const diff = Math.floor((Date.now() - d.getTime()) / 1000);
+    if (diff < 3600) return `${Math.floor(diff / 60)}min atrás`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h atrás`;
+    if (diff < 604800) return `${Math.floor(diff / 86400)}d atrás`;
+    return d.toLocaleDateString("pt-BR");
+  };
+
+  const TIPO_COR: Record<string, string> = {
+    cadastro: "bg-green-100 text-green-700", anuncio: "bg-blue-100 text-blue-700",
+    negociacao: "bg-amber-100 text-amber-700", assinatura: "bg-purple-100 text-purple-700",
+    avaliacao: "bg-yellow-100 text-yellow-700",
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+          <div>
+            <h2 className="text-sm font-bold text-slate-800">Histórico — {userName}</h2>
+            <p className="text-xs text-slate-400 mt-0.5">{eventos.length} eventos</p>
+          </div>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 text-xl">×</button>
+        </div>
+        <div className="overflow-y-auto flex-1 divide-y divide-slate-50">
+          {loading ? (
+            <p className="text-center py-10 text-slate-400 text-sm">Carregando...</p>
+          ) : eventos.length === 0 ? (
+            <p className="text-center py-10 text-slate-400 text-sm">Nenhum evento registrado.</p>
+          ) : eventos.map((e, i) => (
+            <div key={i} className="flex items-start gap-3 px-5 py-3">
+              <span className="text-lg shrink-0 mt-0.5">{e.icon}</span>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="text-xs font-semibold text-slate-800">{e.titulo}</p>
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold shrink-0 ${TIPO_COR[e.tipo] ?? "bg-slate-100 text-slate-600"}`}>{e.tipo}</span>
+                </div>
+                {e.descricao && <p className="text-[11px] text-slate-400 mt-0.5 truncate">{e.descricao}</p>}
+              </div>
+              <span className="text-[11px] text-slate-400 shrink-0">{hora(e.at)}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function ClientesPage() {
   const [data, setData]           = useState<Paginated<Usuario> | null>(null);
   const [busca, setBusca]         = useState("");
@@ -97,6 +159,7 @@ export default function ClientesPage() {
   const [page, setPage]           = useState(1);
   const [loading, setLoading]     = useState(false);
   const [cadastrarModal, setCadastrarModal] = useState(false);
+  const [historico, setHistorico] = useState<{ id: number; nome: string } | null>(null);
 
   async function carregar(p = 1) {
     setLoading(true);
@@ -223,6 +286,8 @@ export default function ClientesPage() {
                             className="text-xs text-green-600 hover:underline">Reativar</button>
                         ) : (
                           <>
+                            <button onClick={() => setHistorico({ id: u.id, nome: u.nome })}
+                              className="text-xs text-slate-500 hover:underline">📋 Histórico</button>
                             {bloqueado ? (
                               <button onClick={() => acao("/desbloquear", "post", u.id)}
                                 className="text-xs text-blue-600 hover:underline">Desbloquear</button>
@@ -258,6 +323,9 @@ export default function ClientesPage() {
 
       {cadastrarModal && (
         <CadastrarModal onClose={() => setCadastrarModal(false)} onDone={() => carregar(1)} />
+      )}
+      {historico && (
+        <HistoricoModal userId={historico.id} userName={historico.nome} onClose={() => setHistorico(null)} />
       )}
     </div>
   );

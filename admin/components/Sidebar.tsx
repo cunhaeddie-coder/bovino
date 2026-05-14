@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Users, Tag, CalendarClock, Star, MapPin,
   CreditCard, Banknote, Building2, Image as ImageIcon, PiggyBank,
   TrendingUp, MessageSquare, ShieldCheck, LogOut, PackageOpen,
-  UserCheck, Headset, ClipboardList, Calendar, type LucideIcon,
+  UserCheck, Headset, ClipboardList, Calendar, Activity, type LucideIcon,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { useAdmin, canAccess, roleLabel, roleColor, AdminPapel } from "@/lib/admin-context";
@@ -21,6 +21,7 @@ const NAV: NavEntry[] = [
 
   { group: "Clientes" },
   { href: "/clientes",     label: "Clientes",          Icon: UserCheck },
+  { href: "/atividades",   label: "Atividades",         Icon: Activity },
   { href: "/assinaturas",  label: "Assinaturas",        Icon: CreditCard },
   { href: "/planos",       label: "Planos",              Icon: PackageOpen },
 

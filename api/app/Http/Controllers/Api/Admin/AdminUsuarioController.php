@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Assinatura;
+use App\Models\Negociacao;
 use App\Models\Pagamento;
 use App\Models\Plano;
 use App\Models\User;
@@ -58,6 +59,113 @@ class AdminUsuarioController extends Controller
             ->findOrFail($id);
 
         return response()->json($usuario);
+    }
+
+    public function atividade(int $id): JsonResponse
+    {
+        $user = User::withTrashed()->findOrFail($id);
+
+        $eventos = collect();
+
+        // Cadastro
+        $eventos->push(['tipo' => 'cadastro', 'icon' => '🎉', 'titulo' => 'Cadastro na plataforma', 'descricao' => null, 'at' => $user->created_at]);
+
+        // Anúncios
+        $user->anuncios()->withTrashed()->latest()->limit(30)->get()
+            ->each(fn($a) => $eventos->push([
+                'tipo' => 'anuncio', 'icon' => '🐄',
+                'titulo' => 'Anúncio criado: ' . $a->titulo,
+                'descricao' => 'R$ ' . number_format($a->preco_unitario, 2, ',', '.') . '/cab · ' . ($a->deleted_at ? 'removido' : 'ativo'),
+                'at' => $a->created_at,
+            ]));
+
+        // Negociações como comprador
+        Negociacao::where('comprador_id', $id)->with('vendedor:id,nome')->latest()->limit(20)->get()
+            ->each(fn($n) => $eventos->push([
+                'tipo' => 'negociacao', 'icon' => '💬',
+                'titulo' => 'Negociação iniciada com ' . ($n->vendedor->nome ?? 'vendedor'),
+                'descricao' => 'Status: ' . $n->status . ($n->preco_proposto ? ' · R$ ' . number_format($n->preco_proposto, 2, ',', '.') . '/cab' : ''),
+                'at' => $n->created_at,
+            ]));
+
+        // Negociações como vendedor
+        Negociacao::where('vendedor_id', $id)->with('comprador:id,nome')->latest()->limit(20)->get()
+            ->each(fn($n) => $eventos->push([
+                'tipo' => 'negociacao', 'icon' => '🤝',
+                'titulo' => 'Proposta recebida de ' . ($n->comprador->nome ?? 'comprador'),
+                'descricao' => 'Status: ' . $n->status . ($n->preco_proposto ? ' · R$ ' . number_format($n->preco_proposto, 2, ',', '.') . '/cab' : ''),
+                'at' => $n->created_at,
+            ]));
+
+        // Assinaturas
+        $user->assinaturas()->with('plano:id,nome')->latest()->limit(10)->get()
+            ->each(fn($a) => $eventos->push([
+                'tipo' => 'assinatura', 'icon' => '⭐',
+                'titulo' => 'Assinatura: ' . ($a->plano->nome ?? 'plano'),
+                'descricao' => 'Status: ' . $a->status . ' · R$ ' . number_format($a->valor, 2, ',', '.'),
+                'at' => $a->created_at,
+            ]));
+
+        // Avaliações enviadas
+        \App\Models\Avaliacao::where('comprador_id', $id)->with('vendedor:id,nome')->latest()->limit(10)->get()
+            ->each(fn($av) => $eventos->push([
+                'tipo' => 'avaliacao', 'icon' => '⭐',
+                'titulo' => 'Avaliou ' . ($av->vendedor->nome ?? 'vendedor') . ': ' . $av->nota . '/5',
+                'descricao' => $av->comentario,
+                'at' => $av->created_at,
+            ]));
+
+        return response()->json(
+            $eventos->sortByDesc('at')->values()->map(fn($e) => [
+                ...$e,
+                'at' => $e['at']?->toISOString(),
+            ])
+        );
+    }
+
+    public function atividadeGlobal(Request $request): JsonResponse
+    {
+        $eventos = collect();
+        $limit = 50;
+
+        \App\Models\Anuncio::with('user:id,nome')->latest()->limit($limit)->get()
+            ->each(fn($a) => $eventos->push([
+                'tipo' => 'anuncio', 'icon' => '🐄', 'user' => $a->user?->nome ?? '—',
+                'titulo' => 'Anúncio criado: ' . $a->titulo,
+                'descricao' => 'R$ ' . number_format($a->preco_unitario, 2, ',', '.') . '/cab',
+                'at' => $a->created_at,
+            ]));
+
+        Negociacao::with(['comprador:id,nome', 'vendedor:id,nome'])->latest()->limit($limit)->get()
+            ->each(fn($n) => $eventos->push([
+                'tipo' => 'negociacao', 'icon' => '💬', 'user' => $n->comprador?->nome ?? '—',
+                'titulo' => 'Negociação: ' . ($n->comprador?->nome ?? '?') . ' → ' . ($n->vendedor?->nome ?? '?'),
+                'descricao' => 'Status: ' . $n->status,
+                'at' => $n->created_at,
+            ]));
+
+        Assinatura::with(['assinante', 'plano:id,nome'])->latest()->limit($limit)->get()
+            ->each(fn($a) => $eventos->push([
+                'tipo' => 'assinatura', 'icon' => '⭐', 'user' => $a->assinante?->nome ?? '—',
+                'titulo' => 'Assinatura ' . ($a->plano?->nome ?? '?') . ' · ' . $a->status,
+                'descricao' => 'R$ ' . number_format($a->valor, 2, ',', '.'),
+                'at' => $a->created_at,
+            ]));
+
+        User::latest()->limit(20)->get()
+            ->each(fn($u) => $eventos->push([
+                'tipo' => 'cadastro', 'icon' => '🎉', 'user' => $u->nome,
+                'titulo' => 'Novo cadastro: ' . $u->nome,
+                'descricao' => $u->estado ? $u->municipio . '/' . $u->estado : null,
+                'at' => $u->created_at,
+            ]));
+
+        return response()->json(
+            $eventos->sortByDesc('at')->take(100)->values()->map(fn($e) => [
+                ...$e,
+                'at' => $e['at']?->toISOString(),
+            ])
+        );
     }
 
     public function bloquear(Request $request, int $id): JsonResponse
