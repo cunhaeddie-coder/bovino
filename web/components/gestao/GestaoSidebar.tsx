@@ -22,7 +22,6 @@ export const NAV_GESTOR: NavItem[] = [
   { href: "/gestao/saude",        label: "Saúde",       Icon: Syringe,         color: "text-red-600"     },
   { href: "/gestao/pesagens",     label: "Pesagens",    Icon: Scale,           color: "text-amber-600"   },
   { href: "/gestao/financeiro",   label: "Financeiro",  Icon: Wallet,          color: "text-emerald-600" },
-  { href: "/gestao/fiscal",       label: "Fiscal",       Icon: Receipt,         color: "text-indigo-600"  },
   { href: "/gestao/relatorios",   label: "Relatórios",  Icon: FileBarChart2,   color: "text-violet-600"  },
   { href: "/gestao/leiteiro",     label: "Leiteiro",    Icon: Milk,            color: "text-sky-600"     },
   { href: "/gestao/insumos",      label: "Estoque",     Icon: Package,         color: "text-orange-600"  },

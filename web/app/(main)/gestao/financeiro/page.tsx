@@ -46,6 +46,12 @@ type LoteFinanceiro = {
   resultado: number; custo_por_cabeca: number;
   custos_por_categoria: Record<string, number>;
 };
+type Lancamento = { id: number; tipo: "receita" | "despesa"; categoria: string; descricao: string | null; valor: number; data: string };
+type ResumoFiscal = { total_receitas: number; total_despesas: number; saldo: number };
+type ContadorAcesso = { ativo: boolean; token: string | null; tem_pin: boolean; expira_em: string | null };
+
+const CATS_RECEITA = ["venda_gado","venda_leite","arrendamento","outros_receita"];
+const CATS_DESPESA = ["alimentacao","sanidade","funcionarios","combustivel","manutencao","pastagem","impostos","outros_despesa"];
 
 const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
@@ -55,7 +61,7 @@ const STATUS_COR: Record<string, string> = {
 };
 
 export default function FinanceiroPage() {
-  const [aba, setAba]               = useState<"dashboard"|"custos"|"receitas"|"pagar"|"receber"|"lotes">("dashboard");
+  const [aba, setAba]               = useState<"dashboard"|"custos"|"receitas"|"pagar"|"receber"|"lotes"|"fiscal"|"contador">("dashboard");
   const [resumo, setResumo]         = useState<Resumo2 | null>(null);
   const [resumoAntigo, setResumoAntigo] = useState<ResumoAntigo | null>(null);
   const [custos, setCustos]         = useState<Custo[]>([]);
@@ -68,6 +74,15 @@ export default function FinanceiroPage() {
   const [showReceita, setShowReceita]   = useState(false);
   const [showPagar, setShowPagar]       = useState(false);
   const [showReceber, setShowReceber]   = useState(false);
+  const [showLancamento, setShowLancamento] = useState(false);
+  const [lancamentos, setLancamentos]   = useState<Lancamento[]>([]);
+  const [resumoFiscal, setResumoFiscal] = useState<ResumoFiscal | null>(null);
+  const [filtroBusca, setFiltroBusca]   = useState("");
+  const [filtroTipo, setFiltroTipo]     = useState("");
+  const [contadorAcesso, setContadorAcesso] = useState<ContadorAcesso | null>(null);
+  const [contadorForm, setContadorForm] = useState({ pin: "", expira_em: "", expira_dias: "30" });
+  const [contadorSalvando, setContadorSalvando] = useState(false);
+  const [contadorCopiado, setContadorCopiado]   = useState(false);
   const [mes, setMes]   = useState(new Date().getMonth() + 1);
   const [ano, setAno]   = useState(new Date().getFullYear());
 
@@ -100,6 +115,24 @@ export default function FinanceiroPage() {
 
   useEffect(() => { carregar(); }, [mes, ano]);
 
+  async function carregarFiscal() {
+    const params = filtroTipo ? `?tipo=${filtroTipo}` : "";
+    const [r, l] = await Promise.all([
+      api.get("/gestao/fiscal/resumo").then(r => r.data).catch(() => null),
+      api.get(`/gestao/fiscal${params}`).then(r => r.data?.data ?? r.data).catch(() => []),
+    ]);
+    setResumoFiscal(r);
+    setLancamentos(Array.isArray(l) ? l : []);
+  }
+
+  async function carregarContador() {
+    const d = await api.get("/gestao/fiscal/contador-acesso").then(r => r.data).catch(() => null);
+    setContadorAcesso(d);
+  }
+
+  useEffect(() => { if (aba === "fiscal")   carregarFiscal();   }, [aba, filtroTipo]);
+  useEffect(() => { if (aba === "contador") carregarContador(); }, [aba]);
+
   const MESES = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
 
   return (
@@ -130,6 +163,8 @@ export default function FinanceiroPage() {
           { k: "pagar",     label: `📤 A Pagar${resumo?.contas_vencidas ? ` ⚠️${resumo.contas_vencidas}` : ""}` },
           { k: "receber",   label: "📥 A Receber" },
           { k: "lotes",     label: "🗂️ Por Lote" },
+          { k: "fiscal",    label: "📋 Fiscal" },
+          { k: "contador",  label: "🧾 Contador" },
         ] as const).map(({ k, label }) => (
           <button key={k} onClick={() => setAba(k)}
             className={`px-4 py-2 text-sm font-medium whitespace-nowrap transition ${aba === k ? "border-b-2 border-green-600 text-green-700" : "text-gray-500 hover:text-gray-700"}`}>
@@ -449,10 +484,184 @@ export default function FinanceiroPage() {
         </div>
       )}
 
+      {/* FISCAL */}
+      {aba === "fiscal" && (
+        <div className="space-y-4">
+          {/* KPIs */}
+          <div className="grid grid-cols-3 gap-4">
+            {[
+              { label: "Receitas",  value: fmt(resumoFiscal?.total_receitas ?? 0), icon: "💚", cor: "text-green-700" },
+              { label: "Despesas",  value: fmt(resumoFiscal?.total_despesas ?? 0), icon: "💸", cor: "text-red-600" },
+              { label: "Saldo",     value: fmt(resumoFiscal?.saldo ?? 0),           icon: (resumoFiscal?.saldo ?? 0) >= 0 ? "📈" : "📉", cor: (resumoFiscal?.saldo ?? 0) >= 0 ? "text-green-700" : "text-red-600" },
+            ].map(k => (
+              <div key={k.label} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+                <p className="text-xl mb-1">{k.icon}</p>
+                <p className={`text-xl font-bold ${k.cor}`}>{k.value}</p>
+                <p className="text-xs text-gray-400 mt-0.5">{k.label}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Filtros + botões */}
+          <div className="flex flex-wrap gap-2 items-center">
+            <select value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)}
+              className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 bg-white">
+              <option value="">Todos os tipos</option>
+              <option value="receita">Receitas</option>
+              <option value="despesa">Despesas</option>
+            </select>
+            <input value={filtroBusca} onChange={e => setFiltroBusca(e.target.value)} placeholder="Buscar descrição..."
+              className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 flex-1 min-w-40" />
+            <a href="/api/v1/gestao/fiscal/exportar" target="_blank"
+              className="text-xs border border-gray-200 px-3 py-2 rounded-xl text-gray-600 hover:bg-gray-50 font-medium">
+              ⬇ Exportar CSV
+            </a>
+            <button onClick={() => setShowLancamento(true)}
+              className="bg-green-700 text-white text-sm font-semibold px-4 py-2 rounded-full hover:bg-green-800">
+              + Novo lançamento
+            </button>
+          </div>
+
+          {/* Lista */}
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            <table className="w-full text-sm">
+              <thead><tr className="bg-gray-50 text-xs text-gray-500 uppercase font-semibold">
+                <th className="text-left px-5 py-3">Descrição</th>
+                <th className="text-left px-3 py-3">Categoria</th>
+                <th className="text-left px-3 py-3">Data</th>
+                <th className="text-right px-5 py-3">Valor</th>
+                <th className="px-3 py-3" />
+              </tr></thead>
+              <tbody>
+                {lancamentos
+                  .filter(l => !filtroBusca || (l.descricao ?? "").toLowerCase().includes(filtroBusca.toLowerCase()))
+                  .map(l => (
+                    <tr key={l.id} className="border-t border-gray-50 hover:bg-gray-50">
+                      <td className="px-5 py-3">
+                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full mr-2 ${l.tipo === "receita" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-600"}`}>
+                          {l.tipo === "receita" ? "↑" : "↓"}
+                        </span>
+                        {l.descricao || <span className="text-gray-400 italic">Sem descrição</span>}
+                      </td>
+                      <td className="px-3 py-3 text-gray-500 text-xs capitalize">{l.categoria.replace(/_/g, " ")}</td>
+                      <td className="px-3 py-3 text-gray-400 text-xs">{new Date(l.data).toLocaleDateString("pt-BR")}</td>
+                      <td className={`px-5 py-3 text-right font-bold ${l.tipo === "receita" ? "text-green-700" : "text-red-600"}`}>
+                        {l.tipo === "receita" ? "+" : "-"}{fmt(Number(l.valor))}
+                      </td>
+                      <td className="px-3 py-3">
+                        <button onClick={async () => { await api.delete(`/gestao/fiscal/${l.id}`); carregarFiscal(); }}
+                          className="text-gray-300 hover:text-red-500 text-sm">✕</button>
+                      </td>
+                    </tr>
+                  ))}
+                {lancamentos.length === 0 && (
+                  <tr><td colSpan={5} className="text-center py-10 text-gray-400">Nenhum lançamento encontrado</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* CONTADOR */}
+      {aba === "contador" && (
+        <div className="max-w-xl space-y-5">
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
+            <div className="flex items-center gap-3">
+              <span className="text-3xl">🧾</span>
+              <div>
+                <h2 className="font-bold text-gray-800">Acesso do Contador</h2>
+                <p className="text-xs text-gray-500">Gere um link seguro para seu contador acessar os dados fiscais</p>
+              </div>
+            </div>
+
+            {contadorAcesso?.ativo && contadorAcesso.token && (
+              <div className="bg-gray-50 rounded-xl p-3 border border-gray-200">
+                <p className="text-xs text-gray-500 mb-1 font-medium">Link ativo</p>
+                <div className="flex gap-2 items-center">
+                  <code className="text-xs text-gray-700 flex-1 truncate">{`${typeof window !== "undefined" ? window.location.origin : ""}/contador/${contadorAcesso.token}`}</code>
+                  <button onClick={() => {
+                    navigator.clipboard.writeText(`${window.location.origin}/contador/${contadorAcesso.token}`);
+                    setContadorCopiado(true); setTimeout(() => setContadorCopiado(false), 2000);
+                  }} className="text-xs bg-green-600 text-white px-2 py-1 rounded-lg">
+                    {contadorCopiado ? "✓ Copiado" : "Copiar"}
+                  </button>
+                </div>
+                {contadorAcesso.expira_em && (
+                  <p className="text-[10px] text-gray-400 mt-1">
+                    Expira em: {new Date(contadorAcesso.expira_em).toLocaleDateString("pt-BR")}
+                    {contadorAcesso.tem_pin && " · PIN ativo ✓"}
+                  </p>
+                )}
+              </div>
+            )}
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">PIN de acesso (opcional)</label>
+                <input type="password" value={contadorForm.pin} onChange={e => setContadorForm(f => ({ ...f, pin: e.target.value }))}
+                  placeholder="Deixe em branco para sem PIN" maxLength={8}
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Validade do link</label>
+                <select value={contadorForm.expira_dias} onChange={e => setContadorForm(f => ({ ...f, expira_dias: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 bg-white">
+                  <option value="7">7 dias</option>
+                  <option value="15">15 dias</option>
+                  <option value="30">30 dias</option>
+                  <option value="90">90 dias</option>
+                  <option value="365">1 ano</option>
+                </select>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={async () => {
+                    setContadorSalvando(true);
+                    const expira = new Date(); expira.setDate(expira.getDate() + parseInt(contadorForm.expira_dias));
+                    await api.post("/gestao/fiscal/contador-acesso", {
+                      pin: contadorForm.pin || undefined,
+                      expira_em: expira.toISOString().split("T")[0],
+                    }).catch(() => null);
+                    await carregarContador();
+                    setContadorSalvando(false);
+                  }}
+                  disabled={contadorSalvando}
+                  className="flex-1 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-semibold py-2.5 rounded-xl text-sm">
+                  {contadorSalvando ? "Salvando..." : contadorAcesso?.ativo ? "Atualizar link" : "Gerar link"}
+                </button>
+                {contadorAcesso?.ativo && (
+                  <button
+                    onClick={async () => {
+                      if (!confirm("Revogar acesso do contador?")) return;
+                      await api.delete("/gestao/fiscal/contador-acesso").catch(() => null);
+                      await carregarContador();
+                    }}
+                    className="px-4 py-2.5 rounded-xl border border-red-200 text-red-600 hover:bg-red-50 text-sm font-semibold">
+                    Revogar
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-sm text-amber-800">
+            <p className="font-semibold mb-1">🔒 Como funciona</p>
+            <ul className="space-y-0.5 text-xs list-disc list-inside text-amber-700">
+              <li>O contador acessa apenas dados fiscais e inventário do rebanho</li>
+              <li>Com PIN: 5 tentativas erradas bloqueiam o acesso por 1 hora</li>
+              <li>O link expira automaticamente na data configurada</li>
+              <li>Você pode revogar o acesso a qualquer momento</li>
+            </ul>
+          </div>
+        </div>
+      )}
+
       {showCusto    && <CustoModal    onClose={() => setShowCusto(false)}    onDone={carregar} />}
       {showReceita  && <ReceitaModal  onClose={() => setShowReceita(false)}  onDone={carregar} />}
       {showPagar    && <ContaPagarModal  onClose={() => setShowPagar(false)}   onDone={carregar} />}
       {showReceber  && <ContaReceberModal onClose={() => setShowReceber(false)} onDone={carregar} />}
+      {showLancamento && <LancamentoFiscalModal onClose={() => setShowLancamento(false)} onDone={carregarFiscal} />}
     </div>
   );
 }
@@ -566,6 +775,45 @@ function ContaReceberModal({ onClose, onDone }: { onClose: () => void; onDone: (
             className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400" />
         </div>
         <ModalBtns onClose={onClose} saving={saving} label="Salvar" />
+      </form>
+    </ModalBase>
+  );
+}
+
+function LancamentoFiscalModal({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
+  const [form, setForm] = useState({ tipo: "receita", categoria: "venda_gado", valor: "", data: new Date().toISOString().split("T")[0], descricao: "" });
+  const [saving, setSaving] = useState(false);
+  const cats = form.tipo === "receita" ? CATS_RECEITA : CATS_DESPESA;
+  async function submit(e: React.FormEvent) {
+    e.preventDefault(); setSaving(true);
+    try { await api.post("/gestao/fiscal", form); onDone(); onClose(); } catch { setSaving(false); }
+  }
+  return (
+    <ModalBase title="Novo Lançamento Fiscal" onClose={onClose}>
+      <form onSubmit={submit} className="space-y-3">
+        <div className="grid grid-cols-2 gap-3">
+          <button type="button" onClick={() => setForm(f => ({ ...f, tipo: "receita", categoria: "venda_gado" }))}
+            className={`py-2 rounded-xl text-sm font-semibold border transition ${form.tipo === "receita" ? "bg-green-600 text-white border-green-600" : "border-gray-200 text-gray-600"}`}>
+            ↑ Receita
+          </button>
+          <button type="button" onClick={() => setForm(f => ({ ...f, tipo: "despesa", categoria: "alimentacao" }))}
+            className={`py-2 rounded-xl text-sm font-semibold border transition ${form.tipo === "despesa" ? "bg-red-500 text-white border-red-500" : "border-gray-200 text-gray-600"}`}>
+            ↓ Despesa
+          </button>
+        </div>
+        <select value={form.categoria} onChange={e => setForm(f => ({ ...f, categoria: e.target.value }))}
+          className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 bg-white">
+          {cats.map(c => <option key={c} value={c}>{c.replace(/_/g, " ")}</option>)}
+        </select>
+        <div className="grid grid-cols-2 gap-3">
+          <input type="number" required step="0.01" min="0.01" value={form.valor} onChange={e => setForm(f => ({ ...f, valor: e.target.value }))} placeholder="Valor (R$)"
+            className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400" />
+          <input type="date" required value={form.data} onChange={e => setForm(f => ({ ...f, data: e.target.value }))}
+            className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400" />
+        </div>
+        <input value={form.descricao} onChange={e => setForm(f => ({ ...f, descricao: e.target.value }))} placeholder="Descrição (opcional)"
+          className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400" />
+        <ModalBtns onClose={onClose} saving={saving} label="Salvar lançamento" />
       </form>
     </ModalBase>
   );
