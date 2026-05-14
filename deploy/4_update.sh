@@ -14,7 +14,8 @@ echo "=========================================="
 echo ""
 
 cd $APP_DIR
-git pull origin main
+git fetch origin main
+git reset --hard origin/main
 
 # API Laravel
 echo "[1/3] Atualizando Laravel..."
