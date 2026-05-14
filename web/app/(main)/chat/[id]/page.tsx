@@ -17,6 +17,12 @@ const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
   concluida: { label: "Concluída", color: "bg-gray-200 text-gray-600" },
 };
 
+const PHONE_REGEX = /(\b\d{2}[\s.-]?\d{4,5}[\s.-]?\d{4}\b|whatsapp|wpp|zap\s*zap|meu\s*(n[uú]mero|fone|celular|cel\b)|t[eé]l[eé]fone)/i;
+
+function detectaContato(texto: string) {
+  return PHONE_REGEX.test(texto);
+}
+
 const QUICK_REPLIES = [
   "Topei!",
   "Vou pensar e te retorno.",
@@ -538,6 +544,12 @@ export default function ChatDetailPage() {
                   </button>
                 ))}
               </div>
+              {detectaContato(texto) && (
+                <div className="flex items-start gap-2 bg-orange-50 border border-orange-200 rounded-xl px-3 py-2 mb-2 text-xs text-orange-800">
+                  <span className="text-base shrink-0">⚠️</span>
+                  <p><strong>Atenção:</strong> Manter a conversa na plataforma garante sua proteção. Pagamentos combinados fora do Bovino não têm garantia.</p>
+                </div>
+              )}
               <div className="flex items-end gap-2">
                 <textarea
                   ref={inputRef}

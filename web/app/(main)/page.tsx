@@ -108,7 +108,7 @@ export default async function Home() {
           <div>
             <p className="text-white font-semibold mb-3">Navegação</p>
             <ul className="space-y-2">
-              {[["Buscar gado", "/busca"], ["Cotações", "/cotacoes"], ["Anunciar", "/anuncios/novo"]].map(([label, href]) => (
+              {[["Buscar gado", "/busca"], ["Cotações", "/cotacoes"], ["🏆 Ranking", "/ranking"], ["Anunciar", "/anuncios/novo"]].map(([label, href]) => (
                 <li key={href}><Link href={href} className="hover:text-white transition-colors">{label}</Link></li>
               ))}
             </ul>

@@ -135,6 +135,8 @@ Route::get('contador/{token}/inventario',[ContadorViewController::class, 'invent
 Route::post('inteligencia/busca', [IntelligenciaController::class, 'logBusca']);
 Route::get('inteligencia/cotacoes', [IntelligenciaController::class, 'cotacoesRealizadas']);
 Route::get('inteligencia/demanda', [IntelligenciaController::class, 'demandaRegioes']);
+
+Route::get('ranking/vendedores', [\App\Http\Controllers\Api\RankingController::class, 'vendedores']);
 Route::get('inteligencia/oferta-regioes', [IntelligenciaController::class, 'ofertaRegioes']);
 Route::get('inteligencia/oportunidades', [IntelligenciaController::class, 'oportunidades']);
 
