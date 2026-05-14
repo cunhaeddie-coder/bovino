@@ -44,15 +44,19 @@ export function OnboardingModal() {
   if (!visible) return null;
 
   async function avancar(etapa: number, payload?: object) {
-    setSalvando(true);
+    // Avança a UI imediatamente, salva no servidor em segundo plano
+    if (etapa >= 3) {
+      setVisible(false);
+    } else {
+      setStep(etapa as Step);
+    }
     try {
+      setSalvando(true);
       await api.post("/onboarding/avancar", { etapa, ...payload });
       if (token && user) {
         const { data: me } = await api.get("/auth/me");
         setAuth(me, token);
       }
-      if (etapa >= 3) { setVisible(false); return; }
-      setStep(etapa as Step);
     } catch {
     } finally {
       setSalvando(false);
@@ -60,12 +64,8 @@ export function OnboardingModal() {
   }
 
   async function pular() {
-    setSalvando(true);
-    try {
-      await api.post("/onboarding/pular");
-    } catch {}
     setVisible(false);
-    setSalvando(false);
+    try { await api.post("/onboarding/pular"); } catch {}
   }
 
   return (
