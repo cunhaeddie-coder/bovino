@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Beef, Layers, Syringe, Scale, Wallet,
   Package, Users, ClipboardList, AlertTriangle, Sprout,
   Warehouse, Bot, Lightbulb, ChevronLeft, ChevronRight,
-  X, LogOut, Dna, Store, TrendingUp, Receipt, FileBarChart2, Milk, MessageCircle, FileCheck, type LucideIcon,
+  X, LogOut, Dna, Store, TrendingUp, Receipt, FileBarChart2, Milk, MessageCircle, FileCheck, ShieldCheck, type LucideIcon,
 } from "lucide-react";
 import { CowIcon } from "@/components/ui/CowIcon";
 import { FazendaSwitcher } from "@/components/gestao/FazendaSwitcher";
@@ -17,6 +17,7 @@ type NavItem = { href: string; label: string; Icon: LucideIcon | typeof CowIcon;
 
 export const NAV_GESTOR: NavItem[] = [
   { href: "/gestao",              label: "Tela Inicial", Icon: LayoutDashboard, color: "text-green-600"   },
+  { href: "/gestao/kyc",          label: "Verificação",  Icon: ShieldCheck,     color: "text-green-600"   },
   { href: "/gestao/inteligencia", label: "Inteligência", Icon: TrendingUp,      color: "text-cyan-600"    },
   { href: "/gestao/animais",      label: "Rebanho",     Icon: Beef,            color: "text-green-700"   },
   { href: "/gestao/gta",          label: "GTA",         Icon: FileCheck,       color: "text-teal-600"    },

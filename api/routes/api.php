@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\GestaoFinanceiroFazendaController;
 use App\Http\Controllers\Api\ContadorAcessoController;
 use App\Http\Controllers\Api\NotificacaoController;
 use App\Http\Controllers\Api\GestaoGtaController;
+use App\Http\Controllers\Api\VendorKycController;
 use App\Http\Controllers\Api\OnboardingController;
 use App\Http\Controllers\Api\ProducaoLeiteController;
 use App\Http\Controllers\Api\SupportChatController;
@@ -318,6 +319,13 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/{id}/resolver', [GestaoEventoCampoController::class, 'resolver']);
         Route::delete('/{id}', [GestaoEventoCampoController::class, 'destroy']);
     });
+
+    // KYC — Verificação de vendedor
+    Route::prefix('kyc')->group(function () {
+        Route::get('/',        [VendorKycController::class, 'status']);
+        Route::post('/',       [VendorKycController::class, 'salvar']);
+    });
+    Route::get('kyc/badges/{userId}', [VendorKycController::class, 'badgesPublicos']);
 
     // GTA — Guia de Trânsito Animal
     Route::prefix('gestao/gta')->group(function () {
