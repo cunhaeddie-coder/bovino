@@ -25,6 +25,11 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+/* Texto digitado sempre escuro em inputs */
+input, textarea, select {
+  color: rgb(17 24 39); /* gray-900 */
+}
+
 /* Placeholder legível em mobile (Android Chrome usa ~54% opacidade por padrão) */
 ::placeholder {
   color: rgb(107 114 128); /* gray-500 */
