@@ -104,15 +104,42 @@ export default async function AnuncioPage({ params }: Props) {
         {anuncio.user && (
           <div className="bg-white rounded-2xl p-5 shadow-sm">
             <h2 className="font-semibold text-gray-700 mb-3">Vendedor</h2>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center text-xl">👤</div>
-              <div>
-                <p className="font-semibold">{anuncio.user.nome}</p>
-                <p className="text-sm text-gray-500">{anuncio.user.municipio}/{anuncio.user.estado}</p>
-                <div className="flex gap-2 mt-1">
-                  {anuncio.user.verificado_celular && <span className="text-xs bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded">✓ Celular</span>}
-                  {anuncio.user.verificado_cpf && <span className="text-xs bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded">✓ CPF</span>}
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center text-xl shrink-0">👤</div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="font-semibold">{anuncio.user.nome}</p>
+                  {anuncio.user.kyc?.kyc_status === "aprovado" && (
+                    <span className="text-[10px] bg-green-600 text-white px-2 py-0.5 rounded-full font-bold">✓ Verificado</span>
+                  )}
                 </div>
+                <p className="text-sm text-gray-500 mt-0.5">{anuncio.user.municipio}/{anuncio.user.estado}</p>
+
+                {/* Badges KYC completos */}
+                {anuncio.user.kyc?.kyc_status === "aprovado" && (
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {anuncio.user.kyc.status_receita === "ok" && (
+                      <span className="text-[10px] bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 rounded-full font-semibold">✓ CPF/CNPJ verificado</span>
+                    )}
+                    {anuncio.user.kyc.status_ie === "ok" && (
+                      <span className="text-[10px] bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 rounded-full font-semibold">✓ IE ativa (GTA)</span>
+                    )}
+                    {anuncio.user.kyc.status_ibama === "ok" && (
+                      <span className="text-[10px] bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 rounded-full font-semibold">✓ Sem embargo IBAMA</span>
+                    )}
+                    {anuncio.user.kyc.status_ie === "ok" && anuncio.user.kyc.status_ibama === "ok" && (
+                      <span className="text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full font-semibold">🌿 Conformidade ESG</span>
+                    )}
+                  </div>
+                )}
+
+                {/* Fallback badges antigos */}
+                {!anuncio.user.kyc && (
+                  <div className="flex gap-2 mt-1">
+                    {anuncio.user.verificado_celular && <span className="text-xs bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded">✓ Celular</span>}
+                    {anuncio.user.verificado_cpf && <span className="text-xs bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded">✓ CPF</span>}
+                  </div>
+                )}
               </div>
             </div>
           </div>

@@ -42,6 +42,12 @@ export interface Anuncio {
     plano: string;
     verificado_cpf: boolean;
     verificado_celular: boolean;
+    kyc?: {
+      kyc_status: string;
+      status_receita: string;
+      status_ie: string;
+      status_ibama: string;
+    };
   };
 }
 

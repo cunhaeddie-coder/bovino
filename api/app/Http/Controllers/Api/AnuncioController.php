@@ -15,7 +15,11 @@ class AnuncioController extends Controller
     {
         $userType = addslashes(\App\Models\User::class);
 
-        $query = Anuncio::with(['animal', 'fotos', 'user:id,nome,estado,municipio,verificado_cpf,plano'])
+        $query = Anuncio::with([
+                'animal', 'fotos',
+                'user:id,nome,estado,municipio,verificado_cpf,plano',
+                'user.kyc:user_id,kyc_status,status_receita,status_ie,status_ibama',
+            ])
             ->addSelect([
                 'is_elite' => \DB::table('assinaturas')
                     ->join('planos', 'planos.id', '=', 'assinaturas.plano_id')
@@ -78,7 +82,11 @@ class AnuncioController extends Controller
     {
         $anuncio->increment('views');
 
-        $anuncio->load(['animal', 'midias', 'user:id,nome,estado,municipio,verificado_cpf,verificado_celular']);
+        $anuncio->load([
+            'animal', 'midias',
+            'user:id,nome,estado,municipio,verificado_cpf,verificado_celular',
+            'user.kyc:user_id,kyc_status,status_receita,status_ie,status_ibama',
+        ]);
 
         return response()->json($anuncio);
     }

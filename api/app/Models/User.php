@@ -95,6 +95,11 @@ class User extends Authenticatable
         return $this->hasMany(Fazenda::class);
     }
 
+    public function kyc(): HasOne
+    {
+        return $this->hasOne(VendorKyc::class);
+    }
+
     // Retorna a fazenda selecionada via contexto (multi-fazenda) ou a primeira
     public function getFazendaAttribute(): ?Fazenda
     {

@@ -2,6 +2,14 @@ import Link from "next/link";
 import Image from "next/image";
 import type { Anuncio } from "@/lib/types";
 
+function kycAprovado(anuncio: Anuncio) {
+  return anuncio.user?.kyc?.kyc_status === "aprovado";
+}
+function kycEsg(anuncio: Anuncio) {
+  const k = anuncio.user?.kyc;
+  return k?.kyc_status === "aprovado" && k?.status_ibama === "ok" && k?.status_ie === "ok";
+}
+
 const SEXO_ICON = { macho: "♂", femea: "♀", misto: "⚥" } as const;
 const SEXO_LABEL = { macho: "Macho", femea: "Fêmea", misto: "Misto" } as const;
 
@@ -39,9 +47,18 @@ export function AnuncioCard({ anuncio }: { anuncio: Anuncio }) {
               ⭐ Destaque
             </span>
           )}
-          {anuncio.user?.verificado_cpf && (
+          {kycAprovado(anuncio) ? (
+            <span className="bg-green-700 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
+              ✓ Verificado
+            </span>
+          ) : anuncio.user?.verificado_cpf && (
             <span className="bg-green-700 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
               ✓ Rastreável
+            </span>
+          )}
+          {kycEsg(anuncio) && (
+            <span className="bg-emerald-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
+              🌿 ESG
             </span>
           )}
           {anuncio.animal.status !== "disponivel" && (
