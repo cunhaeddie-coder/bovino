@@ -17,7 +17,9 @@ type FazendaItem = {
 const FORM_VAZIO = { nome: "", estado: "", municipio: "" };
 
 export function FazendaSwitcher() {
-  const { activeFazendaId, setActiveFazendaId } = useAuthStore();
+  const { activeFazendaId, setActiveFazendaId, user } = useAuthStore();
+  const isElite = (user as any)?.assinatura_ativa?.plano_slug === 'produtor-elite'
+               || (user as any)?.plano === 'produtor-elite';
 
   const [fazendas, setFazendas]     = useState<FazendaItem[]>([]);
   const [carregou, setCarregou]     = useState(false);
@@ -157,7 +159,7 @@ export function FazendaSwitcher() {
     </div>
   );
 
-  // Sem fazenda cadastrada ainda
+  // Sem fazenda cadastrada ainda (primeira fazenda — qualquer plano premium pode criar)
   if (fazendas.length === 0) return (
     <div className="px-3 mb-2">
       {!criando
@@ -169,6 +171,8 @@ export function FazendaSwitcher() {
       }
     </div>
   );
+  // Nota: qualquer plano premium pode criar a PRIMEIRA fazenda
+  // Apenas Elite pode criar fazendas adicionais
 
   return (
     <div className="relative px-3 mb-2">
@@ -214,15 +218,21 @@ export function FazendaSwitcher() {
               </button>
             ))}
 
-            {/* Criar nova fazenda */}
+            {/* Criar nova fazenda — apenas Elite */}
             <div className="border-t border-gray-100">
-              {!criando
-                ? <button onClick={abrirCriacao}
-                    className="w-full flex items-center gap-2 px-3 py-2.5 text-green-700 hover:bg-green-50 text-sm font-medium">
-                    <Plus size={14} /> Nova fazenda
-                  </button>
-                : formJSX(false)
-              }
+              {isElite ? (
+                !criando
+                  ? <button onClick={abrirCriacao}
+                      className="w-full flex items-center gap-2 px-3 py-2.5 text-green-700 hover:bg-green-50 text-sm font-medium">
+                      <Plus size={14} /> Nova fazenda
+                    </button>
+                  : formJSX(false)
+              ) : (
+                <div className="px-3 py-2.5 flex items-center gap-2">
+                  <span className="text-[10px] bg-amber-100 text-amber-700 font-bold px-1.5 py-0.5 rounded-full">Elite</span>
+                  <span className="text-xs text-gray-400">Múltiplas fazendas</span>
+                </div>
+              )}
             </div>
           </div>
         </>

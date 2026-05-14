@@ -101,7 +101,16 @@ class FazendaController extends Controller
             ], 403);
         }
 
-        // Multi-fazenda: sem limite de fazendas por usuário
+        // Multi-fazenda: segunda fazenda em diante requer plano Elite
+        if ($request->user()->fazendas()->exists()) {
+            $assinatura = $request->user()->assinaturaAtiva();
+            if (!$assinatura || $assinatura->plano?->slug !== 'produtor-elite') {
+                return response()->json([
+                    'message' => 'Cadastro de múltiplas fazendas disponível apenas no plano Produtor Elite.',
+                    'upgrade' => true,
+                ], 403);
+            }
+        }
 
         $data = $request->validate([
             'nome'             => 'required|string|max:120',
