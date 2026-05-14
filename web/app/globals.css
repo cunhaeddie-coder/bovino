@@ -25,6 +25,17 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+/* Placeholder legível em mobile (Android Chrome usa ~54% opacidade por padrão) */
+::placeholder {
+  color: rgb(107 114 128); /* gray-500 */
+  opacity: 1;
+}
+
+/* Select com opção vazia: texto em cinza para parecer placeholder */
+select:has(option[value=""]:checked) {
+  color: rgb(107 114 128);
+}
+
 /* ══════════════════════════════════════════════════════
    PALETAS DE TEMA — override das classes green do Tailwind
    Estratégia: [data-theme] + classe = maior especificidade
