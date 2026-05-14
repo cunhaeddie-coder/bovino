@@ -10,12 +10,12 @@ jobs:
     steps:
       - name: Deploy via SSH
         env:
-          SSH_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_KEY_B64: ${{ secrets.SSH_PRIVATE_KEY }}
           HOST: 2.24.75.211
           USER: root
         run: |
           mkdir -p ~/.ssh
-          echo "$SSH_KEY" > ~/.ssh/deploy_key
+          echo "$SSH_KEY_B64" | base64 -d > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
           ssh -i ~/.ssh/deploy_key \
             -o StrictHostKeyChecking=no \
