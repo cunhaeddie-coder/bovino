@@ -295,7 +295,7 @@ export default function LeiteiroPage() {
             </button>
           </div>
           <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto"><table className="w-full min-w-[480px] text-sm">
               <thead>
                 <tr className="bg-slate-50 text-[11px] text-slate-500 font-semibold border-b border-slate-100 uppercase tracking-wide">
                   <th className="text-left px-4 py-3">Data</th>
@@ -332,7 +332,7 @@ export default function LeiteiroPage() {
                   );
                 })}
               </tbody>
-            </table>
+            </table></div>
           </div>
         </div>
       )}

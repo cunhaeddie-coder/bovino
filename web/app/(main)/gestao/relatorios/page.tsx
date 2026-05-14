@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
@@ -208,7 +208,7 @@ export default function RelatoriosPage() {
 
               {/* Tabela por categoria */}
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+                <div className="overflow-x-auto"><table className="w-full min-w-[480px] text-sm">
                   <thead>
                     <tr className="bg-slate-50 text-[11px] text-slate-500 font-semibold uppercase tracking-wide border-b border-slate-100">
                       <th className="text-left px-4 py-3">Categoria</th>
@@ -245,7 +245,7 @@ export default function RelatoriosPage() {
                       <td className="px-4 py-3 text-right text-amber-800">{fmtPeso(inventario.peso_total)}</td>
                     </tr>
                   </tbody>
-                </table>
+                </table></div>
               </div>
 
               {/* Nota fiscal */}

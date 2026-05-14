@@ -186,7 +186,7 @@ export default function ReproducaoPage() {
             </div>
           ) : (
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-              <table className="w-full text-sm">
+              <div className="overflow-x-auto"><table className="w-full min-w-[480px] text-sm">
                 <thead>
                   <tr className="bg-gray-50 text-xs text-gray-500 uppercase font-semibold">
                     <th className="text-left px-5 py-3">Animal</th>
@@ -232,7 +232,7 @@ export default function ReproducaoPage() {
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </table></div>
             </div>
           )}
         </div>

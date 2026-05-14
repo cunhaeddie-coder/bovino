@@ -125,7 +125,7 @@ export default function InsumosPage() {
       {/* Tabela estoque */}
       {aba === "estoque" && (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto"><table className="w-full min-w-[480px] text-sm">
             <thead><tr className="bg-gray-50 text-xs text-gray-500 uppercase font-semibold">
               <th className="text-left px-5 py-3">Insumo</th>
               <th className="text-left px-3 py-3">Categoria</th>
@@ -168,25 +168,50 @@ export default function InsumosPage() {
                 );
               })}
             </tbody>
-          </table>
+          </table></div>
         </div>
       )}
 
       {/* Tabela compras */}
       {aba === "compras" && (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          <table className="w-full text-sm">
-            <thead><tr className="bg-gray-50 text-xs text-gray-500 uppercase font-semibold">
-              <th className="text-left px-5 py-3">Data</th>
-              <th className="text-left px-3 py-3">Fornecedor</th>
-              <th className="text-left px-3 py-3">Itens</th>
-              <th className="text-right px-3 py-3">Total</th>
-              <th className="text-left px-3 py-3">Status</th>
-            </tr></thead>
-            <tbody>
-              {compras.length === 0
-                ? <tr><td colSpan={5} className="text-center py-10 text-gray-400">Nenhuma compra registrada</td></tr>
-                : compras.map(c => (
+          {compras.length === 0 && (
+            <p className="text-center py-10 text-gray-400 text-sm">Nenhuma compra registrada</p>
+          )}
+
+          {/* Mobile: cards */}
+          <div className="md:hidden divide-y divide-gray-50">
+            {compras.map(c => (
+              <div key={c.id} className="flex items-start justify-between px-4 py-3 gap-3">
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-gray-800 text-sm truncate">{c.fornecedor?.nome ?? "—"}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    {new Date(c.data_compra).toLocaleDateString("pt-BR")} · {c.itens?.length ?? 0} item(ns)
+                  </p>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="font-bold text-gray-800 text-sm">{fmt(c.valor_total)}</p>
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold mt-0.5 inline-block ${
+                    c.status === "entregue" ? "bg-green-100 text-green-700" :
+                    c.status === "confirmada" ? "bg-blue-100 text-blue-700" :
+                    "bg-gray-100 text-gray-600"}`}>{c.status}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop: tabela */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead><tr className="bg-gray-50 text-xs text-gray-500 uppercase font-semibold">
+                <th className="text-left px-5 py-3">Data</th>
+                <th className="text-left px-3 py-3">Fornecedor</th>
+                <th className="text-left px-3 py-3">Itens</th>
+                <th className="text-right px-3 py-3">Total</th>
+                <th className="text-left px-3 py-3">Status</th>
+              </tr></thead>
+              <tbody>
+                {compras.map(c => (
                   <tr key={c.id} className="border-t border-gray-50 hover:bg-gray-50">
                     <td className="px-5 py-3 text-gray-700">{new Date(c.data_compra).toLocaleDateString("pt-BR")}</td>
                     <td className="px-3 py-3 text-gray-600">{c.fornecedor?.nome ?? "—"}</td>
@@ -199,17 +224,17 @@ export default function InsumosPage() {
                         "bg-gray-100 text-gray-600"}`}>{c.status}</span>
                     </td>
                   </tr>
-                ))
-              }
-            </tbody>
-          </table>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
       {/* Tabela fornecedores */}
       {aba === "fornecedores" && (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto"><table className="w-full min-w-[480px] text-sm">
             <thead><tr className="bg-gray-50 text-xs text-gray-500 uppercase font-semibold">
               <th className="text-left px-5 py-3">Fornecedor</th>
               <th className="text-left px-3 py-3">Categoria</th>
@@ -229,7 +254,7 @@ export default function InsumosPage() {
                 ))
               }
             </tbody>
-          </table>
+          </table></div>
         </div>
       )}
 
