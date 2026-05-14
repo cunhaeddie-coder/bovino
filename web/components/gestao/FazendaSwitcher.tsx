@@ -24,6 +24,7 @@ export function FazendaSwitcher() {
   const [open, setOpen]           = useState(false);
   const [criando, setCriando]     = useState(false);
   const [novoForm, setNovoForm]   = useState({ nome: "", estado: "", municipio: "" });
+  const [municipios, setMunicipios] = useState<string[]>([]);
   const [salvando, setSalvando]   = useState(false);
 
   useEffect(() => {
@@ -43,6 +44,15 @@ export function FazendaSwitcher() {
     setOpen(false);
     router.refresh();
   }
+
+  useEffect(() => {
+    if (!novoForm.estado) { setMunicipios([]); return; }
+    fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${novoForm.estado}/municipios?orderBy=nome`)
+      .then(r => r.json())
+      .then((data: { nome: string }[]) => setMunicipios(data.map(m => m.nome)))
+      .catch(() => setMunicipios([]));
+    setNovoForm(f => ({ ...f, municipio: "" }));
+  }, [novoForm.estado]);
 
   async function criarFazenda(e: React.FormEvent) {
     e.preventDefault();
@@ -81,8 +91,12 @@ export function FazendaSwitcher() {
           <input autoFocus required value={novoForm.nome} onChange={e => setNovoForm(f => ({ ...f, nome: e.target.value }))}
             placeholder="Nome da fazenda *" className="w-full border border-green-600 bg-green-900/40 text-white placeholder-green-400 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-green-400" />
           <div className="grid grid-cols-2 gap-1.5">
-            <input required value={novoForm.municipio} onChange={e => setNovoForm(f => ({ ...f, municipio: e.target.value }))}
-              placeholder="Município *" className="border border-green-600 bg-green-900/40 text-white placeholder-green-400 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-green-400" />
+            <select required value={novoForm.municipio} onChange={e => setNovoForm(f => ({ ...f, municipio: e.target.value }))}
+              disabled={!novoForm.estado || municipios.length === 0}
+              className="border border-green-600 bg-green-900/40 text-white rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-green-400 disabled:opacity-50">
+              <option value="">{!novoForm.estado ? "Selecione UF" : municipios.length === 0 ? "Carregando..." : "Município *"}</option>
+              {municipios.map(m => <option key={m} value={m}>{m}</option>)}
+            </select>
             <select required value={novoForm.estado} onChange={e => setNovoForm(f => ({ ...f, estado: e.target.value }))}
               className="border border-green-600 bg-green-900/40 text-white rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-green-400">
               <option value="">UF *</option>
@@ -155,13 +169,16 @@ export function FazendaSwitcher() {
                     className="w-full border border-gray-200 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
                   />
                   <div className="grid grid-cols-2 gap-1.5">
-                    <input
+                    <select
                       required
                       value={novoForm.municipio}
                       onChange={e => setNovoForm(f => ({ ...f, municipio: e.target.value }))}
-                      placeholder="Município *"
-                      className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
-                    />
+                      disabled={!novoForm.estado || municipios.length === 0}
+                      className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 bg-white disabled:opacity-50"
+                    >
+                      <option value="">{!novoForm.estado ? "Selecione UF primeiro" : municipios.length === 0 ? "Carregando..." : "Município *"}</option>
+                      {municipios.map(m => <option key={m} value={m}>{m}</option>)}
+                    </select>
                     <select
                       required
                       value={novoForm.estado}
