@@ -26,9 +26,11 @@ export function ThemePicker() {
                     theme === t.id ? "bg-gray-100" : "hover:bg-gray-50"
                   }`}
                 >
-                  {t.flag ? (
-                    <span className={`w-5 h-5 rounded-full text-sm flex items-center justify-center shrink-0 border-2 ${theme === t.id ? "border-gray-800" : "border-transparent"}`}>
-                      🇧🇷
+                  {t.id === "brasil" ? (
+                    <span className={`w-5 h-5 rounded-full shrink-0 border-2 overflow-hidden flex flex-col ${theme === t.id ? "border-gray-800" : "border-transparent"}`}>
+                      <span className="flex-1 w-full" style={{ background: "#009c3b" }} />
+                      <span className="flex-1 w-full" style={{ background: "#FFDF00" }} />
+                      <span className="flex-1 w-full" style={{ background: "#002776" }} />
                     </span>
                   ) : (
                     <span
@@ -62,8 +64,12 @@ export function ThemePicker() {
             className="w-10 h-10 rounded-full shadow-lg border-2 border-white flex items-center justify-center transition-transform hover:scale-110"
             style={{ backgroundColor: t?.cor }}
           >
-            {t?.flag ? (
-              <span className="text-lg leading-none">🇧🇷</span>
+            {t?.id === "brasil" ? (
+              <span className="w-5 h-5 rounded-full overflow-hidden flex flex-col">
+                <span className="flex-1 w-full" style={{ background: "#009c3b" }} />
+                <span className="flex-1 w-full" style={{ background: "#FFDF00" }} />
+                <span className="flex-1 w-full" style={{ background: "#002776" }} />
+              </span>
             ) : (
               <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
