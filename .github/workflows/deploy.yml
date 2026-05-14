@@ -21,4 +21,4 @@ jobs:
             -o StrictHostKeyChecking=no \
             -o ConnectTimeout=30 \
             $USER@$HOST \
-            "bash /var/www/bovino/deploy/4_update.sh"
+            "cd /var/www/bovino && git fetch origin main && git reset --hard origin/main && bash deploy/4_update.sh"
