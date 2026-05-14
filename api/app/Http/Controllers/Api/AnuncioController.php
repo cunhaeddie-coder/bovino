@@ -62,6 +62,15 @@ class AnuncioController extends Controller
         if ($request->filled('preco_max')) {
             $query->where('preco_unitario', '<=', $request->preco_max);
         }
+        if ($request->boolean('verificado')) {
+            $query->whereHas('user.kyc', fn($q) => $q->where('kyc_status', 'aprovado'));
+        }
+        if ($request->boolean('esg')) {
+            $query->whereHas('user.kyc', fn($q) => $q
+                ->where('kyc_status', 'aprovado')
+                ->where('status_ibama', 'ok')
+                ->where('status_ie', 'ok'));
+        }
 
         // Elite → 1, qualquer assinatura ativa → 2, free → 3
         $query->orderByRaw("

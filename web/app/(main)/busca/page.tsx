@@ -29,6 +29,8 @@ export default async function BuscaPage({ searchParams }: { searchParams: Search
   if (sp.sexo) params.sexo = sp.sexo as string;
   if (sp.preco_min) params.preco_min = sp.preco_min as string;
   if (sp.preco_max) params.preco_max = sp.preco_max as string;
+  if (sp.verificado) params.verificado = "1";
+  if (sp.esg) params.esg = "1";
 
   if (sp.page) params.page = sp.page as string;
   const { data: anuncios, total, current_page, last_page } = await buscar(params);
@@ -97,6 +99,20 @@ export default async function BuscaPage({ searchParams }: { searchParams: Search
             </button>
           </div>
 
+          {/* Filtros de confiança */}
+          <div className="flex flex-wrap gap-3">
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <input type="checkbox" name="verificado" value="1" defaultChecked={!!sp.verificado}
+                className="w-4 h-4 rounded accent-green-700" />
+              <span className="text-sm text-gray-700">✓ Apenas verificados</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <input type="checkbox" name="esg" value="1" defaultChecked={!!sp.esg}
+                className="w-4 h-4 rounded accent-green-700" />
+              <span className="text-sm text-gray-700">🌿 Conformidade ESG</span>
+            </label>
+          </div>
+
           {/* Faixa de preço */}
           <div className="flex items-center gap-2">
             <span className="text-xs text-gray-500 shrink-0">R$/cab:</span>
@@ -120,8 +136,10 @@ export default async function BuscaPage({ searchParams }: { searchParams: Search
           </div>
 
           {/* Chips dos filtros ativos */}
-          {(sp.q || sp.raca || sp.estado || sp.preco_min || sp.preco_max) && (
+          {(sp.q || sp.raca || sp.estado || sp.preco_min || sp.preco_max || sp.verificado || sp.esg) && (
             <div className="flex flex-wrap gap-1.5 pt-1">
+              {sp.verificado && <span className="bg-green-50 text-green-700 text-xs px-2 py-0.5 rounded-full">✓ Verificados</span>}
+              {sp.esg && <span className="bg-emerald-50 text-emerald-700 text-xs px-2 py-0.5 rounded-full">🌿 ESG</span>}
               {sp.q && <span className="bg-green-50 text-green-700 text-xs px-2 py-0.5 rounded-full">🔍 "{sp.q}"</span>}
               {sp.raca && <span className="bg-green-50 text-green-700 text-xs px-2 py-0.5 rounded-full">🐄 {sp.raca}</span>}
               {sp.estado && <span className="bg-green-50 text-green-700 text-xs px-2 py-0.5 rounded-full">📍 {sp.estado}{sp.municipio ? ` / ${sp.municipio}` : ""}</span>}

@@ -82,6 +82,14 @@ export default function ChatDetailPage() {
   const [contraVal, setContraVal] = useState("");
   const [contraLoading, setContraLoading] = useState(false);
 
+  // Visit scheduling
+  const [showVisita, setShowVisita] = useState(false);
+  const [visitaData, setVisitaData] = useState("");
+  const [visitaHora, setVisitaHora] = useState("");
+  const [visitaMensagem, setVisitaMensagem] = useState("");
+  const [visitaLoading, setVisitaLoading] = useState(false);
+  const [visitaEnviada, setVisitaEnviada] = useState(false);
+
   // Rating state
   const [notaAvaliacao, setNotaAvaliacao] = useState(5);
   const [comentarioAvaliacao, setComentarioAvaliacao] = useState("");
@@ -197,6 +205,29 @@ export default function ChatDetailPage() {
     } catch {
     } finally {
       setContraLoading(false);
+    }
+  }
+
+  async function solicitarVisita() {
+    if (!neg || !visitaData || visitaLoading) return;
+    setVisitaLoading(true);
+    try {
+      await api.post(`/anuncios/${neg.anuncio_id}/visita`, {
+        data_solicitada: visitaData,
+        hora_solicitada: visitaHora || undefined,
+        mensagem: visitaMensagem.trim() || undefined,
+      });
+      setVisitaEnviada(true);
+      setShowVisita(false);
+      // Manda mensagem no chat informando
+      const dataFmt = new Date(visitaData + "T12:00:00").toLocaleDateString("pt-BR");
+      await api.post(`/negociacoes/${neg.id}/mensagens`, {
+        corpo: `📅 Solicitei uma visita para ${dataFmt}${visitaHora ? " às " + visitaHora : ""}`,
+      });
+      carregar();
+    } catch {
+    } finally {
+      setVisitaLoading(false);
     }
   }
 
@@ -342,6 +373,50 @@ export default function ChatDetailPage() {
             )}
           </div>
 
+          {/* Timeline */}
+          {neg && (() => {
+            const steps = [
+              { key: "proposta",    label: "Proposta" },
+              { key: "negociando",  label: "Negociando" },
+              { key: "aceita",      label: "Acordo" },
+              { key: "concluida",   label: "Concluída" },
+            ];
+            const stepIdx =
+              neg.status === "recusada"   ? -1 :
+              neg.status === "concluida"  ?  3 :
+              neg.status === "aceita"     ?  2 :
+              neg.preco_contra_proposta   ?  1 : 0;
+            return (
+              <div className="bg-white border-b border-gray-100 px-4 py-2.5 shrink-0">
+                {neg.status === "recusada" ? (
+                  <p className="text-center text-xs font-semibold text-red-500">❌ Proposta recusada</p>
+                ) : (
+                  <div className="flex items-center gap-0">
+                    {steps.map((s, i) => (
+                      <div key={s.key} className="flex items-center flex-1 last:flex-none">
+                        <div className="flex flex-col items-center gap-0.5">
+                          <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold border-2 transition-colors ${
+                            i < stepIdx  ? "bg-green-600 border-green-600 text-white" :
+                            i === stepIdx ? "bg-green-700 border-green-700 text-white ring-2 ring-green-200" :
+                            "bg-white border-gray-200 text-gray-400"
+                          }`}>
+                            {i < stepIdx ? "✓" : i + 1}
+                          </div>
+                          <span className={`text-[9px] font-medium whitespace-nowrap ${i <= stepIdx ? "text-green-700" : "text-gray-400"}`}>
+                            {s.label}
+                          </span>
+                        </div>
+                        {i < steps.length - 1 && (
+                          <div className={`flex-1 h-0.5 mb-3.5 mx-0.5 ${i < stepIdx ? "bg-green-500" : "bg-gray-200"}`} />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
           {/* Messages */}
           <div className="flex-1 overflow-y-auto px-4 py-3 space-y-0.5 bg-gray-50">
             {mensagens.length === 0 && (
@@ -435,6 +510,22 @@ export default function ChatDetailPage() {
           {/* Input */}
           {!isEncerrada && (
             <div className="bg-white border-t border-gray-100 px-3 pt-2 pb-3 shrink-0">
+              {/* Quick replies + visita */}
+              <div className="flex gap-1.5 overflow-x-auto pb-2 scrollbar-hide">
+                {isComprador && !visitaEnviada && (
+                  <button
+                    onClick={() => setShowVisita(true)}
+                    className="text-xs text-blue-600 bg-blue-50 border border-blue-200 rounded-full px-3 py-1 shrink-0 hover:bg-blue-100 font-semibold"
+                  >
+                    📅 Agendar visita
+                  </button>
+                )}
+                {visitaEnviada && (
+                  <span className="text-xs text-blue-600 bg-blue-50 rounded-full px-3 py-1 shrink-0">
+                    📅 Visita solicitada
+                  </span>
+                )}
+              </div>
               {/* Quick replies */}
               <div className="flex gap-1.5 overflow-x-auto pb-2 scrollbar-hide">
                 {QUICK_REPLIES.map((r) => (
@@ -471,6 +562,60 @@ export default function ChatDetailPage() {
             </div>
           )}
         </>
+      )}
+
+      {/* Visit scheduling modal */}
+      {showVisita && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-sm p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-bold text-gray-900">📅 Agendar visita</h3>
+              <button onClick={() => setShowVisita(false)} className="text-gray-400 hover:text-gray-700">✕</button>
+            </div>
+            <p className="text-xs text-gray-500">Solicite uma data para visitar a propriedade. O vendedor confirma ou sugere outra data.</p>
+            <div className="space-y-3">
+              <div>
+                <label className="text-sm font-medium text-gray-700">Data preferida</label>
+                <input
+                  type="date"
+                  value={visitaData}
+                  onChange={e => setVisitaData(e.target.value)}
+                  min={new Date(Date.now() + 86400000).toISOString().split("T")[0]}
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 mt-1 text-sm focus:outline-none focus:border-green-400"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700">Horário <span className="text-gray-400 font-normal text-xs">(opcional)</span></label>
+                <input
+                  type="time"
+                  value={visitaHora}
+                  onChange={e => setVisitaHora(e.target.value)}
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 mt-1 text-sm focus:outline-none focus:border-green-400"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700">Observação <span className="text-gray-400 font-normal text-xs">(opcional)</span></label>
+                <textarea
+                  value={visitaMensagem}
+                  onChange={e => setVisitaMensagem(e.target.value)}
+                  rows={2}
+                  placeholder="Ex: Virei com veterinário para avaliação..."
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 mt-1 text-sm resize-none focus:outline-none focus:border-green-400"
+                />
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button onClick={() => setShowVisita(false)}
+                className="flex-1 border border-gray-200 rounded-xl py-2.5 text-sm text-gray-600 hover:bg-gray-50">
+                Cancelar
+              </button>
+              <button onClick={solicitarVisita} disabled={visitaLoading || !visitaData}
+                className="flex-1 bg-blue-600 text-white rounded-xl py-2.5 text-sm font-bold disabled:opacity-50 hover:bg-blue-700">
+                {visitaLoading ? "Enviando..." : "Solicitar visita"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Counter-offer modal */}

@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { serverFetch } from "@/lib/api-server";
 import { AnuncioGallery } from "@/components/anuncio/AnuncioGallery";
 import { AnuncioOwnerActions } from "@/components/anuncio/AnuncioOwnerActions";
+import { NegociarModal } from "@/components/anuncio/NegociarModal";
 import type { Anuncio } from "@/lib/types";
 
 type Props = { params: Promise<{ id: string }> };
@@ -90,12 +91,12 @@ export default async function AnuncioPage({ params }: Props) {
           )}
 
           {anuncio.animal.status === "disponivel" && (
-            <Link
-              href={`/chat?anuncio=${anuncio.id}`}
-              className="block w-full text-center bg-green-700 text-white rounded-xl py-3 font-semibold hover:bg-green-800 transition-colors"
-            >
-              {anuncio.aceita_negociacao ? "Negociar / Contato" : "Entrar em contato"}
-            </Link>
+            <NegociarModal
+              anuncioId={anuncio.id}
+              precoUnitario={anuncio.preco_unitario}
+              quantidade={anuncio.animal.quantidade}
+              aceitaNegociacao={anuncio.aceita_negociacao}
+            />
           )}
 
           <AnuncioOwnerActions anuncioId={anuncio.id} ownerId={anuncio.user_id} />
