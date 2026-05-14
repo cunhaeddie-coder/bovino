@@ -368,7 +368,7 @@ export default function AnimaisPage() {
           ) : (
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
               <div className="overflow-x-auto">
-                <div className="overflow-x-auto"><table className="w-full min-w-[480px] text-sm">
+                <table className="w-full min-w-[480px] text-sm">
                   <thead>
                     <tr className="border-b border-gray-100 bg-gray-50">
                       <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500">Brinco / Nome</th>
@@ -419,7 +419,7 @@ export default function AnimaisPage() {
                       </tr>
                     ))}
                   </tbody>
-                </table></div>
+                </table>
               </div>
             </div>
           )}

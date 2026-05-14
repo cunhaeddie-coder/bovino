@@ -125,50 +125,81 @@ export default function InsumosPage() {
       {/* Tabela estoque */}
       {aba === "estoque" && (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="overflow-x-auto"><table className="w-full min-w-[480px] text-sm">
-            <thead><tr className="bg-gray-50 text-xs text-gray-500 uppercase font-semibold">
-              <th className="text-left px-5 py-3">Insumo</th>
-              <th className="text-left px-3 py-3">Categoria</th>
-              <th className="text-left px-3 py-3">Unidade</th>
-              <th className="text-right px-3 py-3">Qtd atual</th>
-              <th className="text-right px-3 py-3">Mínimo</th>
-              <th className="text-right px-3 py-3">Preço unit.</th>
-              <th className="text-right px-5 py-3">Ações</th>
-            </tr></thead>
-            <tbody>
-              {loading ? (
-                <tr><td colSpan={7} className="text-center py-10 text-gray-400">Carregando...</td></tr>
-              ) : insumos.length === 0 ? (
-                <tr><td colSpan={7} className="text-center py-10 text-gray-400">Nenhum insumo cadastrado</td></tr>
-              ) : insumos.map(i => {
-                const qtdAtual = Number(i.estoque?.quantidade_atual ?? 0);
-                const qtdMin   = Number(i.estoque?.quantidade_minima ?? 0);
-                const abaixo   = i.estoque && qtdMin > 0 && qtdAtual <= qtdMin;
-                return (
-                  <tr key={i.id} className="border-t border-gray-50 hover:bg-gray-50">
-                    <td className="px-5 py-3">
-                      <p className="font-semibold text-gray-800">{i.nome}</p>
-                      {i.codigo && <p className="text-xs text-gray-400">#{i.codigo}</p>}
-                    </td>
-                    <td className="px-3 py-3 text-gray-500 capitalize">{i.categoria}</td>
-                    <td className="px-3 py-3 text-gray-500">{i.unidade}</td>
-                    <td className={`px-3 py-3 text-right font-semibold ${abaixo ? "text-red-600" : "text-gray-800"}`}>
-                      {qtdAtual > 0 ? qtdAtual.toFixed(2) : "—"}
-                      {abaixo && <span className="ml-1 text-xs text-red-500">⚠️</span>}
-                    </td>
-                    <td className="px-3 py-3 text-right text-gray-500">{qtdMin > 0 ? qtdMin.toFixed(2) : "—"}</td>
-                    <td className="px-3 py-3 text-right text-gray-700">{i.preco_unitario ? fmt(i.preco_unitario) : "—"}</td>
-                    <td className="px-5 py-3 text-right">
-                      <button onClick={() => setMovModal(i)}
-                        className="text-xs px-2 py-1 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 font-semibold">
-                        Movimentar
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table></div>
+          {loading && <p className="text-center py-10 text-gray-400 text-sm">Carregando...</p>}
+          {!loading && insumos.length === 0 && <p className="text-center py-10 text-gray-400 text-sm">Nenhum insumo cadastrado</p>}
+
+          {/* Mobile: cards */}
+          <div className="md:hidden divide-y divide-gray-50">
+            {insumos.map(i => {
+              const qtdAtual = Number(i.estoque?.quantidade_atual ?? 0);
+              const qtdMin   = Number(i.estoque?.quantidade_minima ?? 0);
+              const abaixo   = i.estoque && qtdMin > 0 && qtdAtual <= qtdMin;
+              return (
+                <div key={i.id} className="flex items-center justify-between px-4 py-3 gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <p className="font-semibold text-gray-800 text-sm truncate">{i.nome}</p>
+                      {abaixo && <span className="text-red-500 text-xs">⚠️</span>}
+                    </div>
+                    <p className="text-xs text-gray-400 mt-0.5 capitalize">{i.categoria} · {i.unidade}</p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className={`font-bold text-sm ${abaixo ? "text-red-600" : "text-gray-800"}`}>
+                      {qtdAtual > 0 ? qtdAtual.toFixed(1) : "—"} {i.unidade}
+                    </p>
+                    <button onClick={() => setMovModal(i)}
+                      className="text-[10px] px-1.5 py-0.5 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 font-semibold mt-0.5">
+                      Movimentar
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Desktop: tabela */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead><tr className="bg-gray-50 text-xs text-gray-500 uppercase font-semibold">
+                <th className="text-left px-5 py-3">Insumo</th>
+                <th className="text-left px-3 py-3">Categoria</th>
+                <th className="text-left px-3 py-3">Unidade</th>
+                <th className="text-right px-3 py-3">Qtd atual</th>
+                <th className="text-right px-3 py-3">Mínimo</th>
+                <th className="text-right px-3 py-3">Preço unit.</th>
+                <th className="text-right px-5 py-3">Ações</th>
+              </tr></thead>
+              <tbody>
+                {insumos.map(i => {
+                  const qtdAtual = Number(i.estoque?.quantidade_atual ?? 0);
+                  const qtdMin   = Number(i.estoque?.quantidade_minima ?? 0);
+                  const abaixo   = i.estoque && qtdMin > 0 && qtdAtual <= qtdMin;
+                  return (
+                    <tr key={i.id} className="border-t border-gray-50 hover:bg-gray-50">
+                      <td className="px-5 py-3">
+                        <p className="font-semibold text-gray-800">{i.nome}</p>
+                        {i.codigo && <p className="text-xs text-gray-400">#{i.codigo}</p>}
+                      </td>
+                      <td className="px-3 py-3 text-gray-500 capitalize">{i.categoria}</td>
+                      <td className="px-3 py-3 text-gray-500">{i.unidade}</td>
+                      <td className={`px-3 py-3 text-right font-semibold ${abaixo ? "text-red-600" : "text-gray-800"}`}>
+                        {qtdAtual > 0 ? qtdAtual.toFixed(2) : "—"}
+                        {abaixo && <span className="ml-1 text-xs text-red-500">⚠️</span>}
+                      </td>
+                      <td className="px-3 py-3 text-right text-gray-500">{qtdMin > 0 ? qtdMin.toFixed(2) : "—"}</td>
+                      <td className="px-3 py-3 text-right text-gray-700">{i.preco_unitario ? fmt(i.preco_unitario) : "—"}</td>
+                      <td className="px-5 py-3 text-right">
+                        <button onClick={() => setMovModal(i)}
+                          className="text-xs px-2 py-1 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 font-semibold">
+                          Movimentar
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
@@ -234,27 +265,45 @@ export default function InsumosPage() {
       {/* Tabela fornecedores */}
       {aba === "fornecedores" && (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="overflow-x-auto"><table className="w-full min-w-[480px] text-sm">
-            <thead><tr className="bg-gray-50 text-xs text-gray-500 uppercase font-semibold">
-              <th className="text-left px-5 py-3">Fornecedor</th>
-              <th className="text-left px-3 py-3">Categoria</th>
-              <th className="text-left px-3 py-3">Telefone</th>
-              <th className="text-left px-3 py-3">Estado</th>
-            </tr></thead>
-            <tbody>
-              {fornecedores.length === 0
-                ? <tr><td colSpan={4} className="text-center py-10 text-gray-400">Nenhum fornecedor cadastrado</td></tr>
-                : fornecedores.map(f => (
+          {fornecedores.length === 0 && <p className="text-center py-10 text-gray-400 text-sm">Nenhum fornecedor cadastrado</p>}
+
+          {/* Mobile: cards */}
+          <div className="md:hidden divide-y divide-gray-50">
+            {fornecedores.map(f => (
+              <div key={f.id} className="flex items-center justify-between px-4 py-3">
+                <div>
+                  <p className="font-semibold text-gray-800 text-sm">{f.nome}</p>
+                  <p className="text-xs text-gray-400 capitalize mt-0.5">{f.categoria}</p>
+                </div>
+                <div className="text-right text-xs text-gray-500">
+                  <p>{(f as any).telefone ?? "—"}</p>
+                  <p>{(f as any).estado ?? "—"}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop: tabela */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead><tr className="bg-gray-50 text-xs text-gray-500 uppercase font-semibold">
+                <th className="text-left px-5 py-3">Fornecedor</th>
+                <th className="text-left px-3 py-3">Categoria</th>
+                <th className="text-left px-3 py-3">Telefone</th>
+                <th className="text-left px-3 py-3">Estado</th>
+              </tr></thead>
+              <tbody>
+                {fornecedores.map(f => (
                   <tr key={f.id} className="border-t border-gray-50 hover:bg-gray-50">
                     <td className="px-5 py-3 font-semibold text-gray-800">{f.nome}</td>
                     <td className="px-3 py-3 text-gray-500 capitalize">{f.categoria}</td>
                     <td className="px-3 py-3 text-gray-500">{(f as any).telefone ?? "—"}</td>
                     <td className="px-3 py-3 text-gray-500">{(f as any).estado ?? "—"}</td>
                   </tr>
-                ))
-              }
-            </tbody>
-          </table></div>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 

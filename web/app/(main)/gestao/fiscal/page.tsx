@@ -456,7 +456,7 @@ export default function FiscalPage() {
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </table></div>
             {lista && lista.last_page > 1 && (
               <div className="px-5 py-3 border-t border-slate-100 text-xs text-slate-400 text-center">
                 Página {lista.current_page} de {lista.last_page} · {lista.total} lançamentos
