@@ -20,8 +20,30 @@ export function HeroSearch() {
   }
 
   return (
-    <section className="bg-gradient-to-br from-green-800 via-green-700 to-green-600 text-white py-8 md:py-20 px-4">
-      <div className="max-w-3xl mx-auto text-center space-y-5">
+    <section className="relative bg-gradient-to-br from-green-800 via-green-700 to-green-600 text-white py-8 md:py-20 px-4 overflow-hidden">
+
+      {/* Bandeira do Brasil decorativa */}
+      <div className="absolute inset-0 flex items-center justify-end pointer-events-none select-none" aria-hidden>
+        <svg viewBox="0 0 720 504" className="h-full w-auto opacity-15 md:opacity-20" xmlns="http://www.w3.org/2000/svg">
+          {/* Verde */}
+          <rect width="720" height="504" fill="#009c3b"/>
+          {/* Losango amarelo */}
+          <polygon points="360,40 680,252 360,464 40,252" fill="#FFDF00"/>
+          {/* Círculo azul */}
+          <circle cx="360" cy="252" r="130" fill="#002776"/>
+          {/* Faixa branca */}
+          <path d="M230,252 Q360,195 490,252" stroke="white" strokeWidth="18" fill="none"/>
+          {/* Estrelas (simplificadas) */}
+          {[
+            [360,160],[290,210],[430,210],[260,260],[460,260],
+            [300,305],[420,305],[360,340]
+          ].map(([cx,cy],i) => (
+            <circle key={i} cx={cx} cy={cy} r="7" fill="white"/>
+          ))}
+        </svg>
+      </div>
+
+      <div className="relative max-w-3xl mx-auto text-center space-y-5">
         <h1 className="text-3xl md:text-5xl font-bold leading-tight">
           O maior mercado de{" "}
           <span className="text-yellow-300">gado bovino</span>{" "}
@@ -77,3 +99,4 @@ export function HeroSearch() {
     </section>
   );
 }
+
