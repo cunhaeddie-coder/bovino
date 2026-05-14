@@ -49,12 +49,62 @@ class KycService
         return ['status' => 'ok', 'nome' => null, 'dados' => null];
     }
 
-    // ── IBAMA — consulta tabela local (atualizada por artisan command) ────────
+    // ── IBAMA — API pública ArcGIS PAMGIA (tempo real) ───────────────────────
+
+    private const IBAMA_API = 'https://pamgia.ibama.gov.br/server/rest/services/01_Publicacoes_Bases/adm_embargos_ibama_a/FeatureServer/0/query';
 
     public function verificarIbama(string $cpfCnpj): array
     {
         $doc = preg_replace('/\D/', '', $cpfCnpj);
 
+        try {
+            $resp = Http::timeout(15)->get(self::IBAMA_API, [
+                'where'      => "cpf_cnpj_embargado='{$doc}'",
+                'outFields'  => 'cpf_cnpj_embargado,nome_embargado,municipio,uf,dat_embargo,des_infracao',
+                'resultRecordCount' => 5,
+                'f'          => 'json',
+            ]);
+
+            if ($resp->failed()) {
+                Log::warning("IBAMA API falhou: HTTP {$resp->status()}");
+                return $this->verificarIbamaLocal($doc);
+            }
+
+            $data = $resp->json();
+
+            if (!empty($data['error'])) {
+                Log::warning("IBAMA API erro: " . json_encode($data['error']));
+                return $this->verificarIbamaLocal($doc);
+            }
+
+            $features = $data['features'] ?? [];
+
+            if (!empty($features)) {
+                $attrs = $features[0]['attributes'] ?? [];
+                return [
+                    'status'   => 'embargado',
+                    'detalhe'  => [
+                        'nome'       => $attrs['nome_embargado'] ?? null,
+                        'municipio'  => $attrs['municipio'] ?? null,
+                        'uf'         => $attrs['uf'] ?? null,
+                        'data'       => $attrs['dat_embargo'] ?? null,
+                        'infracao'   => $attrs['des_infracao'] ?? null,
+                        'total'      => count($features),
+                    ],
+                ];
+            }
+
+            return ['status' => 'ok'];
+
+        } catch (\Exception $e) {
+            Log::warning("IBAMA API exception: " . $e->getMessage());
+            return $this->verificarIbamaLocal($doc);
+        }
+    }
+
+    // Fallback: tabela local (importada via artisan ibama:importar)
+    private function verificarIbamaLocal(string $doc): array
+    {
         $embargo = DB::table('ibama_embargos')
             ->where('cpf_cnpj', $doc)
             ->where('situacao', 'ativo')
@@ -64,13 +114,8 @@ class KycService
             return ['status' => 'embargado', 'detalhe' => (array) $embargo];
         }
 
-        // Se tabela vazia (ainda não importou), retorna não_verificado
         $total = DB::table('ibama_embargos')->count();
-        if ($total === 0) {
-            return ['status' => 'nao_verificado'];
-        }
-
-        return ['status' => 'ok'];
+        return ['status' => $total > 0 ? 'ok' : 'nao_verificado'];
     }
 
     // ── IE — valida formato por estado ────────────────────────────────────────
