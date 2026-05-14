@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useThemeStore } from "@/lib/themeStore";
 
 const RACAS = ["Nelore", "Angus", "Girolando", "Brahman", "Braford", "Gir", "Simmental", "Tabapuã"];
 const UFS   = ["AC","AL","AM","AP","BA","CE","DF","ES","GO","MA","MG","MS","MT","PA","PB","PE","PI","PR","RJ","RN","RO","RR","RS","SC","SE","SP","TO"];
@@ -10,6 +11,7 @@ export function HeroSearch() {
   const router = useRouter();
   const [q, setQ]           = useState("");
   const [estado, setEstado] = useState("");
+  const { theme } = useThemeStore();
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
@@ -22,7 +24,8 @@ export function HeroSearch() {
   return (
     <section className="relative bg-gradient-to-br from-green-800 via-green-700 to-green-600 text-white py-8 md:py-20 px-4 overflow-hidden">
 
-      {/* Bandeira do Brasil decorativa */}
+      {/* Bandeira do Brasil decorativa — só no tema Brasil */}
+      {theme === "brasil" && (
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none" aria-hidden>
         <svg viewBox="0 0 720 504" className="w-full max-w-2xl opacity-10" xmlns="http://www.w3.org/2000/svg">
           {/* Verde */}
@@ -42,6 +45,7 @@ export function HeroSearch() {
           ))}
         </svg>
       </div>
+      )}
 
       <div className="relative max-w-3xl mx-auto text-center space-y-5">
         <h1 className="text-3xl md:text-5xl font-bold leading-tight">
