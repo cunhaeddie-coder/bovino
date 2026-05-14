@@ -23,8 +23,8 @@ export function HeroSearch() {
     <section className="relative bg-gradient-to-br from-green-800 via-green-700 to-green-600 text-white py-8 md:py-20 px-4 overflow-hidden">
 
       {/* Bandeira do Brasil decorativa */}
-      <div className="absolute inset-0 flex items-center justify-end pointer-events-none select-none" aria-hidden>
-        <svg viewBox="0 0 720 504" className="h-full w-auto opacity-15 md:opacity-20" xmlns="http://www.w3.org/2000/svg">
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none" aria-hidden>
+        <svg viewBox="0 0 720 504" className="w-full max-w-2xl opacity-10" xmlns="http://www.w3.org/2000/svg">
           {/* Verde */}
           <rect width="720" height="504" fill="#009c3b"/>
           {/* Losango amarelo */}
