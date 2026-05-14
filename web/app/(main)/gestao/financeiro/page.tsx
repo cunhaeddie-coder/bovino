@@ -157,7 +157,7 @@ export default function FinanceiroPage() {
       {/* Abas */}
       <div id="fin-abas" className="flex gap-1 border-b border-gray-200 overflow-x-auto">
         {([
-          { k: "dashboard", label: "📊 Dashboard" },
+          { k: "dashboard", label: "📊 Painel" },
           { k: "receitas",  label: "💚 Receitas" },
           { k: "custos",    label: "💸 Custos" },
           { k: "pagar",     label: `📤 A Pagar${resumo?.contas_vencidas ? ` ⚠️${resumo.contas_vencidas}` : ""}` },
