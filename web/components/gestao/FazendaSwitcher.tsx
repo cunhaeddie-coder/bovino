@@ -22,7 +22,7 @@ export function FazendaSwitcher() {
   const [fazendas, setFazendas]   = useState<FazendaItem[]>([]);
   const [open, setOpen]           = useState(false);
   const [criando, setCriando]     = useState(false);
-  const [novoNome, setNovoNome]   = useState("");
+  const [novoForm, setNovoForm]   = useState({ nome: "", estado: "", municipio: "" });
   const [salvando, setSalvando]   = useState(false);
 
   useEffect(() => {
@@ -46,18 +46,14 @@ export function FazendaSwitcher() {
 
   async function criarFazenda(e: React.FormEvent) {
     e.preventDefault();
-    if (!novoNome.trim()) return;
+    if (!novoForm.nome.trim() || !novoForm.estado || !novoForm.municipio.trim()) return;
     setSalvando(true);
     try {
-      const { data } = await api.post("/fazenda", {
-        nome: novoNome.trim(),
-        estado: "SP",
-        municipio: "",
-      });
+      const { data } = await api.post("/fazenda", novoForm);
       setFazendas(prev => [...prev, data]);
       selecionar(data.id);
       setCriando(false);
-      setNovoNome("");
+      setNovoForm({ nome: "", estado: "", municipio: "" });
     } catch {
     } finally {
       setSalvando(false);
@@ -115,13 +111,34 @@ export function FazendaSwitcher() {
                 </button>
               ) : (
                 <form onSubmit={criarFazenda} className="p-3 space-y-2">
+                  <p className="text-xs font-semibold text-gray-500 mb-1">Nova fazenda</p>
                   <input
-                    autoFocus
-                    value={novoNome}
-                    onChange={e => setNovoNome(e.target.value)}
-                    placeholder="Nome da fazenda"
+                    autoFocus required
+                    value={novoForm.nome}
+                    onChange={e => setNovoForm(f => ({ ...f, nome: e.target.value }))}
+                    placeholder="Nome da fazenda *"
                     className="w-full border border-gray-200 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
                   />
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <input
+                      required
+                      value={novoForm.municipio}
+                      onChange={e => setNovoForm(f => ({ ...f, municipio: e.target.value }))}
+                      placeholder="Município *"
+                      className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+                    />
+                    <select
+                      required
+                      value={novoForm.estado}
+                      onChange={e => setNovoForm(f => ({ ...f, estado: e.target.value }))}
+                      className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 bg-white"
+                    >
+                      <option value="">UF *</option>
+                      {["AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG","PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO"].map(uf => (
+                        <option key={uf} value={uf}>{uf}</option>
+                      ))}
+                    </select>
+                  </div>
                   <div className="flex gap-1.5">
                     <button type="button" onClick={() => setCriando(false)}
                       className="flex-1 py-1.5 text-xs text-gray-500 border border-gray-200 rounded-lg">
@@ -129,7 +146,7 @@ export function FazendaSwitcher() {
                     </button>
                     <button type="submit" disabled={salvando}
                       className="flex-1 py-1.5 text-xs text-white bg-green-600 rounded-lg disabled:opacity-50">
-                      {salvando ? "..." : "Criar"}
+                      {salvando ? "Criando..." : "Criar"}
                     </button>
                   </div>
                 </form>
