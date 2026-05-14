@@ -182,7 +182,8 @@ class AuthController extends Controller
         $funcionario = \App\Models\Funcionario::where('user_id', $user->id)->first();
 
         return response()->json([
-            ...$user->only(['id', 'nome', 'celular', 'email', 'tipo', 'plano', 'verificado_celular', 'verificado_cpf']),
+            ...$user->only(['id', 'nome', 'celular', 'email', 'tipo', 'plano', 'verificado_celular', 'verificado_cpf',
+                            'nome_propriedade', 'estado', 'municipio', 'onboarding_etapa']),
             'papel' => $funcionario?->papel,
             'assinatura_ativa' => $assinatura ? [
                 'id'        => $assinatura->id,

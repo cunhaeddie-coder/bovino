@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\GestaoFinanceiroController;
 use App\Http\Controllers\Api\GestaoFinanceiroFazendaController;
 use App\Http\Controllers\Api\ContadorAcessoController;
 use App\Http\Controllers\Api\NotificacaoController;
+use App\Http\Controllers\Api\OnboardingController;
 use App\Http\Controllers\Api\ProducaoLeiteController;
 use App\Http\Controllers\Api\SupportChatController;
 use App\Http\Controllers\Api\ContadorViewController;
@@ -315,6 +316,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/{id}/resolver', [GestaoEventoCampoController::class, 'resolver']);
         Route::delete('/{id}', [GestaoEventoCampoController::class, 'destroy']);
     });
+
+    // Onboarding
+    Route::post('onboarding/avancar', [OnboardingController::class, 'avancar']);
+    Route::post('onboarding/pular',   [OnboardingController::class, 'pular']);
 
     // Notificações
     Route::prefix('notificacoes')->group(function () {

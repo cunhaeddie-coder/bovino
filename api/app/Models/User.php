@@ -35,6 +35,7 @@ class User extends Authenticatable
         'nome_propriedade',
         'avatar_url',
         'stripe_customer_id',
+        'onboarding_etapa',
     ];
 
     protected $hidden = [
