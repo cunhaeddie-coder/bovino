@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\GestaoFinanceiroController;
 use App\Http\Controllers\Api\GestaoFinanceiroFazendaController;
 use App\Http\Controllers\Api\ContadorAcessoController;
 use App\Http\Controllers\Api\NotificacaoController;
+use App\Http\Controllers\Api\GestaoGtaController;
 use App\Http\Controllers\Api\OnboardingController;
 use App\Http\Controllers\Api\ProducaoLeiteController;
 use App\Http\Controllers\Api\SupportChatController;
@@ -315,6 +316,15 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/', [GestaoEventoCampoController::class, 'store']);
         Route::post('/{id}/resolver', [GestaoEventoCampoController::class, 'resolver']);
         Route::delete('/{id}', [GestaoEventoCampoController::class, 'destroy']);
+    });
+
+    // GTA — Guia de Trânsito Animal
+    Route::prefix('gestao/gta')->group(function () {
+        Route::get('/resumo',         [GestaoGtaController::class, 'resumo']);
+        Route::get('/',               [GestaoGtaController::class, 'index']);
+        Route::post('/',              [GestaoGtaController::class, 'store']);
+        Route::patch('/{id}/status',  [GestaoGtaController::class, 'atualizarStatus']);
+        Route::delete('/{id}',        [GestaoGtaController::class, 'destroy']);
     });
 
     // Onboarding
