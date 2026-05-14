@@ -27,11 +27,10 @@ export function ThemePicker() {
                   }`}
                 >
                   {t.id === "brasil" ? (
-                    <span className={`w-5 h-5 rounded-full shrink-0 border-2 overflow-hidden flex flex-col ${theme === t.id ? "border-gray-800" : "border-transparent"}`}>
-                      <span className="flex-1 w-full" style={{ background: "#009c3b" }} />
-                      <span className="flex-1 w-full" style={{ background: "#FFDF00" }} />
-                      <span className="flex-1 w-full" style={{ background: "#002776" }} />
-                    </span>
+                    <span
+                      className={`w-5 h-5 rounded-full shrink-0 border-2 ${theme === t.id ? "border-gray-800" : "border-transparent"}`}
+                      style={{ background: "linear-gradient(to bottom, #009c3b 33%, #FFDF00 33%, #FFDF00 66%, #002776 66%)" }}
+                    />
                   ) : (
                     <span
                       className="w-5 h-5 rounded-full border-2 shrink-0"
@@ -62,14 +61,15 @@ export function ThemePicker() {
             onClick={() => setOpen((v) => !v)}
             title="Mudar tema"
             className="w-10 h-10 rounded-full shadow-lg border-2 border-white flex items-center justify-center transition-transform hover:scale-110"
-            style={{ backgroundColor: t?.cor }}
+            style={t?.id === "brasil"
+              ? { background: "linear-gradient(to bottom, #009c3b 33%, #FFDF00 33%, #FFDF00 66%, #002776 66%)" }
+              : { backgroundColor: t?.cor }}
           >
             {t?.id === "brasil" ? (
-              <span className="w-5 h-5 rounded-full overflow-hidden flex flex-col">
-                <span className="flex-1 w-full" style={{ background: "#009c3b" }} />
-                <span className="flex-1 w-full" style={{ background: "#FFDF00" }} />
-                <span className="flex-1 w-full" style={{ background: "#002776" }} />
-              </span>
+              <span
+                className="w-6 h-6 rounded-full"
+                style={{ background: "linear-gradient(to bottom, #009c3b 33%, #FFDF00 33%, #FFDF00 66%, #002776 66%)" }}
+              />
             ) : (
               <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
