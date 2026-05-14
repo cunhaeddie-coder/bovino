@@ -16,7 +16,7 @@ class AdminUsuarioController extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = User::withTrashed()
-            ->with(['assinaturaAtiva.plano'])
+            ->with(['assinaturas' => fn($q) => $q->where('status', 'ativa')->with('plano')->latest()])
             ->withCount(['anuncios', 'assinaturas']);
 
         if ($request->filled('busca')) {

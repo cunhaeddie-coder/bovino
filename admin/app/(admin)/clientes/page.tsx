@@ -100,14 +100,19 @@ export default function ClientesPage() {
 
   async function carregar(p = 1) {
     setLoading(true);
-    const params = new URLSearchParams({ page: String(p) });
-    if (busca)  params.set("busca", busca);
-    if (tipo)   params.set("tipo", tipo);
-    if (status) params.set("status", status);
-    const { data: res } = await api.get(`/usuarios?${params}`);
-    setData(res);
-    setPage(p);
-    setLoading(false);
+    try {
+      const params = new URLSearchParams({ page: String(p) });
+      if (busca)  params.set("busca", busca);
+      if (tipo)   params.set("tipo", tipo);
+      if (status) params.set("status", status);
+      const { data: res } = await api.get(`/usuarios?${params}`);
+      setData(res);
+      setPage(p);
+    } catch (e) {
+      console.error("Erro ao carregar clientes:", e);
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => { carregar(1); }, [busca, tipo, status]);
@@ -178,7 +183,7 @@ export default function ClientesPage() {
               ) : data?.data.map((u) => {
                 const inativo   = !!u.deleted_at;
                 const bloqueado = u.bloqueado_ate && new Date(u.bloqueado_ate) > new Date();
-                const planoNome = u.assinatura_ativa?.plano?.nome;
+                const planoNome = u.assinaturas?.[0]?.plano?.nome;
                 return (
                   <tr key={u.id} className={`border-t border-slate-50 hover:bg-slate-50 transition ${inativo ? "opacity-50" : ""}`}>
                     <td className="px-5 py-3">
