@@ -27,7 +27,7 @@ export function HeroSearch() {
       {/* Bandeira do Brasil decorativa — só no tema Brasil */}
       {theme === "brasil" && (
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none" aria-hidden>
-        <svg viewBox="0 0 720 504" className="w-full max-w-2xl opacity-10" xmlns="http://www.w3.org/2000/svg">
+        <svg viewBox="0 0 720 504" className="w-full max-w-2xl opacity-35" xmlns="http://www.w3.org/2000/svg">
           {/* Verde */}
           <rect width="720" height="504" fill="#009c3b"/>
           {/* Losango amarelo */}
