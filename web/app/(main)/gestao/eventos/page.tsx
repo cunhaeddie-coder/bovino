@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
@@ -115,7 +115,7 @@ export default function EventosCampoPage() {
       ) : (
         <div id="lista-eventos" className="grid gap-3">
           {eventos.map(ev => (
-            <div key={ev.id} className={`bg-white rounded-2xl border shadow-sm p-5 ${ev.resolvido ? "opacity-60" : ""}`}>
+            <div key={ev.id} className={`bg-white rounded-2xl border shadow-sm p-3 md:p-5 ${ev.resolvido ? "opacity-60" : ""}`}>
               <div className="flex items-start gap-4">
                 <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-2xl border ${URGENCIA_COR[ev.urgencia]}`}>
                   {TIPO_EMOJI[ev.tipo] ?? "📝"}

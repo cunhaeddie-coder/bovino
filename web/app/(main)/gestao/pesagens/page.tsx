@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
@@ -70,7 +70,7 @@ export default function PesagensPage() {
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-gray-900">⚖️ Pesagens</h1>
+        <h1 className="text-base md:text-xl font-bold text-gray-900">⚖️ Pesagens</h1>
         <button id="btn-pesagem" onClick={() => setShowForm(true)} className="bg-green-700 text-white text-sm font-semibold px-4 py-2 rounded-full hover:bg-green-800 transition">
           + Registrar pesagem
         </button>

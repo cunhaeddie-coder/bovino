@@ -1,7 +1,8 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
+import { KpiCard, KpiGrid } from "@/components/gestao/KpiCard";
 import { TourButton } from "@/components/ui/TourButton";
 import type { DriveStep } from "driver.js";
 
@@ -104,19 +105,11 @@ export default function InsumosPage() {
 
       {/* KPIs */}
       {resumo && (
-        <div id="insumos-kpis" className="grid grid-cols-3 gap-4">
-          {[
-            { label: "Valor em estoque", value: fmt(resumo.valor_estoque), icon: "📦", color: "text-blue-700" },
-            { label: "Compras no mês",   value: fmt(resumo.compras_mes),   icon: "🛒", color: "text-green-700" },
-            { label: "Abaixo do mínimo", value: resumo.abaixo_minimo,      icon: "⚠️", color: resumo.abaixo_minimo > 0 ? "text-red-600" : "text-gray-700" },
-          ].map(k => (
-            <div key={k.label} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-              <p className="text-xl mb-1">{k.icon}</p>
-              <p className={`text-xl font-bold ${k.color}`}>{k.value}</p>
-              <p className="text-xs text-gray-400">{k.label}</p>
-            </div>
-          ))}
-        </div>
+        <KpiGrid id="insumos-kpis" cols={3}>
+          <KpiCard icon="📦" label="Valor em estoque" value={resumo.valor_estoque} moeda color="text-blue-700" />
+          <KpiCard icon="🛒" label="Compras no mês"   value={resumo.compras_mes}   moeda color="text-green-700" />
+          <KpiCard icon="⚠️" label="Abaixo do mínimo" text={String(resumo.abaixo_minimo)} color={resumo.abaixo_minimo > 0 ? "text-red-600" : "text-gray-700"} />
+        </KpiGrid>
       )}
 
       {/* Abas */}
@@ -394,7 +387,7 @@ function NovaCompraModal({ insumos, fornecedores, onClose, onDone }: { insumos: 
           </div>
           <div className="bg-green-50 rounded-xl px-4 py-3 text-right">
             <p className="text-xs text-gray-500">Total da compra</p>
-            <p className="text-xl font-bold text-green-700">{total.toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}</p>
+            <p className="text-base md:text-xl font-bold text-green-700">{total.toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}</p>
           </div>
           {erro && <p className="text-xs text-red-500 bg-red-50 rounded-lg px-3 py-2">{erro}</p>}
           <div className="flex gap-2">

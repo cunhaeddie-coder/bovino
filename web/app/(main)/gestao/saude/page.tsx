@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
@@ -98,7 +98,7 @@ export default function SaudePage() {
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-gray-900">💉 Saúde do rebanho</h1>
+        <h1 className="text-base md:text-xl font-bold text-gray-900">💉 Saúde do rebanho</h1>
         <button id="btn-evento-saude" onClick={() => setShowForm(true)} className="bg-green-700 text-white text-sm font-semibold px-4 py-2 rounded-full hover:bg-green-800 transition">
           + Registrar evento
         </button>

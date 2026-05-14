@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
@@ -120,9 +120,9 @@ export default function GtaPage() {
             { label: "Animais movidos",  value: resumo.total_animais, icon: "🐄", cor: "text-green-700" },
             { label: "Saídas / Entradas",value: `${resumo.saidas} / ${resumo.entradas}`, icon: "↕️", cor: "text-blue-700" },
           ].map(k => (
-            <div key={k.label} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <div key={k.label} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 md:p-5">
               <p className="text-xl mb-1">{k.icon}</p>
-              <p className={`text-xl font-bold ${k.cor}`}>{k.value}</p>
+              <p className={`text-base md:text-xl font-bold ${k.cor}`}>{k.value}</p>
               <p className="text-xs text-gray-400 mt-0.5">{k.label}</p>
             </div>
           ))}
@@ -168,7 +168,7 @@ export default function GtaPage() {
           </div>
         )}
         {gtas.map(g => (
-          <div key={g.id} className={`bg-white rounded-2xl border shadow-sm p-5 ${vencida(g) ? "border-red-300" : vencendo(g) ? "border-amber-300" : "border-gray-100"}`}>
+          <div key={g.id} className={`bg-white rounded-2xl border shadow-sm p-3 md:p-5 ${vencida(g) ? "border-red-300" : vencendo(g) ? "border-amber-300" : "border-gray-100"}`}>
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-3 flex-1 min-w-0">
                 {/* Tipo badge */}
@@ -322,7 +322,7 @@ function GtaModal({ onClose, onDone }: { onClose: () => void; onDone: () => void
           {/* Origem */}
           <div>
             <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Origem</p>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               <div className="col-span-1">
                 <input value={form.origem_nome} onChange={e => set("origem_nome", e.target.value)} placeholder="Nome da fazenda" className={inp} />
               </div>
@@ -341,7 +341,7 @@ function GtaModal({ onClose, onDone }: { onClose: () => void; onDone: () => void
           {/* Destino */}
           <div>
             <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Destino</p>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               <div className="col-span-1">
                 <input value={form.destino_nome} onChange={e => set("destino_nome", e.target.value)} placeholder="Nome da fazenda" className={inp} />
               </div>
@@ -358,7 +358,7 @@ function GtaModal({ onClose, onDone }: { onClose: () => void; onDone: () => void
           </div>
 
           {/* Datas + Qtd */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">Data de emissão *</label>
               <input type="date" required value={form.data_emissao} onChange={e => set("data_emissao", e.target.value)} className={inp} />

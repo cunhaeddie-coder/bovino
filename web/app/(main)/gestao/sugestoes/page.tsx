@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
@@ -169,7 +169,7 @@ export default function SugestoesPage() {
         ) : (
           <div className="space-y-3">
             {lista.map((s) => (
-              <div key={s.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+              <div key={s.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 md:p-5">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap mb-1">

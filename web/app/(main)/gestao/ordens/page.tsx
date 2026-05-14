@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
@@ -235,7 +235,7 @@ export default function OrdensServicoPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Ordens de Serviço</h1>
+          <h1 className="text-base md:text-xl font-bold text-gray-900">Ordens de Serviço</h1>
           <p className="text-sm text-gray-500 mt-0.5">Crie, atribua e acompanhe tarefas do rebanho</p>
         </div>
         <button onClick={abrirCreate}

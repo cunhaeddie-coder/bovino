@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
@@ -301,7 +301,7 @@ export default function FiscalPage() {
       </div>
 
       {/* Cards de resumo */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         <div className="bg-green-50 border border-green-100 rounded-2xl p-4">
           <p className="text-xs text-green-600 font-semibold">Receitas</p>
           <p className="text-xl font-extrabold text-green-700 mt-1">{fmt(resumo?.receitas_mes ?? 0)}</p>
@@ -335,7 +335,7 @@ export default function FiscalPage() {
       {aba === "visao" && resumo && (
         <div className="grid md:grid-cols-2 gap-4">
           {/* Gráfico 6 meses */}
-          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-3 md:p-5">
             <h3 className="text-xs font-bold text-slate-600 uppercase tracking-wide mb-4">Últimos 6 meses</h3>
             <div className="space-y-3">
               {resumo.ultimos_6_meses.map(m => (
@@ -366,7 +366,7 @@ export default function FiscalPage() {
           </div>
 
           {/* Despesas por categoria */}
-          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-3 md:p-5">
             <h3 className="text-xs font-bold text-slate-600 uppercase tracking-wide mb-4">Despesas por categoria — {mesPtBR(mes)}</h3>
             {resumo.categorias_despesa.length === 0 ? (
               <p className="text-sm text-slate-400 text-center py-8">Sem despesas neste mês</p>
@@ -474,7 +474,7 @@ export default function FiscalPage() {
           ) : acesso ? (
             <>
               {/* Link ativo */}
-              <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-4">
+              <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-3 md:p-5 space-y-4">
                 <div className="flex items-center justify-between">
                   <h3 className="text-sm font-bold text-slate-800">Link ativo</h3>
                   <span className="text-[10px] bg-green-100 text-green-700 font-bold px-2 py-0.5 rounded-full">Ativo</span>
@@ -514,7 +514,7 @@ export default function FiscalPage() {
               </div>
 
               {/* Editar configurações */}
-              <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+              <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-3 md:p-5">
                 <h3 className="text-sm font-bold text-slate-800 mb-4">Configurações</h3>
                 <form onSubmit={salvarAcesso} className="space-y-3">
                   <div>

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
@@ -184,9 +184,9 @@ export default function FinanceiroPage() {
               { label: "Resultado do mês",   value: fmt(resumo?.lucro_mes ?? 0),              icon: resumo && resumo.lucro_mes >= 0 ? "📈" : "📉", cor: resumo && resumo.lucro_mes >= 0 ? "text-green-700" : "text-red-600" },
               { label: "A pagar (total)",    value: fmt(resumo?.contas_pagar_total ?? 0),     icon: "📤", cor: "text-orange-600" },
             ].map(k => (
-              <div key={k.label} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+              <div key={k.label} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 md:p-5">
                 <p className="text-xl mb-1">{k.icon}</p>
-                <p className={`text-xl font-bold ${k.cor}`}>{k.value}</p>
+                <p className={`text-base md:text-xl font-bold ${k.cor}`}>{k.value}</p>
                 <p className="text-xs text-gray-400 mt-0.5">{k.label}</p>
               </div>
             ))}
@@ -217,7 +217,7 @@ export default function FinanceiroPage() {
 
           {/* Custos históricos por categoria */}
           {resumoAntigo && Object.keys(resumoAntigo.por_categoria).length > 0 && (
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 md:p-5">
               <h2 className="text-sm font-semibold text-gray-700 mb-4">Custos por categoria (ano)</h2>
               <div className="space-y-3">
                 {Object.entries(resumoAntigo.por_categoria)
@@ -412,14 +412,14 @@ export default function FinanceiroPage() {
           ) : (
             <>
               {/* Totais consolidados */}
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
                 {[
                   { label: "Total custos",   value: loteRelatorio.reduce((s,l) => s + l.total_custos,   0), cor: "text-red-600"   },
                   { label: "Total receitas", value: loteRelatorio.reduce((s,l) => s + l.total_receitas, 0), cor: "text-green-700" },
                   { label: "Resultado",      value: loteRelatorio.reduce((s,l) => s + l.resultado,      0), cor: loteRelatorio.reduce((s,l) => s + l.resultado, 0) >= 0 ? "text-green-700" : "text-red-600" },
                 ].map(k => (
                   <div key={k.label} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
-                    <p className={`text-xl font-bold ${k.cor}`}>{fmt(k.value)}</p>
+                    <p className={`text-base md:text-xl font-bold ${k.cor}`}>{fmt(k.value)}</p>
                     <p className="text-xs text-gray-400 mt-0.5">{k.label}</p>
                   </div>
                 ))}
@@ -429,7 +429,7 @@ export default function FinanceiroPage() {
               {loteRelatorio.map(lote => {
                 const positivo = lote.resultado >= 0;
                 return (
-                  <div key={lote.id} className={`bg-white rounded-2xl border shadow-sm p-5 ${positivo ? "border-green-100" : "border-red-100"}`}>
+                  <div key={lote.id} className={`bg-white rounded-2xl border shadow-sm p-3 md:p-5 ${positivo ? "border-green-100" : "border-red-100"}`}>
                     <div className="flex items-start justify-between mb-3">
                       <div>
                         <p className="font-bold text-gray-800">{lote.nome}</p>
@@ -443,7 +443,7 @@ export default function FinanceiroPage() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-3 mb-3">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-3">
                       <div className="bg-red-50 rounded-xl p-3">
                         <p className="text-xs text-red-500 font-semibold">Custos</p>
                         <p className="font-bold text-red-700">{fmt(lote.total_custos)}</p>
@@ -488,15 +488,15 @@ export default function FinanceiroPage() {
       {aba === "fiscal" && (
         <div className="space-y-4">
           {/* KPIs */}
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
             {[
               { label: "Receitas",  value: fmt(resumoFiscal?.total_receitas ?? 0), icon: "💚", cor: "text-green-700" },
               { label: "Despesas",  value: fmt(resumoFiscal?.total_despesas ?? 0), icon: "💸", cor: "text-red-600" },
               { label: "Saldo",     value: fmt(resumoFiscal?.saldo ?? 0),           icon: (resumoFiscal?.saldo ?? 0) >= 0 ? "📈" : "📉", cor: (resumoFiscal?.saldo ?? 0) >= 0 ? "text-green-700" : "text-red-600" },
             ].map(k => (
-              <div key={k.label} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+              <div key={k.label} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 md:p-5">
                 <p className="text-xl mb-1">{k.icon}</p>
-                <p className={`text-xl font-bold ${k.cor}`}>{k.value}</p>
+                <p className={`text-base md:text-xl font-bold ${k.cor}`}>{k.value}</p>
                 <p className="text-xs text-gray-400 mt-0.5">{k.label}</p>
               </div>
             ))}

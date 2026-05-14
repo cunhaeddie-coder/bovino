@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
@@ -140,26 +140,26 @@ export default function ArrendamentosPage() {
       {/* KPIs */}
       {resumo && (
         <div id="arr-kpis" className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 md:p-5">
             <p className="text-xl mb-1">💸</p>
-            <p className="text-xl font-bold text-red-600">{fmt(resumo.total_pagar_mes)}</p>
+            <p className="text-base md:text-xl font-bold text-red-600">{fmt(resumo.total_pagar_mes)}</p>
             <p className="text-xs text-gray-400">Pagando/mês</p>
           </div>
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 md:p-5">
             <p className="text-xl mb-1">💚</p>
-            <p className="text-xl font-bold text-green-700">{fmt(resumo.total_receber_mes)}</p>
+            <p className="text-base md:text-xl font-bold text-green-700">{fmt(resumo.total_receber_mes)}</p>
             <p className="text-xs text-gray-400">Recebendo/mês</p>
           </div>
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 md:p-5">
             <p className="text-xl mb-1">🌿</p>
-            <p className="text-xl font-bold text-gray-900">
+            <p className="text-base md:text-xl font-bold text-gray-900">
               {(resumo.area_ocupada + resumo.area_cedida).toLocaleString("pt-BR")} ha
             </p>
             <p className="text-xs text-gray-400">{resumo.area_ocupada.toLocaleString("pt-BR")} ha ocupados · {resumo.area_cedida.toLocaleString("pt-BR")} ha cedidos</p>
           </div>
-          <div className={`rounded-2xl border shadow-sm p-5 ${resumo.vencendo_30dias > 0 || resumo.vencidos > 0 ? "bg-red-50 border-red-200" : "bg-white border-gray-100"}`}>
+          <div className={`rounded-2xl border shadow-sm p-3 md:p-5 ${resumo.vencendo_30dias > 0 || resumo.vencidos > 0 ? "bg-red-50 border-red-200" : "bg-white border-gray-100"}`}>
             <p className="text-xl mb-1">⏰</p>
-            <p className={`text-xl font-bold ${resumo.vencidos > 0 ? "text-red-600" : resumo.vencendo_30dias > 0 ? "text-yellow-600" : "text-gray-900"}`}>
+            <p className={`text-base md:text-xl font-bold ${resumo.vencidos > 0 ? "text-red-600" : resumo.vencendo_30dias > 0 ? "text-yellow-600" : "text-gray-900"}`}>
               {resumo.vencidos > 0 ? resumo.vencidos : resumo.vencendo_30dias}
             </p>
             <p className="text-xs text-gray-400">{resumo.vencidos > 0 ? "Contrato(s) vencido(s)" : "Vencendo em 30 dias"}</p>
@@ -227,7 +227,7 @@ export default function ArrendamentosPage() {
             const vencendo = dias !== null && dias >= 0 && dias <= 30;
             const vencido  = dias !== null && dias < 0;
             return (
-              <div key={arr.id} className={`bg-white rounded-2xl border shadow-sm p-5 space-y-3 ${vencido ? "border-red-300" : vencendo ? "border-yellow-300" : "border-gray-100"}`}>
+              <div key={arr.id} className={`bg-white rounded-2xl border shadow-sm p-3 md:p-5 space-y-3 ${vencido ? "border-red-300" : vencendo ? "border-yellow-300" : "border-gray-100"}`}>
 
                 {/* Topo */}
                 <div className="flex items-start justify-between gap-2">
@@ -436,7 +436,7 @@ function ArrendamentoModal({
           </div>
 
           {/* Localização */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             <div>
               <label className="text-xs font-semibold text-gray-600 block mb-1">Estado</label>
               <select value={form.estado} onChange={e => set("estado", e.target.value)}

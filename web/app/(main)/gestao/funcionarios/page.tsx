@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
@@ -163,20 +163,20 @@ export default function FuncionariosPage() {
       </div>
 
       {/* KPIs */}
-      <div id="func-kpis" className="grid grid-cols-3 gap-4">
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+      <div id="func-kpis" className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 md:p-5">
           <p className="text-xl mb-1">👷</p>
-          <p className="text-xl font-bold text-gray-900">{funcionarios.filter(f=>f.ativo).length}</p>
+          <p className="text-base md:text-xl font-bold text-gray-900">{funcionarios.filter(f=>f.ativo).length}</p>
           <p className="text-xs text-gray-400">Funcionários ativos</p>
         </div>
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 md:p-5">
           <p className="text-xl mb-1">💰</p>
-          <p className="text-xl font-bold text-gray-900">{fmt(totalFolha)}</p>
+          <p className="text-base md:text-xl font-bold text-gray-900">{fmt(totalFolha)}</p>
           <p className="text-xs text-gray-400">Folha mensal</p>
         </div>
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 md:p-5">
           <p className="text-xl mb-1">📋</p>
-          <p className="text-xl font-bold text-gray-900">{tarefas.filter(t=>t.status==="pendente").length}</p>
+          <p className="text-base md:text-xl font-bold text-gray-900">{tarefas.filter(t=>t.status==="pendente").length}</p>
           <p className="text-xs text-gray-400">Tarefas pendentes</p>
         </div>
       </div>
@@ -304,7 +304,7 @@ export default function FuncionariosPage() {
         <div className="grid gap-3">
           {prestadores.length === 0 ? <p className="text-gray-400 text-sm text-center py-10">Nenhum prestador cadastrado</p>
           : prestadores.map(p => (
-            <div key={p.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex items-center justify-between">
+            <div key={p.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 md:p-5 flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center font-bold text-blue-700">{p.nome[0]}</div>
                 <div>
@@ -530,7 +530,7 @@ function PrestadorModal({ onClose, onDone }: { onClose: () => void; onDone: () =
             className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400" />
           <input required value={form.especialidade} onChange={e => setForm({...form, especialidade: e.target.value})} placeholder="Especialidade (ex: veterinário, nutricionista)"
             className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400" />
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             <input value={form.telefone} onChange={e => setForm({...form, telefone: e.target.value})} placeholder="Telefone"
               className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400" />
             <input type="number" value={form.valor_hora} onChange={e => setForm({...form, valor_hora: e.target.value})} placeholder="R$/hora" step="0.01"

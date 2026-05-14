@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState, useCallback } from "react";
 import { api } from "@/lib/api";
@@ -169,7 +169,7 @@ export default function AnimaisPage() {
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between gap-2 flex-wrap">
-        <h1 className="text-xl font-bold text-gray-900">Rebanho</h1>
+        <h1 className="text-base md:text-xl font-bold text-gray-900">Rebanho</h1>
         <div className="flex gap-2">
           <button onClick={()=>setShowGrupo(true)}
             className="bg-amber-600 text-white text-sm font-semibold px-4 py-2 rounded-full hover:bg-amber-700 transition">
@@ -201,7 +201,7 @@ export default function AnimaisPage() {
             <KPI label="Fêmeas" valor={dash.femeas} icon="♀" cor="text-pink-500"/>
             <KPI label="Peso médio" valor={dash.peso_medio>0?`${dash.peso_medio} kg`:"—"} icon="⚖️"/>
           </div>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             <KPI label="Nascimentos/mês" valor={dash.nascimentos_mes} icon="🐣" cor="text-green-600" small/>
             <KPI label="Mortes/mês" valor={dash.mortes_mes} icon="💀" cor={dash.mortes_mes>0?"text-red-500":"text-gray-400"} small/>
             <KPI label="Prenhas (90d)" valor={dash.prenhas} icon="🤰" cor="text-purple-500" small/>

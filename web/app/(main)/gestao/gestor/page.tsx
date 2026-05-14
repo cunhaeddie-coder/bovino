@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
@@ -154,7 +154,7 @@ export default function GestorIAPage() {
       )}
 
       {/* Chat */}
-      <div className="flex-1 overflow-y-auto space-y-4 bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+      <div className="flex-1 overflow-y-auto space-y-4 bg-white rounded-2xl border border-gray-100 shadow-sm p-3 md:p-5">
         {mensagens.map((m, i) => (
           <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
             {m.role === "assistant" && (

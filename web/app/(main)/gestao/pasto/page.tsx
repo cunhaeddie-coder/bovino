@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
@@ -90,7 +90,7 @@ export default function PastoPage() {
       {/* MAPA VISUAL DE PASTAGENS */}
       {aba === "mapa" && (
         <div className="space-y-4">
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 md:p-5">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-sm font-semibold text-gray-700">Pastagens / Piquetes</h2>
               <span className="text-xs text-gray-400">{pastagens.length} piquete(s) cadastrado(s)</span>
@@ -170,20 +170,20 @@ export default function PastoPage() {
           </div>
 
           {/* KPIs pastagens */}
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
               <p className="text-xl mb-1">🌿</p>
-              <p className="text-xl font-bold text-gray-900">{pastagens.filter(p => !p.ocupada).length}</p>
+              <p className="text-base md:text-xl font-bold text-gray-900">{pastagens.filter(p => !p.ocupada).length}</p>
               <p className="text-xs text-gray-400">Em descanso</p>
             </div>
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
               <p className="text-xl mb-1">🐄</p>
-              <p className="text-xl font-bold text-gray-900">{pastagens.filter(p => p.ocupada).length}</p>
+              <p className="text-base md:text-xl font-bold text-gray-900">{pastagens.filter(p => p.ocupada).length}</p>
               <p className="text-xs text-gray-400">Ocupadas</p>
             </div>
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
               <p className="text-xl mb-1">📐</p>
-              <p className="text-xl font-bold text-gray-900">{pastagens.reduce((s, p) => s + Number(p.area_ha ?? 0), 0).toFixed(1)}</p>
+              <p className="text-base md:text-xl font-bold text-gray-900">{pastagens.reduce((s, p) => s + Number(p.area_ha ?? 0), 0).toFixed(1)}</p>
               <p className="text-xs text-gray-400">Total ha</p>
             </div>
           </div>
@@ -255,7 +255,7 @@ export default function PastoPage() {
           ) : (
             <div className="grid sm:grid-cols-2 gap-4">
               {templates.map(t => (
-                <div key={t.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+                <div key={t.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 md:p-5">
                   <div className="flex items-start justify-between mb-3">
                     <div>
                       <p className="font-semibold text-gray-800">{t.nome}</p>
@@ -495,7 +495,7 @@ function AplicacaoModal({ lotes, pastagens, onClose, onDone }: { lotes: Lote[]; 
             <input type="date" value={form.data_aplicacao} onChange={e => setForm({...form, data_aplicacao: e.target.value})}
               className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400" />
           </div>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             <div className="col-span-2">
               <input required type="number" step="0.001" min="0.001" value={form.quantidade_total} onChange={e => setForm({...form, quantidade_total: e.target.value})} placeholder="Quantidade"
                 className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400" />

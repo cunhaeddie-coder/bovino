@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
@@ -75,7 +75,7 @@ function FormLancamento({ onSalvo }: { onSalvo: () => void }) {
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-3 md:p-5">
       <h2 className="text-sm font-bold text-slate-800 mb-4">Lançamento diário</h2>
       <form onSubmit={submit} className="space-y-3">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -245,7 +245,7 @@ export default function LeiteiroPage() {
 
       {/* ── Gráfico ── */}
       {aba === "grafico" && resumo && (
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-3 md:p-5">
           <h3 className="text-xs font-bold text-slate-600 uppercase tracking-wide mb-4">Produção diária — últimos 30 dias</h3>
           {resumo.ultimos_30_dias.length === 0 ? (
             <p className="text-sm text-slate-400 text-center py-8">Nenhum registro nos últimos 30 dias.</p>

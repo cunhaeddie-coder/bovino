@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -119,7 +119,7 @@ function SetupFazendaPrompt() {
               placeholder="Ex: Fazenda Santa Cruz" required />
           </div>
           {form.slug && <p className="text-xs text-gray-400">Perfil público: <span className="font-mono text-green-700">/fazenda/{form.slug}</span></p>}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             <div>
               <label className="text-xs font-semibold text-gray-600 block mb-1.5">Estado</label>
               <select value={form.estado} onChange={(e) => setForm({ ...form, estado: e.target.value })}
@@ -198,7 +198,7 @@ export default function GestaoDashboard() {
           { label: "Fêmeas",           value: resumo?.femeas ?? "—",   icon: "🐮" },
           { label: "Alertas de saúde", value: alertas.length,          icon: "💉" },
         ].map((card) => (
-          <div key={card.label} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+          <div key={card.label} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 md:p-5">
             <p className="text-2xl mb-1">{card.icon}</p>
             <p className="text-2xl font-bold text-gray-900">{card.value}</p>
             <p className="text-xs text-gray-500 mt-0.5">{card.label}</p>
@@ -232,12 +232,12 @@ export default function GestaoDashboard() {
 
       {/* Composição */}
       {resumo && Object.keys(resumo.por_categoria).length > 0 && (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 md:p-5">
           <h2 className="text-sm font-semibold text-gray-700 mb-4">Composição do rebanho</h2>
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-3">
             {Object.entries(resumo.por_categoria).map(([cat, qtd]) => (
               <div key={cat} className="text-center">
-                <p className="text-xl font-bold text-gray-900">{qtd}</p>
+                <p className="text-base md:text-xl font-bold text-gray-900">{qtd}</p>
                 <p className="text-xs text-gray-400">{CATEGORIA_LABEL[cat] ?? cat}</p>
               </div>
             ))}
@@ -247,7 +247,7 @@ export default function GestaoDashboard() {
 
       <div className="grid md:grid-cols-2 gap-4">
         {/* Alertas saúde */}
-        <div id="gestao-alertas" className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+        <div id="gestao-alertas" className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 md:p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-semibold text-gray-700">💉 Próximas doses / vacinas</h2>
             <Link href="/gestao/saude" className="text-xs text-green-700 hover:underline">Ver tudo →</Link>
@@ -272,7 +272,7 @@ export default function GestaoDashboard() {
         </div>
 
         {/* Demanda pelos lotes */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 md:p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-semibold text-gray-700">📈 Compradores buscando seus lotes</h2>
             <Link href="/inteligencia" className="text-xs text-green-700 hover:underline">Ver detalhes →</Link>

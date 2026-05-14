@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
@@ -115,18 +115,18 @@ export default function ReproducaoPage() {
       {/* DASHBOARD */}
       {aba === "dashboard" && (
         <div className="space-y-5">
-          <div className="grid grid-cols-3 gap-4">
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 md:p-5">
               <p className="text-2xl mb-1">🐮</p>
               <p className="text-3xl font-bold text-gray-900">{dash?.total_femeas ?? 0}</p>
               <p className="text-xs text-gray-400 mt-0.5">Fêmeas no rebanho</p>
             </div>
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 md:p-5">
               <p className="text-2xl mb-1">🤰</p>
               <p className="text-3xl font-bold text-pink-600">{dash?.prenhas ?? 0}</p>
               <p className="text-xs text-gray-400 mt-0.5">Prenhas confirmadas</p>
             </div>
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 md:p-5">
               <p className="text-2xl mb-1">🍼</p>
               <p className="text-3xl font-bold text-green-600">{dash?.partos_esperados ?? 0}</p>
               <p className="text-xs text-gray-400 mt-0.5">Partos nos próximos 60 dias</p>
@@ -146,7 +146,7 @@ export default function ReproducaoPage() {
           )}
 
           {(dash?.eventos_recentes ?? []).length > 0 && (
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 md:p-5">
               <h2 className="text-sm font-semibold text-gray-700 mb-4">Últimos eventos</h2>
               <div className="space-y-3">
                 {dash!.eventos_recentes.map(ev => (

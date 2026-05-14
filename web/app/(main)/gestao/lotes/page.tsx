@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -210,7 +210,7 @@ export default function LotesPage() {
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-gray-900">🗂️ Lotes</h1>
+        <h1 className="text-base md:text-xl font-bold text-gray-900">🗂️ Lotes</h1>
         <button id="btn-novo-lote" onClick={abrirNovo}
           className="bg-green-700 text-white text-sm font-semibold px-4 py-2 rounded-full hover:bg-green-800 transition">
           + Novo lote
@@ -356,7 +356,7 @@ export default function LotesPage() {
           {lotes.map(lote => {
             const st = STATUS_LABEL[lote.status];
             return (
-              <div key={lote.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-3">
+              <div key={lote.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 md:p-5 space-y-3">
                 <div className="flex items-start justify-between gap-2">
                   <h3 className="font-bold text-gray-900 leading-tight">{lote.nome}</h3>
                   <span className={`text-xs font-semibold px-2 py-0.5 rounded-full shrink-0 ${st.cor}`}>{st.label}</span>

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { api } from "@/lib/api";
@@ -374,7 +374,7 @@ export default function CurralPage() {
       {/* Pesagens */}
       {aba === "pesagens" && (
         <div className="space-y-4">
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 md:p-5">
             <h2 className="font-semibold text-gray-700 mb-3">Registrar pesagem</h2>
             <div className="space-y-3">
               <input value={buscaAnimal} onChange={e => { setBuscaAnimal(e.target.value); setAnimalSel(null); }}
@@ -435,7 +435,7 @@ export default function CurralPage() {
       {/* Eventos offline */}
       {aba === "eventos" && (
         <div className="space-y-4">
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 md:p-5">
             <h2 className="font-bold text-gray-800 text-base mb-4">Registrar evento</h2>
             <div className="space-y-3">
               <select value={novoEvento.tipo} onChange={e => setNovoEvento({...novoEvento, tipo: e.target.value, categoria_animal: ""})}
