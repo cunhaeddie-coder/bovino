@@ -125,6 +125,10 @@ class AdminUsuarioController extends Controller
 
     public function online(): JsonResponse
     {
+        if (!\Schema::hasColumn('users', 'last_seen_at')) {
+            return response()->json(['total' => 0, 'usuarios' => []]);
+        }
+
         $usuarios = User::whereNotNull('last_seen_at')
             ->where('last_seen_at', '>=', now()->subMinutes(5))
             ->select('id', 'nome', 'estado', 'municipio', 'last_seen_at')
