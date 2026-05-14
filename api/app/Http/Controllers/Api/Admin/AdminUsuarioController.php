@@ -123,6 +123,24 @@ class AdminUsuarioController extends Controller
         );
     }
 
+    public function online(): JsonResponse
+    {
+        $usuarios = User::whereNotNull('last_seen_at')
+            ->where('last_seen_at', '>=', now()->subMinutes(5))
+            ->select('id', 'nome', 'estado', 'municipio', 'last_seen_at')
+            ->orderByDesc('last_seen_at')
+            ->get()
+            ->map(fn($u) => [
+                'id'           => $u->id,
+                'nome'         => $u->nome,
+                'local'        => $u->municipio && $u->estado ? "{$u->municipio}/{$u->estado}" : null,
+                'last_seen_at' => $u->last_seen_at->toISOString(),
+                'segundos'     => now()->diffInSeconds($u->last_seen_at),
+            ]);
+
+        return response()->json(['total' => $usuarios->count(), 'usuarios' => $usuarios]);
+    }
+
     public function atividadeGlobal(Request $request): JsonResponse
     {
         $eventos = collect();

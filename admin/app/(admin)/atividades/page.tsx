@@ -12,6 +12,76 @@ type Evento = {
   at: string;
 };
 
+type UsuarioOnline = {
+  id: number;
+  nome: string;
+  local: string | null;
+  last_seen_at: string;
+  segundos: number;
+};
+
+function OnlineAgora() {
+  const [data, setData] = useState<{ total: number; usuarios: UsuarioOnline[] } | null>(null);
+
+  const carregar = () =>
+    api.get<{ total: number; usuarios: UsuarioOnline[] }>("/online")
+      .then(({ data }) => setData(data))
+      .catch(() => {});
+
+  useEffect(() => {
+    carregar();
+    const iv = setInterval(carregar, 30_000);
+    return () => clearInterval(iv);
+  }, []);
+
+  const statusCor = (seg: number) =>
+    seg < 60 ? "bg-green-500" : seg < 180 ? "bg-yellow-400" : "bg-gray-300";
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <span className="relative flex h-3 w-3">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+            <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500" />
+          </span>
+          <h2 className="text-sm font-bold text-slate-800">Online agora</h2>
+          <span className="text-xs bg-green-100 text-green-700 font-bold px-2 py-0.5 rounded-full">
+            {data?.total ?? "—"}
+          </span>
+        </div>
+        <span className="text-[10px] text-slate-400">atualiza a cada 30s</span>
+      </div>
+
+      {!data ? (
+        <p className="text-xs text-slate-400 text-center py-4">Carregando...</p>
+      ) : data.usuarios.length === 0 ? (
+        <p className="text-xs text-slate-400 text-center py-4">Nenhum usuário online no momento.</p>
+      ) : (
+        <div className="space-y-2">
+          {data.usuarios.map(u => (
+            <div key={u.id} className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-slate-50 transition">
+              <div className="relative shrink-0">
+                <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-sm font-bold text-green-700">
+                  {u.nome.charAt(0).toUpperCase()}
+                </div>
+                <span className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white ${statusCor(u.segundos)}`} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold text-slate-800 truncate">{u.nome}</p>
+                {u.local && <p className="text-[10px] text-slate-400 truncate">{u.local}</p>}
+              </div>
+              <span className="text-[10px] text-slate-400 shrink-0">
+                {u.segundos < 60 ? "agora" : `${Math.floor(u.segundos / 60)}min`}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 const TIPO_COR: Record<string, string> = {
   cadastro:   "bg-green-100 text-green-700",
   anuncio:    "bg-blue-100 text-blue-700",
@@ -52,6 +122,7 @@ export default function AtividadesPage() {
 
   return (
     <div className="p-6 space-y-5">
+      <OnlineAgora />
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-xl font-extrabold text-slate-900">Feed de Atividades</h1>

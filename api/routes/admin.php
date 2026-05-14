@@ -43,6 +43,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('usuarios',                          [AdminUsuarioController::class, 'cadastrar']);
     Route::get('usuarios/{id}/atividade',            [AdminUsuarioController::class, 'atividade']);
     Route::get('atividade',                          [AdminUsuarioController::class, 'atividadeGlobal']);
+    Route::get('online',                             [AdminUsuarioController::class, 'online']);
     Route::post('assinaturas/manual',                [AdminUsuarioController::class, 'criarAssinaturaManual']);
     Route::post('assinaturas/{id}/confirmar-pix',    [AdminUsuarioController::class, 'confirmarPix']);
 

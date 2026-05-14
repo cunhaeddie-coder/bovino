@@ -146,6 +146,10 @@ Route::post('banners/{banner}/clique', [BannerController::class, 'registrarCliqu
 
 // Autenticado (usuários: compradores e produtores)
 Route::middleware('auth:sanctum')->group(function () {
+    Route::post('ping', fn(\Illuminate\Http\Request $r) => response()->json(
+        tap($r->user())->update(['last_seen_at' => now()])
+    ));
+
     Route::prefix('auth')->group(function () {
         Route::get('me', [AuthController::class, 'me']);
         Route::post('logout', [AuthController::class, 'logout']);
