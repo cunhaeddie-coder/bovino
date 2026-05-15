@@ -22,6 +22,7 @@ type B3Dados = {
   variacao: number;
   variacao_pct: number;
   negocios: number;
+  pregao_aberto: boolean;
   atualizado: string;
 };
 
@@ -48,10 +49,19 @@ function B3Card({ dados, loading }: { dados: B3Dados | null; loading: boolean })
           </div>
           {dados ? (
             <div className="flex items-end gap-3 flex-wrap">
-              <p className="text-4xl font-extrabold text-blue-700">{fmt(dados.preco)}<span className="text-base text-gray-400 font-normal"> /@</span></p>
-              <span className={`text-sm font-bold px-2 py-0.5 rounded-full ${positivo ? "bg-green-100 text-green-700" : "bg-red-100 text-red-600"}`}>
-                {positivo ? "▲" : "▼"} {Math.abs(dados.variacao_pct).toFixed(2)}% ({positivo ? "+" : ""}{fmt(dados.variacao)})
-              </span>
+              <div>
+                <p className="text-4xl font-extrabold text-blue-700">{fmt(dados.preco)}<span className="text-base text-gray-400 font-normal"> /@</span></p>
+                {!dados.pregao_aberto && (
+                  <span className="text-xs text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full mt-1 inline-block">
+                    🔒 Pregão fechado · exibindo fechamento anterior
+                  </span>
+                )}
+              </div>
+              {dados.pregao_aberto && (
+                <span className={`text-sm font-bold px-2 py-0.5 rounded-full ${positivo ? "bg-green-100 text-green-700" : "bg-red-100 text-red-600"}`}>
+                  {positivo ? "▲" : "▼"} {Math.abs(dados.variacao_pct).toFixed(2)}% ({positivo ? "+" : ""}{fmt(dados.variacao)})
+                </span>
+              )}
             </div>
           ) : (
             <p className="text-gray-400 mt-2 text-sm">Dados indisponíveis no momento</p>
@@ -92,6 +102,11 @@ export default function CotacoesPage() {
   const [b3, setB3] = useState<B3Dados | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingB3, setLoadingB3] = useState(true);
+  const [estado, setEstado] = useState("");
+  const [cotacoesEstado, setCotacoesEstado] = useState<Cotacao[]>([]);
+  const [loadingEstado, setLoadingEstado] = useState(false);
+
+  const UFS = ["AC","AL","AM","AP","BA","CE","DF","ES","GO","MA","MG","MS","MT","PA","PB","PE","PI","PR","RJ","RN","RO","RR","RS","SC","SE","SP","TO"];
 
   useEffect(() => {
     if (!user) { router.replace("/login?next=/cotacoes"); return; }
@@ -107,6 +122,15 @@ export default function CotacoesPage() {
       .catch(() => {})
       .finally(() => setLoadingB3(false));
   }, [user]);
+
+  useEffect(() => {
+    if (!estado) { setCotacoesEstado([]); return; }
+    setLoadingEstado(true);
+    api.get<Cotacao[]>(`/cotacoes?tipo=boi_gordo&estado=${estado}`)
+      .then(({ data }) => setCotacoesEstado(data.slice(0, 5)))
+      .catch(() => {})
+      .finally(() => setLoadingEstado(false));
+  }, [estado]);
 
   if (!user || !temPlano(user)) return null;
 
@@ -149,6 +173,50 @@ export default function CotacoesPage() {
                   </div>
                 );
               })}
+            </div>
+          )}
+        </div>
+
+        {/* Histórico por estado */}
+        <div>
+          <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Histórico por Estado</h2>
+            <select
+              value={estado}
+              onChange={e => setEstado(e.target.value)}
+              className="border border-gray-200 rounded-xl px-3 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-500"
+            >
+              <option value="">Selecione um estado</option>
+              {UFS.map(uf => <option key={uf} value={uf}>{uf}</option>)}
+            </select>
+          </div>
+
+          {estado && (
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+              {loadingEstado ? (
+                <div className="p-8 text-center text-gray-400 text-sm">Carregando...</div>
+              ) : cotacoesEstado.length === 0 ? (
+                <div className="p-8 text-center text-gray-400 text-sm">Sem dados para {estado}.</div>
+              ) : (
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-gray-50 text-xs text-gray-500 font-semibold border-b border-gray-100">
+                      <th className="text-left px-4 py-3">Data</th>
+                      <th className="text-left px-4 py-3">Preço (R$/@)</th>
+                      <th className="text-left px-4 py-3">Fonte</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {cotacoesEstado.map(c => (
+                      <tr key={c.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-3 text-gray-600">{new Date(c.referencia_em).toLocaleDateString("pt-BR")}</td>
+                        <td className="px-4 py-3 font-bold text-green-700">{fmt(c.preco_arroba)}</td>
+                        <td className="px-4 py-3 text-gray-400">{c.fonte}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
           )}
         </div>

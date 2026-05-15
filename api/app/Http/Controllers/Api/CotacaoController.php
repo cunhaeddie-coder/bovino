@@ -48,19 +48,29 @@ class CotacaoController extends Controller
                 $c = $contratos[0];
                 $qtn = $c['SctyQtn'];
 
+                $precoAtual   = (float) ($qtn['curPrc'] ?? 0);
+                $precoFechAnt = (float) ($qtn['prvsDayClsgPrc'] ?? 0);
+                $pregaoAberto = $precoAtual > 0;
+
+                // Fora do pregão: usa fechamento anterior como preço de referência
+                $preco = $pregaoAberto ? $precoAtual : $precoFechAnt;
+                $variacao    = $pregaoAberto ? (float) ($qtn['prcFlcn'] ?? 0) : 0;
+                $variacaoPct = $pregaoAberto ? (float) ($qtn['prcFlcnPct'] ?? 0) : 0;
+
                 return [
-                    'contrato'    => $c['FinInstrmId']['MktIdrCd'] ?? 'BGI',
-                    'vencimento'  => $c['FinInstrmId']['Exptn']['XprtnDt'] ?? null,
-                    'preco'       => round($qtn['curPrc'] ?? $qtn['avrgPrc'] ?? 0, 2),
-                    'abertura'    => round($qtn['opnPrc'] ?? 0, 2),
-                    'minimo'      => round($qtn['minPrc'] ?? 0, 2),
-                    'maximo'      => round($qtn['maxPrc'] ?? 0, 2),
-                    'fechamento'  => round($qtn['prvsDayClsgPrc'] ?? 0, 2),
-                    'variacao'    => round($qtn['prcFlcn'] ?? 0, 2),
-                    'variacao_pct'=> round($qtn['prcFlcnPct'] ?? 0, 2),
-                    'negocios'    => (int) ($qtn['finQty'] ?? 0),
-                    'fonte'       => 'B3',
-                    'atualizado'  => now()->toISOString(),
+                    'contrato'      => $c['FinInstrmId']['MktIdrCd'] ?? 'BGI',
+                    'vencimento'    => $c['FinInstrmId']['Exptn']['XprtnDt'] ?? null,
+                    'preco'         => round($preco, 2),
+                    'abertura'      => round($qtn['opnPrc'] ?? 0, 2),
+                    'minimo'        => round($qtn['minPrc'] ?? 0, 2),
+                    'maximo'        => round($qtn['maxPrc'] ?? 0, 2),
+                    'fechamento'    => round($precoFechAnt, 2),
+                    'variacao'      => round($variacao, 2),
+                    'variacao_pct'  => round($variacaoPct, 2),
+                    'negocios'      => (int) ($qtn['finQty'] ?? 0),
+                    'pregao_aberto' => $pregaoAberto,
+                    'fonte'         => 'B3',
+                    'atualizado'    => now()->toISOString(),
                 ];
             } catch (\Exception $e) {
                 return null;
