@@ -20,8 +20,8 @@ git reset --hard origin/main
 # API Laravel
 echo "[1/3] Atualizando Laravel..."
 cd $APP_DIR/api
-composer install --no-dev --optimize-autoloader
-composer require laravel/socialite --no-dev --no-interaction -q 2>/dev/null || true
+COMPOSER_ALLOW_SUPERUSER=1 composer update laravel/socialite --no-dev --optimize-autoloader --no-interaction -q
+COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --optimize-autoloader
 php artisan migrate --force
 php artisan config:cache
 php artisan route:cache
