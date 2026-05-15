@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Cotacao;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 
 class CotacaoController extends Controller
 {
@@ -23,6 +25,53 @@ class CotacaoController extends Controller
         }
 
         return response()->json($query->get());
+    }
+
+    public function b3(): JsonResponse
+    {
+        $dados = Cache::remember('cotacao_b3_bgi', 900, function () {
+            try {
+                $resp = Http::timeout(10)
+                    ->withHeaders(['Accept' => 'application/json'])
+                    ->get('https://cotacao.b3.com.br/mds/api/v1/derivativeQuotation/BGI');
+
+                if (!$resp->ok()) return null;
+
+                $contratos = $resp->json('Scty') ?? [];
+                if (empty($contratos)) return null;
+
+                // Pega o contrato com maior volume (mais líquido)
+                usort($contratos, fn($a, $b) =>
+                    ($b['SctyQtn']['finQty'] ?? 0) <=> ($a['SctyQtn']['finQty'] ?? 0)
+                );
+
+                $c = $contratos[0];
+                $qtn = $c['SctyQtn'];
+
+                return [
+                    'contrato'    => $c['FinInstrmId']['MktIdrCd'] ?? 'BGI',
+                    'vencimento'  => $c['FinInstrmId']['Exptn']['XprtnDt'] ?? null,
+                    'preco'       => round($qtn['curPrc'] ?? $qtn['avrgPrc'] ?? 0, 2),
+                    'abertura'    => round($qtn['opnPrc'] ?? 0, 2),
+                    'minimo'      => round($qtn['minPrc'] ?? 0, 2),
+                    'maximo'      => round($qtn['maxPrc'] ?? 0, 2),
+                    'fechamento'  => round($qtn['prvsDayClsgPrc'] ?? 0, 2),
+                    'variacao'    => round($qtn['prcFlcn'] ?? 0, 2),
+                    'variacao_pct'=> round($qtn['prcFlcnPct'] ?? 0, 2),
+                    'negocios'    => (int) ($qtn['finQty'] ?? 0),
+                    'fonte'       => 'B3',
+                    'atualizado'  => now()->toISOString(),
+                ];
+            } catch (\Exception $e) {
+                return null;
+            }
+        });
+
+        if (!$dados) {
+            return response()->json(['error' => 'Dados B3 indisponíveis'], 503);
+        }
+
+        return response()->json($dados);
     }
 
     public function ultima(): JsonResponse
