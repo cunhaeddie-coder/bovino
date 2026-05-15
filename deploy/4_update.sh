@@ -31,6 +31,7 @@ chown -R www-data:www-data storage bootstrap/cache
 echo "[2/3] Atualizando Next.js Web..."
 cd $APP_DIR/web
 npm install
+rm -rf .next
 npm run build
 pm2 restart bovino-web
 
@@ -38,6 +39,7 @@ pm2 restart bovino-web
 echo "[3/3] Atualizando Next.js Admin..."
 cd $APP_DIR/admin
 npm install
+rm -rf .next
 npm run build
 pm2 restart bovino-admin
 
