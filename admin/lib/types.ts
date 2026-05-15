@@ -24,6 +24,7 @@ export interface Usuario {
   anuncios_count?: number;
   assinaturas_count?: number;
   assinatura_ativa?: { plano?: { nome: string } } | null;
+  assinaturas?: { plano?: { nome: string } }[];
 }
 
 export interface Anuncio {
