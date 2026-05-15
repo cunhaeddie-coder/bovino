@@ -119,6 +119,7 @@ Route::get('anuncios/{anuncio}', [AnuncioController::class, 'show']);
 Route::get('usuarios/{id}/perfil', [PerfilController::class, 'publico']);
 
 Route::get('cotacoes', [CotacaoController::class, 'index']);
+Route::get('cotacoes/b3/historico', [CotacaoController::class, 'b3Historico']);
 Route::get('cotacoes/b3', [CotacaoController::class, 'b3']);
 Route::get('cotacoes/ultima', [CotacaoController::class, 'ultima']);
 

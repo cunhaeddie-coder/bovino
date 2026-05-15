@@ -46,6 +46,11 @@ pm2 restart bovino-admin
 
 supervisorctl restart bovino-queue:*
 
+# Garantir que o scheduler do Laravel está no cron (idempotente)
+CRON_LINE="* * * * * cd $APP_DIR/api && php artisan schedule:run >> /dev/null 2>&1"
+( crontab -l 2>/dev/null | grep -qF "artisan schedule:run" ) || \
+  ( crontab -l 2>/dev/null; echo "$CRON_LINE" ) | crontab -
+
 echo ""
 echo "Atualização concluída!"
 pm2 status

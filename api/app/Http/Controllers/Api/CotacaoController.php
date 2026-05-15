@@ -91,6 +91,26 @@ class CotacaoController extends Controller
         return response()->json($dados);
     }
 
+    public function b3Historico(Request $request): JsonResponse
+    {
+        $periodo = $request->get('periodo', '1m');
+
+        $dias = match($periodo) {
+            '1s' => 7,
+            '3m' => 90,
+            '1a' => 365,
+            default => 30, // 1m
+        };
+
+        $dados = Cotacao::where('tipo', 'boi_gordo')
+            ->where('fonte', 'B3')
+            ->whereDate('referencia_em', '>=', now()->subDays($dias))
+            ->orderBy('referencia_em')
+            ->get(['referencia_em', 'preco_arroba']);
+
+        return response()->json($dados);
+    }
+
     public function ultima(): JsonResponse
     {
         $cotacoes = [];

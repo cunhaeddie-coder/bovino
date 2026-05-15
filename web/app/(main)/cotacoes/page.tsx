@@ -7,6 +7,9 @@ import { temPlano } from "@/lib/auth";
 import { api } from "@/lib/api";
 import type { Cotacao } from "@/lib/types";
 import Link from "next/link";
+import dynamic from "next/dynamic";
+
+const B3Chart = dynamic(() => import("./B3Chart"), { ssr: false });
 
 const TIPO_LABEL = { boi_gordo: "Boi Gordo", bezerro: "Bezerro", vaca: "Vaca" } as const;
 const fmt = (v: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
@@ -26,6 +29,10 @@ type B3Dados = {
   pregao_aberto: boolean;
   atualizado: string;
 };
+
+export type B3Ponto = { referencia_em: string; preco_arroba: number };
+
+type Periodo = "1s" | "1m" | "3m" | "1a";
 
 function B3Card({ dados, loading }: { dados: B3Dados | null; loading: boolean }) {
   if (loading) return <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 animate-pulse h-48" />;
@@ -96,6 +103,68 @@ function B3Card({ dados, loading }: { dados: B3Dados | null; loading: boolean })
   );
 }
 
+const PERIODOS: { key: Periodo; label: string }[] = [
+  { key: "1s", label: "1S" },
+  { key: "1m", label: "1M" },
+  { key: "3m", label: "3M" },
+  { key: "1a", label: "1A" },
+];
+
+function B3ChartSection() {
+  const [periodo, setPeriodo] = useState<Periodo>("1m");
+  const [historico, setHistorico] = useState<B3Ponto[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setLoading(true);
+    api.get<B3Ponto[]>(`/cotacoes/b3/historico?periodo=${periodo}`)
+      .then(({ data }) => setHistorico(data))
+      .catch(() => setHistorico([]))
+      .finally(() => setLoading(false));
+  }, [periodo]);
+
+  return (
+    <div className="bg-white rounded-2xl border border-blue-100 shadow-sm overflow-hidden">
+      <div className="flex items-center justify-between px-5 pt-4 pb-2">
+        <p className="text-sm font-semibold text-gray-700">Histórico BGI · Ajuste Diário</p>
+        <div className="flex gap-1">
+          {PERIODOS.map(p => (
+            <button
+              key={p.key}
+              onClick={() => setPeriodo(p.key)}
+              className={`px-3 py-1 rounded-lg text-xs font-semibold transition-colors ${
+                periodo === p.key
+                  ? "bg-blue-600 text-white"
+                  : "text-gray-500 hover:bg-gray-100"
+              }`}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="h-52 flex items-center justify-center text-gray-400 text-sm animate-pulse">
+          Carregando...
+        </div>
+      ) : historico.length < 3 ? (
+        <div className="h-52 flex flex-col items-center justify-center gap-2 text-center px-6">
+          <span className="text-2xl">📈</span>
+          <p className="text-sm font-semibold text-gray-600">Histórico sendo coletado</p>
+          <p className="text-xs text-gray-400">Os dados são capturados diariamente às 13h e 19h.<br />O gráfico estará disponível em alguns dias.</p>
+        </div>
+      ) : (
+        <B3Chart dados={historico} />
+      )}
+
+      <p className="text-[10px] text-gray-400 text-right px-5 pb-3">
+        Ajuste diário oficial · B3 BGI
+      </p>
+    </div>
+  );
+}
+
 export default function CotacoesPage() {
   const router = useRouter();
   const { user } = useAuthStore();
@@ -143,7 +212,10 @@ export default function CotacoesPage() {
         {/* B3 — Futuro */}
         <div>
           <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Mercado Futuro · B3</h2>
-          <B3Card dados={b3} loading={loadingB3} />
+          <div className="grid grid-cols-1 gap-4">
+            <B3Card dados={b3} loading={loadingB3} />
+            <B3ChartSection />
+          </div>
         </div>
 
         {/* CEPEA — À vista */}
