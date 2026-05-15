@@ -33,7 +33,7 @@ function CustomTooltip({ active, payload, label }: {
   );
 }
 
-export default function B3Chart({ dados }: { dados: B3Ponto[] }) {
+export default function B3Chart({ dados, height = 160 }: { dados: B3Ponto[]; height?: number }) {
   const precos = dados.map(d => d.preco_arroba);
   const min = Math.min(...precos);
   const max = Math.max(...precos);
@@ -44,32 +44,31 @@ export default function B3Chart({ dados }: { dados: B3Ponto[] }) {
     preco: d.preco_arroba,
   }));
 
-  // Show fewer X-axis ticks when there are many points
   const tickInterval = data.length > 60 ? Math.floor(data.length / 8)
     : data.length > 20 ? Math.floor(data.length / 6)
     : 0;
 
   return (
-    <div className="px-2 pb-2">
-      <ResponsiveContainer width="100%" height={200}>
-        <AreaChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+    <div className="px-2 pb-1">
+      <ResponsiveContainer width="100%" height={height}>
+        <AreaChart data={data} margin={{ top: 6, right: 4, left: 0, bottom: 0 }}>
           <defs>
             <linearGradient id="b3grad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#2563eb" stopOpacity={0.18} />
+              <stop offset="5%" stopColor="#2563eb" stopOpacity={0.16} />
               <stop offset="95%" stopColor="#2563eb" stopOpacity={0} />
             </linearGradient>
           </defs>
           <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
           <XAxis
             dataKey="data"
-            tick={{ fontSize: 10, fill: "#9ca3af" }}
+            tick={{ fontSize: 9, fill: "#9ca3af" }}
             tickLine={false}
             axisLine={false}
             interval={tickInterval}
           />
           <YAxis
             domain={[min - pad, max + pad]}
-            tick={{ fontSize: 10, fill: "#9ca3af" }}
+            tick={{ fontSize: 9, fill: "#9ca3af" }}
             tickLine={false}
             axisLine={false}
             tickFormatter={(v) =>
@@ -79,7 +78,7 @@ export default function B3Chart({ dados }: { dados: B3Ponto[] }) {
                 maximumFractionDigits: 0,
               }).format(v)
             }
-            width={72}
+            width={68}
           />
           <Tooltip content={<CustomTooltip />} />
           <Area
