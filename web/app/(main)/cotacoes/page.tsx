@@ -15,13 +15,14 @@ type B3Dados = {
   contrato: string;
   vencimento: string | null;
   preco: number;
-  abertura: number;
+  ajuste: number;
   minimo: number;
   maximo: number;
-  fechamento: number;
+  bid: number;
+  ask: number;
+  contratos_abertos: number;
   variacao: number;
   variacao_pct: number;
-  negocios: number;
   pregao_aberto: boolean;
   atualizado: string;
 };
@@ -71,12 +72,12 @@ function B3Card({ dados, loading }: { dados: B3Dados | null; loading: boolean })
         {dados && (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs text-gray-500">
             {[
-              ["Abertura", fmt(dados.abertura)],
-              ["Mínimo", fmt(dados.minimo)],
-              ["Máximo", fmt(dados.maximo)],
-              ["Fechamento ant.", fmt(dados.fechamento)],
+              ["Ajuste anterior", fmt(dados.ajuste)],
+              ["Lim. inferior", fmt(dados.minimo)],
+              ["Lim. superior", fmt(dados.maximo)],
+              dados.bid > 0 ? ["Compra / Venda", `${fmt(dados.bid)} / ${fmt(dados.ask)}`] : ["Contratos abertos", dados.contratos_abertos.toLocaleString("pt-BR")],
             ].map(([l, v]) => (
-              <div key={l} className="bg-gray-50 rounded-xl px-3 py-2">
+              <div key={l as string} className="bg-gray-50 rounded-xl px-3 py-2">
                 <p className="text-gray-400 text-[10px]">{l}</p>
                 <p className="font-semibold text-gray-700 mt-0.5">{v}</p>
               </div>
@@ -87,7 +88,7 @@ function B3Card({ dados, loading }: { dados: B3Dados | null; loading: boolean })
 
       {dados && (
         <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-50 text-[11px] text-gray-400">
-          <span>Negócios: <strong className="text-gray-600">{dados.negocios.toLocaleString("pt-BR")}</strong></span>
+          <span>Contratos abertos: <strong className="text-gray-600">{dados.contratos_abertos.toLocaleString("pt-BR")}</strong></span>
           <span>Fonte: B3 · {new Date(dados.atualizado).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</span>
         </div>
       )}

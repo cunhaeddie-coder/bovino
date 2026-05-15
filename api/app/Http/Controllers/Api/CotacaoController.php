@@ -37,37 +37,44 @@ class CotacaoController extends Controller
 
                 if (!$resp->ok()) return null;
 
-                $contratos = $resp->json('Scty') ?? [];
-                if (empty($contratos)) return null;
+                $contratos = collect($resp->json('Scty') ?? [])
+                    ->filter(fn($s) => ($s['mkt']['cd'] ?? '') === 'FUT')
+                    ->filter(fn($s) => ($s['SctyQtn']['prvsDayAdjstmntPric'] ?? 0) > 0)
+                    ->sortByDesc(fn($s) => $s['asset']['AsstSummry']['opnCtrcts'] ?? 0)
+                    ->values();
 
-                // Pega o contrato com maior volume (mais líquido)
-                usort($contratos, fn($a, $b) =>
-                    ($b['SctyQtn']['finQty'] ?? 0) <=> ($a['SctyQtn']['finQty'] ?? 0)
-                );
+                if ($contratos->isEmpty()) return null;
 
-                $c = $contratos[0];
+                $c   = $contratos->first();
                 $qtn = $c['SctyQtn'];
 
-                $precoAtual   = (float) ($qtn['curPrc'] ?? 0);
-                $precoFechAnt = (float) ($qtn['prvsDayClsgPrc'] ?? 0);
-                $pregaoAberto = $precoAtual > 0;
+                $ajuste  = (float) ($qtn['prvsDayAdjstmntPric'] ?? 0);
+                $curPrc  = (float) ($qtn['curPrc'] ?? 0);
+                $bid     = (float) ($c['buyOffer']['price']  ?? 0);
+                $ask     = (float) ($c['sellOffer']['price'] ?? 0);
 
-                // Fora do pregão: usa fechamento anterior como preço de referência
-                $preco = $pregaoAberto ? $precoAtual : $precoFechAnt;
-                $variacao    = $pregaoAberto ? (float) ($qtn['prcFlcn'] ?? 0) : 0;
-                $variacaoPct = $pregaoAberto ? (float) ($qtn['prcFlcnPct'] ?? 0) : 0;
+                // Preço: atual > médio bid/ask > ajuste anterior
+                $preco = $curPrc > 0 ? $curPrc
+                    : ($bid > 0 && $ask > 0 ? round(($bid + $ask) / 2, 2) : $ajuste);
+
+                $pregaoAberto = $curPrc > 0 || ($bid > 0 && $ask > 0);
+                $variacao     = $preco > 0 && $ajuste > 0 ? round($preco - $ajuste, 2) : 0;
+                $variacaoPct  = $ajuste > 0 && $variacao != 0 ? round(($variacao / $ajuste) * 100, 2) : 0;
+
+                $venc = $c['asset']['AsstSummry']['mtrtyCode'] ?? null;
 
                 return [
-                    'contrato'      => $c['FinInstrmId']['MktIdrCd'] ?? 'BGI',
-                    'vencimento'    => $c['FinInstrmId']['Exptn']['XprtnDt'] ?? null,
+                    'contrato'      => $c['symb'] ?? 'BGI',
+                    'vencimento'    => $venc,
                     'preco'         => round($preco, 2),
-                    'abertura'      => round($qtn['opnPrc'] ?? 0, 2),
-                    'minimo'        => round($qtn['minPrc'] ?? 0, 2),
-                    'maximo'        => round($qtn['maxPrc'] ?? 0, 2),
-                    'fechamento'    => round($precoFechAnt, 2),
-                    'variacao'      => round($variacao, 2),
-                    'variacao_pct'  => round($variacaoPct, 2),
-                    'negocios'      => (int) ($qtn['finQty'] ?? 0),
+                    'ajuste'        => round($ajuste, 2),
+                    'minimo'        => round($qtn['bottomLmtPric'] ?? 0, 2),
+                    'maximo'        => round($qtn['topLmtPric'] ?? 0, 2),
+                    'bid'           => round($bid, 2),
+                    'ask'           => round($ask, 2),
+                    'contratos_abertos' => (int) ($c['asset']['AsstSummry']['opnCtrcts'] ?? 0),
+                    'variacao'      => $variacao,
+                    'variacao_pct'  => $variacaoPct,
                     'pregao_aberto' => $pregaoAberto,
                     'fonte'         => 'B3',
                     'atualizado'    => now()->toISOString(),
