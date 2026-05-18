@@ -23,19 +23,25 @@ class GestaoLoteController extends Controller
 
         $lotes = $fazenda->lotes()
             ->when($request->status, fn($q) => $q->where('status', $request->status))
-            ->withCount('animais')
+            ->withCount(['animais' => fn($q) => $q->withoutGlobalScope('fazenda')])
             ->latest()
             ->get();
 
-        // GMD por lote: busca sessões de pesagem agrupadas por data (2 queries total)
-        $gmds = Pesagem::whereIn('lote_id', $lotes->pluck('id'))
-            ->whereNotNull('gmd')
-            ->select('lote_id', 'data_pesagem', DB::raw('AVG(gmd) as gmd_medio'))
-            ->groupBy('lote_id', 'data_pesagem')
-            ->orderBy('lote_id')
-            ->orderByDesc('data_pesagem')
-            ->get()
-            ->groupBy('lote_id');
+        // GMD por lote — usa withoutGlobalScope para evitar conflito com ONLY_FULL_GROUP_BY
+        $loteIds = $lotes->pluck('id')->all();
+        $gmds = collect();
+        if (!empty($loteIds)) {
+            $gmds = Pesagem::withoutGlobalScope('fazenda')
+                ->whereIn('lote_id', $loteIds)
+                ->where('fazenda_id', $fazenda->id)
+                ->whereNotNull('gmd')
+                ->select('lote_id', 'data_pesagem', DB::raw('AVG(gmd) as gmd_medio'))
+                ->groupBy('lote_id', 'data_pesagem')
+                ->orderBy('lote_id')
+                ->orderByDesc('data_pesagem')
+                ->get()
+                ->groupBy('lote_id');
+        }
 
         return response()->json(
             $lotes->map(fn($lote) => $this->comEvolucao($lote, $gmds->get($lote->id, collect())))
