@@ -67,6 +67,11 @@ type Resumo = {
   por_categoria: Record<string, number>;
 };
 type MercadoAgora = { preco: number; variacao_pct: number; variacao: number; pregao_aberto: boolean; cepea?: number };
+type BoviScore = {
+  score: number;
+  grau: { letra: string; label: string; cor: string };
+  componentes: { nome: string; pontos: number; max: number; detalhe: string }[];
+};
 type AlertaSaude = {
   id: number; descricao: string; tipo: string; proxima_dose: string;
   animal?: { brinco: string; nome: string }; lote?: { nome: string };
@@ -153,6 +158,7 @@ export default function GestaoDashboard() {
   const [matches, setMatches]         = useState<MatchLote[]>([]);
   const [valorRebanho, setValorRebanho] = useState<ValorRebanho | null>(null);
   const [mercado, setMercado]         = useState<MercadoAgora | null>(null);
+  const [bovisco, setBovisco]         = useState<BoviScore | null>(null);
   const [semFazenda, setSemFazenda]   = useState(false);
   const [loaded, setLoaded]           = useState(false);
 
@@ -174,6 +180,7 @@ export default function GestaoDashboard() {
     api.get("/gestao/saude/alertas").then(r => setAlertas(r.data)).catch(() => {});
     api.get("/inteligencia/match-lotes").then(r => setMatches(r.data)).catch(() => {});
     api.get("/gestao/ia/valor-rebanho").then(r => setValorRebanho(r.data)).catch(() => {});
+    api.get("/gestao/bovisco").then(r => setBovisco(r.data)).catch(() => {});
   }, []);
 
   if (!loaded) return (
@@ -218,8 +225,56 @@ export default function GestaoDashboard() {
         ))}
       </div>
 
-      {/* Mercado Agora */}
-      {mercado && (
+      {/* BoviScore + Mercado Agora — linha compacta */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+
+        {/* BoviScore */}
+        {bovisco && (() => {
+          const COR: Record<string, string> = {
+            green: "border-green-200 bg-green-50",
+            blue:  "border-blue-200 bg-blue-50",
+            yellow:"border-yellow-200 bg-yellow-50",
+            red:   "border-red-200 bg-red-50",
+          };
+          const TEXTO: Record<string, string> = {
+            green: "text-green-700", blue: "text-blue-700",
+            yellow:"text-yellow-700", red: "text-red-600",
+          };
+          const c = bovisco.grau.cor;
+          return (
+            <div className={`rounded-2xl border p-4 shadow-sm ${COR[c]}`}>
+              <div className="flex items-center gap-3">
+                <div className={`w-14 h-14 rounded-full flex flex-col items-center justify-center border-4 shrink-0 ${COR[c]} border-current ${TEXTO[c]}`}>
+                  <span className="text-xl font-extrabold leading-none">{bovisco.score}</span>
+                  <span className="text-[9px] font-bold opacity-70">/ 100</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="font-bold text-gray-800 text-sm">BoviScore</p>
+                    <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${TEXTO[c]} bg-white/60`}>
+                      {bovisco.grau.letra} · {bovisco.grau.label}
+                    </span>
+                  </div>
+                  <div className="mt-1.5 space-y-1">
+                    {bovisco.componentes.map(comp => (
+                      <div key={comp.nome} className="flex items-center gap-2">
+                        <div className="flex-1 h-1.5 bg-white/60 rounded-full overflow-hidden">
+                          <div className={`h-full rounded-full ${TEXTO[c].replace("text-","bg-")}`}
+                               style={{ width: `${(comp.pontos / comp.max) * 100}%` }} />
+                        </div>
+                        <span className="text-[10px] text-gray-500 w-16 truncate">{comp.nome.split(" ")[0]}</span>
+                        <span className={`text-[10px] font-bold ${TEXTO[c]}`}>{comp.pontos}/{comp.max}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* Mercado Agora */}
+        {mercado && (
         <Link href="/cotacoes" className="block">
           <div className="bg-white border border-blue-100 rounded-2xl px-5 py-3 shadow-sm flex items-center gap-4 hover:border-blue-300 transition">
             <div className="flex-1 flex items-center gap-3 flex-wrap">
@@ -246,6 +301,8 @@ export default function GestaoDashboard() {
           </div>
         </Link>
       )}
+
+      </div>{/* end grid BoviScore+Mercado */}
 
       {/* Card valor do rebanho */}
       {valorRebanho && valorRebanho.total_animais > 0 && (
@@ -352,6 +409,7 @@ export default function GestaoDashboard() {
               { href: "/gestao/insumos",       Icon: Package,       label: "Estoque",       color: "text-orange-700 bg-orange-50" },
               { href: "/gestao/funcionarios",  Icon: Users,         label: "Equipe",        color: "text-violet-700 bg-violet-50" },
               { href: "/gestao/eventos",       Icon: AlertTriangle, label: "Ocorrências",   color: "text-yellow-700 bg-yellow-50" },
+              { href: "/gestao/genetica",      Icon: Dna,           label: "Banco Genético",color: "text-pink-700 bg-pink-50"    },
               { href: "/gestao/arrendamentos", Icon: Home,          label: "Arrendamentos", color: "text-teal-700 bg-teal-50"     },
               { href: "/gestao/pasto",         Icon: Sprout,        label: "App Pasto",     color: "text-lime-700 bg-lime-50"     },
               { href: "/gestao/curral",        Icon: Warehouse,     label: "App Curral",    color: "text-amber-800 bg-amber-100"  },

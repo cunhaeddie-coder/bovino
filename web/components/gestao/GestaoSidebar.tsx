@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Beef, Layers, Syringe, Scale, Wallet,
   Package, Users, ClipboardList, AlertTriangle, Sprout,
   Warehouse, Bot, Lightbulb, ChevronLeft, ChevronRight,
-  X, LogOut, Dna, Store, TrendingUp, Receipt, FileBarChart2, Milk, MessageCircle, FileCheck, ShieldCheck, type LucideIcon,
+  X, LogOut, Dna, Store, TrendingUp, Receipt, FileBarChart2, Milk, MessageCircle, FileCheck, ShieldCheck, FlaskConical, type LucideIcon,
 } from "lucide-react";
 import { CowIcon } from "@/components/ui/CowIcon";
 import { FazendaSwitcher } from "@/components/gestao/FazendaSwitcher";
@@ -32,6 +32,7 @@ export const NAV_GESTOR: NavItem[] = [
   { href: "/gestao/ordens",       label: "OS",          Icon: ClipboardList,   color: "text-slate-600"   },
   { href: "/gestao/eventos",      label: "Ocorrências", Icon: AlertTriangle,   color: "text-yellow-600"  },
   { href: "/gestao/reproducao",   label: "Reprodução",  Icon: Dna,             color: "text-pink-600"    },
+  { href: "/gestao/genetica",     label: "Banco Genético", Icon: FlaskConical, color: "text-pink-500"   },
   { href: "/gestao/pasto",        label: "App Pasto",   Icon: Sprout,          color: "text-lime-600"    },
   { href: "/gestao/curral",       label: "App Curral",  Icon: Warehouse,       color: "text-amber-800"   },
   { href: "/gestao/gestor",       label: "IA Gestor",   Icon: Bot,             color: "text-violet-700"  },

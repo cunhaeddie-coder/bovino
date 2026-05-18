@@ -431,6 +431,18 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/{id}',        [GestaoReproducaoController::class, 'destroy']);
     });
 
+    // Banco Genético (sêmen)
+    Route::prefix('gestao/genetica')->group(function () {
+        Route::get('/',              [\App\Http\Controllers\Api\BancoGeneticoController::class, 'index']);
+        Route::post('/',             [\App\Http\Controllers\Api\BancoGeneticoController::class, 'store']);
+        Route::put('/{id}',          [\App\Http\Controllers\Api\BancoGeneticoController::class, 'update']);
+        Route::post('/{id}/usar',    [\App\Http\Controllers\Api\BancoGeneticoController::class, 'usarDose']);
+        Route::delete('/{id}',       [\App\Http\Controllers\Api\BancoGeneticoController::class, 'destroy']);
+    });
+
+    // BoviScore
+    Route::get('gestao/bovisco', [\App\Http\Controllers\Api\BoviScoreController::class, 'calcular']);
+
     // App Gestor — IA e valor do rebanho
     Route::prefix('gestao/ia')->group(function () {
         Route::post('/chat', [GestaoIAController::class, 'chat']);
