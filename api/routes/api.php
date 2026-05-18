@@ -123,7 +123,6 @@ Route::get('cotacoes/b3/historico', [CotacaoController::class, 'b3Historico']);
 Route::get('cotacoes/b3', [CotacaoController::class, 'b3']);
 Route::get('cotacoes/ultima', [CotacaoController::class, 'ultima']);
 
-Route::get('fazendas/minhas', [FazendaController::class, 'minhas'])->middleware('auth:sanctum');
 Route::get('fazendas/{slug}', [FazendaController::class, 'showBySlug']);
 
 // Acesso do contador — rotas públicas (sem autenticação)
@@ -192,6 +191,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('negociacoes/{negociacao}/contra-proposta', [NegociacaoController::class, 'contraPropostar']);
 
     // Fazenda / perfil da propriedade
+    Route::get('fazendas/minhas', [FazendaController::class, 'minhas']);
     Route::get('fazenda/minha', [FazendaController::class, 'show']);
     Route::post('fazenda', [FazendaController::class, 'store']);
     Route::put('fazenda', [FazendaController::class, 'update']);

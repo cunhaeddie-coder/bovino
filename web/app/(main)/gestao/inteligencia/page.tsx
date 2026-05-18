@@ -55,6 +55,13 @@ const FERRAMENTAS = [
     desc: "Visão consolidada de todas as aquisições, vendas, mortes e descartes do rebanho.",
     cor: "border-cyan-200 hover:border-cyan-400",
   },
+  {
+    href: "/gestao/inteligencia/por-origem",
+    icon: "🏡",
+    titulo: "Desempenho por Origem",
+    desc: "Compare o peso médio dos animais agrupados por fazenda ou criador de procedência.",
+    cor: "border-orange-200 hover:border-orange-400",
+  },
 ];
 
 export default function GestaoInteligenciaPage() {

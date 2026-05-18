@@ -25,6 +25,76 @@ function fmt(v: number) {
   return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 0 });
 }
 
+const FAIXAS_CALC = [
+  { max: 300,   faixaIdx: 0, plano: "premium", label: "até 300 cab.",    preco: 150 },
+  { max: 500,   faixaIdx: 0, plano: "elite",   label: "até 500 cab.",    preco: 280 },
+  { max: 1000,  faixaIdx: 1, plano: "elite",   label: "até 1.000 cab.",  preco: 330 },
+  { max: 5000,  faixaIdx: 2, plano: "elite",   label: "até 5.000 cab.",  preco: 420 },
+  { max: 10000, faixaIdx: 3, plano: "elite",   label: "até 10.000 cab.", preco: 550 },
+];
+
+function CalculadoraRebanho({ onFaixaChange, onPeriodoChange }: {
+  onFaixaChange: (i: number) => void;
+  onPeriodoChange: (p: "mensal" | "anual") => void;
+}) {
+  const [cabecas, setCabecas] = useState(100);
+
+  const faixa = FAIXAS_CALC.find(f => cabecas <= f.max) ?? FAIXAS_CALC[FAIXAS_CALC.length - 1];
+  const custoPorAnimal = (faixa.preco / Math.max(cabecas, 1)).toFixed(2).replace(".", ",");
+
+  function handleChange(val: number) {
+    setCabecas(val);
+    if (faixa.plano === "elite") onFaixaChange(faixa.faixaIdx);
+  }
+
+  return (
+    <div className="bg-white rounded-3xl border border-green-200 shadow-md p-6 space-y-5">
+      <div className="text-center">
+        <p className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-1">Calculadora de Rebanho</p>
+        <h2 className="text-2xl font-extrabold text-gray-900">Quantos animais você tem?</h2>
+      </div>
+
+      {/* Slider */}
+      <div className="space-y-2">
+        <div className="flex justify-between text-xs text-gray-400">
+          <span>1</span><span>2.500</span><span>5.000</span><span>10.000</span>
+        </div>
+        <input
+          type="range" min={1} max={10000} step={50} value={cabecas}
+          onChange={e => handleChange(Number(e.target.value))}
+          className="w-full accent-green-600 cursor-pointer"
+        />
+        <div className="text-center">
+          <span className="text-4xl font-extrabold text-green-700">{cabecas.toLocaleString("pt-BR")}</span>
+          <span className="text-gray-500 text-sm ml-2">cabeças</span>
+        </div>
+      </div>
+
+      {/* Resultado */}
+      <div className={`rounded-2xl p-4 text-center ${faixa.plano === "elite" ? "bg-amber-50 border border-amber-200" : "bg-green-50 border border-green-200"}`}>
+        <p className="text-xs font-semibold text-gray-500 mb-1">Plano recomendado</p>
+        <p className={`text-2xl font-extrabold mb-0.5 ${faixa.plano === "elite" ? "text-amber-700" : "text-green-700"}`}>
+          {faixa.plano === "elite" ? "Elite" : "Premium"} — {faixa.label}
+        </p>
+        <p className={`text-3xl font-extrabold ${faixa.plano === "elite" ? "text-amber-600" : "text-green-600"}`}>
+          {fmt(faixa.preco)}<span className="text-base text-gray-400 font-normal">/mês</span>
+        </p>
+        <p className="text-xs text-gray-500 mt-1">≈ R$ {custoPorAnimal} por animal/mês</p>
+      </div>
+
+      <button
+        onClick={() => {
+          if (faixa.plano === "elite") onFaixaChange(faixa.faixaIdx);
+          document.getElementById("planos-cards")?.scrollIntoView({ behavior: "smooth" });
+        }}
+        className={`w-full py-3 rounded-2xl font-bold text-sm transition ${faixa.plano === "elite" ? "bg-amber-500 hover:bg-amber-600 text-white" : "bg-green-700 hover:bg-green-800 text-white"}`}
+      >
+        Ver detalhes do plano →
+      </button>
+    </div>
+  );
+}
+
 export default function PlanosPage() {
   const router = useRouter();
   const { user } = useAuthStore();
@@ -83,7 +153,12 @@ export default function PlanosPage() {
         )}
       </section>
 
-      <div className="max-w-4xl mx-auto px-4 py-16">
+      {/* Calculadora de Rebanho */}
+      <div className="max-w-2xl mx-auto px-4 py-10">
+        <CalculadoraRebanho onFaixaChange={setEliteFaixa} onPeriodoChange={setPeriodo} />
+      </div>
+
+      <div className="max-w-4xl mx-auto px-4 pb-16" id="planos-cards">
         <div className="grid md:grid-cols-2 gap-8">
 
           {/* Card Premium */}

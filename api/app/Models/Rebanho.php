@@ -16,7 +16,7 @@ class Rebanho extends Model
 
     protected $fillable = [
         'fazenda_id', 'pastagem_id', 'brinco', 'sisbov', 'nome',
-        'raca', 'sexo', 'categoria', 'status_leiteiro', 'data_nascimento',
+        'raca', 'procedencia', 'sexo', 'categoria', 'status_leiteiro', 'data_nascimento',
         'peso_atual', 'pai', 'mae', 'status', 'observacao',
     ];
 
