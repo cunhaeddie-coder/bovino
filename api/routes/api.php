@@ -447,6 +447,22 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('gestao/analises/minha-arroba', [\App\Http\Controllers\Api\GestaoAnalisesController::class, 'minhaArroba']);
     Route::get('gestao/analises/racas',         [\App\Http\Controllers\Api\GestaoAnalisesController::class, 'racas']);
 
+    // Plano Nutricional
+    Route::prefix('gestao/nutricional')->group(function () {
+        Route::get('/',       [\App\Http\Controllers\Api\PlanoNutricionalController::class, 'index']);
+        Route::post('/',      [\App\Http\Controllers\Api\PlanoNutricionalController::class, 'store']);
+        Route::put('/{id}',   [\App\Http\Controllers\Api\PlanoNutricionalController::class, 'update']);
+        Route::delete('/{id}',[\App\Http\Controllers\Api\PlanoNutricionalController::class, 'destroy']);
+    });
+
+    // Movimentações (Aquisições, Saídas, Perdas, Origem)
+    Route::prefix('gestao/movimentacoes')->group(function () {
+        Route::get('/aquisicoes', [\App\Http\Controllers\Api\GestaoMovimentacoesController::class, 'aquisicoes']);
+        Route::get('/saidas',     [\App\Http\Controllers\Api\GestaoMovimentacoesController::class, 'saidas']);
+        Route::get('/perdas',     [\App\Http\Controllers\Api\GestaoMovimentacoesController::class, 'perdas']);
+        Route::get('/por-origem', [\App\Http\Controllers\Api\GestaoMovimentacoesController::class, 'porOrigem']);
+    });
+
     // App Gestor — IA e valor do rebanho
     Route::prefix('gestao/ia')->group(function () {
         Route::post('/chat', [GestaoIAController::class, 'chat']);

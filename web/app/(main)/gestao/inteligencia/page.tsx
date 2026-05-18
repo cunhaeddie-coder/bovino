@@ -48,6 +48,13 @@ const FERRAMENTAS = [
     desc: "Configure alertas para ser notificado quando surgir demanda para o tipo de gado que você cria.",
     cor: "border-gray-200 hover:border-green-400",
   },
+  {
+    href: "/gestao/movimentacoes",
+    icon: "↕️",
+    titulo: "Entradas e Saídas",
+    desc: "Visão consolidada de todas as aquisições, vendas, mortes e descartes do rebanho.",
+    cor: "border-cyan-200 hover:border-cyan-400",
+  },
 ];
 
 export default function GestaoInteligenciaPage() {
