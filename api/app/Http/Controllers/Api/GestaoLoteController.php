@@ -21,13 +21,14 @@ class GestaoLoteController extends Controller
     {
         $fazenda = $this->fazenda($request);
 
-        $lotes = $fazenda->lotes()
-            ->when($request->status, fn($q) => $q->where('status', $request->status))
-            ->withCount(['animais' => fn($q) => $q->withoutGlobalScope('fazenda')])
+        // Usa LoteGestao diretamente — o BelongsToFazenda global scope
+        // já filtra por fazenda_id via FazendaContext; evita duplo WHERE
+        // que ocorria ao combinar HasMany + global scope com ids distintos.
+        $lotes = LoteGestao::when($request->status, fn($q) => $q->where('status', $request->status))
+            ->withCount('animais')
             ->latest()
             ->get();
 
-        // GMD por lote — usa withoutGlobalScope para evitar conflito com ONLY_FULL_GROUP_BY
         $loteIds = $lotes->pluck('id')->all();
         $gmds = collect();
         if (!empty($loteIds)) {
