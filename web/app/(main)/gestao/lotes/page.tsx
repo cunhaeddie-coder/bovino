@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { api } from "@/lib/api";
 import { TourButton } from "@/components/ui/TourButton";
 import type { DriveStep } from "driver.js";
@@ -43,6 +44,9 @@ type Lote = {
   preco_arroba: number | null;
   status: "disponivel" | "reservado" | "vendido" | "interno";
   animais_count?: number;
+  gmd_ultimo?: number | null;
+  gmd_penultimo?: number | null;
+  gmd_total?: number | null;
 };
 
 type FormState = {
@@ -382,11 +386,36 @@ export default function LotesPage() {
                   )}
                 </div>
 
-                <div className="flex gap-2">
+                {/* Evolução do Lote — GMD */}
+                {(lote.gmd_ultimo != null || lote.gmd_total != null) && (
+                  <div className="bg-gray-50 rounded-xl p-2.5 space-y-1">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Evolução do Lote</p>
+                    <div className="grid grid-cols-3 gap-1 text-center">
+                      {[
+                        ["Penúlt. GMD", lote.gmd_penultimo],
+                        ["Últ. GMD", lote.gmd_ultimo],
+                        ["GMD Total", lote.gmd_total],
+                      ].map(([label, val]) => (
+                        <div key={label as string}>
+                          <p className="text-[10px] text-gray-400">{label}</p>
+                          <p className={`text-sm font-bold ${val == null ? "text-gray-300" : Number(val) >= 0.8 ? "text-green-600" : Number(val) >= 0.4 ? "text-yellow-600" : "text-red-500"}`}>
+                            {val != null ? `${val} kg` : "—"}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex gap-2 flex-wrap">
                   <button onClick={() => abrirEditar(lote)}
                     className="flex-1 border border-gray-200 text-gray-600 text-xs font-semibold py-2 rounded-full hover:bg-gray-50 transition">
                     ✏️ Editar
                   </button>
+                  <Link href={`/gestao/inteligencia/projecao-venda?lote=${lote.id}`}
+                    className="flex-1 text-center border border-blue-200 text-blue-700 text-xs font-semibold py-2 rounded-full hover:bg-blue-50 transition">
+                    📊 Projeção
+                  </Link>
                   {lote.status === "disponivel" && (
                     <button onClick={() => setConfirmarPublicar(lote)}
                       className="flex-1 border border-green-700 text-green-700 text-xs font-semibold py-2 rounded-full hover:bg-green-50 transition">

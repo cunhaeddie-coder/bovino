@@ -243,6 +243,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/{id}', [GestaoLoteController::class, 'show']);
         Route::put('/{id}', [GestaoLoteController::class, 'update']);
         Route::delete('/{id}', [GestaoLoteController::class, 'destroy']);
+        Route::get('/{id}/projecao', [GestaoLoteController::class, 'projecao']);
         Route::get('/{id}/publicar', [GestaoLoteController::class, 'publicar']);
     });
 
