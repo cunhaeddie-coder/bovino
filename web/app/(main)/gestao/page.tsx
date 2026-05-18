@@ -5,7 +5,7 @@ import Link from "next/link";
 import {
   Beef, Layers, Syringe, Scale, Wallet, Package,
   Users, AlertTriangle, Home, Sprout, Warehouse, Bot,
-  BarChart2, Receipt, FileBarChart2, Milk, type LucideIcon,
+  BarChart2, Receipt, FileBarChart2, Milk, Dna, type LucideIcon,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { TourButton } from "@/components/ui/TourButton";
