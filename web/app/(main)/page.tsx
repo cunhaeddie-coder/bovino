@@ -84,12 +84,20 @@ export default async function Home() {
           <p className="text-green-100 max-w-md mx-auto">
             Anuncie grátis e alcance compradores em todo o Brasil. Sem intermediários, negociação direta.
           </p>
-          <Link
-            href="/cadastro"
-            className="inline-block bg-yellow-400 text-yellow-900 font-bold px-8 py-3 rounded-full hover:bg-yellow-300 transition-colors text-sm md:text-base"
-          >
-            Criar conta e anunciar grátis
-          </Link>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Link
+              href="/cadastro"
+              className="inline-block bg-yellow-400 text-yellow-900 font-bold px-8 py-3 rounded-full hover:bg-yellow-300 transition-colors text-sm md:text-base"
+            >
+              Criar conta e anunciar grátis
+            </Link>
+            <Link
+              href="/demo"
+              className="inline-block bg-white/15 border border-white/30 text-white font-bold px-8 py-3 rounded-full hover:bg-white/25 transition-colors text-sm md:text-base"
+            >
+              🎯 Ver demonstração
+            </Link>
+          </div>
         </section>
 
         <ComoFunciona />

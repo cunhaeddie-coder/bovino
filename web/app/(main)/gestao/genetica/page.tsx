@@ -2,6 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
+import { TourButton } from "@/components/ui/TourButton";
+import type { DriveStep } from "driver.js";
+
+const TOUR_STEPS: DriveStep[] = [
+  { element: "#genetica-header", popover: { title: "🧬 Banco Genético", description: "Controle o estoque de sêmen dos seus touros. Registre doses compradas, acompanhe o saldo e registre cada inseminação realizada.", side: "bottom" } },
+  { element: "#genetica-grid", popover: { title: "🐂 Cards de touros", description: "Cada card mostra o touro, raça, RGD, fabricante e a barra de estoque (verde >50%, amarelo >20%, vermelho ≤20%). Clique em 'Usar dose' ao realizar uma inseminação.", side: "top" } },
+  { element: "#btn-add-semen", popover: { title: "➕ Cadastrar sêmen", description: "Registre um novo touro informando nome, raça, RGD, fabricante, número da partida e quantidade de doses adquiridas.", side: "bottom" } },
+];
 
 type Semen = {
   id: number;
@@ -88,12 +96,13 @@ export default function BancoGeneticoPage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
+      <div id="genetica-header" className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-gray-900">🧬 Banco Genético</h1>
           <p className="text-sm text-gray-500">Estoque de sêmen · {totalDoses} doses disponíveis</p>
         </div>
         <button onClick={abrirNovo}
+          id="btn-add-semen"
           className="bg-pink-600 text-white text-sm font-semibold px-4 py-2 rounded-full hover:bg-pink-700 transition">
           + Novo touro
         </button>
@@ -111,7 +120,7 @@ export default function BancoGeneticoPage() {
           </button>
         </div>
       ) : (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div id="genetica-grid" className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {itens.map(s => {
             const pctEstoque = s.qtd_doses_total > 0 ? (s.qtd_doses_atual / s.qtd_doses_total) * 100 : 0;
             const corEstoque = pctEstoque > 50 ? "bg-green-500" : pctEstoque > 20 ? "bg-yellow-500" : "bg-red-500";
@@ -256,6 +265,7 @@ export default function BancoGeneticoPage() {
           </div>
         </div>
       )}
+      <TourButton tourKey="genetica" steps={TOUR_STEPS} />
     </div>
   );
 }

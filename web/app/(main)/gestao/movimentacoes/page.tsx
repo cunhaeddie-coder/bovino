@@ -2,6 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
+import { TourButton } from "@/components/ui/TourButton";
+import type { DriveStep } from "driver.js";
+
+const TOUR_STEPS: DriveStep[] = [
+  { element: "#mov-tabs", popover: { title: "↕️ Entradas e Saídas", description: "Visão consolidada de tudo que entrou e saiu do seu rebanho. Organize por Aquisições (compras), Saídas (vendas) e Perdas e Mortes.", side: "bottom" } },
+  { element: "#mov-resumo", popover: { title: "📊 Resumo financeiro", description: "Total investido em compras e total recebido em vendas. Compare para calcular o resultado financeiro do período.", side: "bottom" } },
+  { element: "#mov-tabela", popover: { title: "📋 Registros detalhados", description: "Cada linha mostra data, descrição, valor e lote associado. Os registros são gerados automaticamente a partir do módulo Financeiro.", side: "top" } },
+];
 
 const fmt = (v: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
@@ -60,7 +68,7 @@ export default function MovimentacoesPage() {
       <h1 className="text-xl font-bold text-gray-900">↕️ Entradas e Saídas</h1>
 
       {/* Tabs */}
-      <div className="flex gap-1 border-b border-gray-200 overflow-x-auto">
+      <div id="mov-tabs" className="flex gap-1 border-b border-gray-200 overflow-x-auto">
         {([
           { k: "aquisicoes", label: "📥 Aquisições" },
           { k: "saidas",     label: "📤 Saídas"     },
@@ -81,7 +89,7 @@ export default function MovimentacoesPage() {
           {aba === "aquisicoes" && (
             <div className="space-y-3">
               {resumoAq && (resumoAq.total_registros ?? 0) > 0 && (
-                <div className="grid grid-cols-2 gap-3">
+                <div id="mov-resumo" className="grid grid-cols-2 gap-3">
                   <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 text-center">
                     <p className="text-2xl font-bold text-blue-700">{resumoAq.total_registros}</p>
                     <p className="text-xs text-blue-600">registros de compra</p>
@@ -95,6 +103,7 @@ export default function MovimentacoesPage() {
               {aquisicoes.length === 0 ? (
                 <EmptyState icon="📥" label="Nenhuma aquisição registrada" sub='Registre compras de animais em Financeiro → Custos com categoria "Aquisição"' />
               ) : (
+                <div id="mov-tabela">
                 <Table>
                   <thead>
                     <TR header>
@@ -203,6 +212,7 @@ export default function MovimentacoesPage() {
           )}
         </>
       )}
+      <TourButton tourKey="movimentacoes" steps={TOUR_STEPS} />
     </div>
   );
 }

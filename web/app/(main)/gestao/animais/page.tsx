@@ -2,6 +2,15 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { api } from "@/lib/api";
+import { TourButton } from "@/components/ui/TourButton";
+import type { DriveStep } from "driver.js";
+
+const TOUR_STEPS: DriveStep[] = [
+  { element: "#animais-header", popover: { title: "🐄 Rebanho", description: "Painel central do seu rebanho. Veja total de animais, composição por categoria, faixa etária e alertas de manejo.", side: "bottom" } },
+  { element: "#animais-abas", popover: { title: "📑 Abas de navegação", description: "Alterne entre Visão geral (KPIs e gráficos), lista completa do Rebanho e Alertas de manejo (desmama, baixo peso, natimortos).", side: "bottom" } },
+  { element: "#btn-add-animais", popover: { title: "➕ Adicionar animais", description: "Cadastre um animal individual com todos os dados (brinco, raça, peso, nascimento) ou importe um grupo inteiro de uma vez.", side: "bottom" } },
+  { element: "#animais-filtros", popover: { title: "🔍 Filtros avançados", description: "Filtre por categoria, sexo, raça, faixa etária, peso mínimo/máximo e status leiteiro para encontrar exatamente o animal que procura.", side: "bottom" } },
+];
 
 type Animal = {
   id: number; brinco: string | null; nome: string | null; raca: string;
@@ -168,9 +177,9 @@ export default function AnimaisPage() {
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between gap-2 flex-wrap">
+      <div id="animais-header" className="flex items-center justify-between gap-2 flex-wrap">
         <h1 className="text-base md:text-xl font-bold text-gray-900">Rebanho</h1>
-        <div className="flex gap-2">
+        <div id="btn-add-animais" className="flex gap-2">
           <button onClick={()=>setShowGrupo(true)}
             className="bg-amber-600 text-white text-sm font-semibold px-4 py-2 rounded-full hover:bg-amber-700 transition">
             + Adicionar grupo
@@ -183,7 +192,7 @@ export default function AnimaisPage() {
       </div>
 
       {/* Abas */}
-      <div className="flex gap-1 bg-gray-100 rounded-xl p-1">
+      <div id="animais-abas" className="flex gap-1 bg-gray-100 rounded-xl p-1">
         {([ ["dashboard","Visão geral"], ["rebanho","Rebanho"], ["alertas", totalAlertas>0?`Alertas (${totalAlertas})`:"Alertas"] ] as const).map(([id,label])=>(
           <button key={id} onClick={()=>setAba(id)}
             className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-colors ${aba===id?"bg-white text-gray-900 shadow-sm":"text-gray-500 hover:text-gray-700"}`}>
@@ -295,7 +304,7 @@ export default function AnimaisPage() {
       {aba==="rebanho" && (
         <div className="space-y-3">
           {/* Filtros avançados */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 space-y-3">
+          <div id="animais-filtros" className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">Pesquisar</span>
               {filtrosAtivos > 0 && (
@@ -753,6 +762,7 @@ function GrupoModal({ onClose, onDone }: { onClose: () => void; onDone: () => vo
           </form>
         </div>
       </div>
+      <TourButton tourKey="animais" steps={TOUR_STEPS} />
     </div>
   );
 }

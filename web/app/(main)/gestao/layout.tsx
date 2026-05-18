@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { Menu } from "lucide-react";
 import { GestaoSidebar, NAV_GESTOR } from "@/components/gestao/GestaoSidebar";
+import { OnboardingChecklist } from "@/components/gestao/OnboardingChecklist";
 
 const LABEL_MAP = Object.fromEntries(NAV_GESTOR.map((n) => [n.href, n.label]));
 
@@ -76,6 +77,8 @@ export default function GestaoLayout({ children }: { children: React.ReactNode }
           {children}
         </main>
       </div>
+
+      <OnboardingChecklist />
 
       {/* ── Drawer mobile ── */}
       {drawer && (

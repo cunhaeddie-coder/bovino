@@ -2,6 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
+import { TourButton } from "@/components/ui/TourButton";
+import type { DriveStep } from "driver.js";
+
+const TOUR_STEPS: DriveStep[] = [
+  { element: "#nutricional-header", popover: { title: "🌿 Plano Nutricional", description: "Crie e gerencie protocolos alimentares por categoria de animal. Registre os ingredientes, quantidades e custo estimado por animal por dia.", side: "bottom" } },
+  { element: "#nutricional-lista", popover: { title: "📋 Planos ativos", description: "Cada plano pode ser expandido para ver os ingredientes. Clique no plano para editar ou desativar. O custo diário por animal ajuda a calcular o custo total do lote.", side: "top" } },
+  { element: "#btn-novo-plano", popover: { title: "➕ Criar plano", description: "Defina nome, categoria (novilho, boi gordo, etc.), custo por animal/dia e a lista detalhada de ingredientes com quantidades e unidades.", side: "bottom" } },
+];
 
 const fmt = (v: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
@@ -102,12 +110,12 @@ export default function PlanoNutricionalPage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
+      <div id="nutricional-header" className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-gray-900">🌿 Plano Nutricional</h1>
           <p className="text-sm text-gray-500">Gerencie dietas e protocolos alimentares por categoria</p>
         </div>
-        <button onClick={abrirNovo}
+        <button id="btn-novo-plano" onClick={abrirNovo}
           className="bg-lime-600 text-white text-sm font-semibold px-4 py-2 rounded-full hover:bg-lime-700 transition">
           + Novo plano
         </button>
@@ -123,7 +131,7 @@ export default function PlanoNutricionalPage() {
           <button onClick={abrirNovo} className="mt-4 text-lime-600 text-sm font-semibold hover:underline">Criar primeiro plano →</button>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div id="nutricional-lista" className="space-y-3">
           {planos.map(p => (
             <div key={p.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
               {/* Header */}
@@ -271,6 +279,7 @@ export default function PlanoNutricionalPage() {
           </div>
         </div>
       )}
+      <TourButton tourKey="nutricional" steps={TOUR_STEPS} />
     </div>
   );
 }

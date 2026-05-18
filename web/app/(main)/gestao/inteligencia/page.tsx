@@ -2,6 +2,15 @@
 
 import Link from "next/link";
 import { TrendingUp, BarChart2, MapPin, Zap } from "lucide-react";
+import { TourButton } from "@/components/ui/TourButton";
+import type { DriveStep } from "driver.js";
+
+const TOUR_STEPS: DriveStep[] = [
+  { element: "#intel-grid", popover: { title: "📊 Hub de Inteligência", description: "Central de análises e ferramentas de decisão para o seu negócio. Cada card leva a uma ferramenta específica.", side: "bottom" } },
+  { popover: { title: "💹 Projeção de Venda", description: "Simule o resultado financeiro antes de negociar: receita esperada, preço de equilíbrio e o preço mínimo para atingir sua meta de lucro." } },
+  { popover: { title: "📈 Minha @ vs Mercado", description: "Compare o preço por arroba dos seus lotes com a cotação B3 e CEPEA para saber se está acima ou abaixo do mercado." } },
+  { popover: { title: "🐄 BoviScore & Raças", description: "BoviScore é o índice de saúde geral do seu rebanho (0–100). Raças em Números agrupa desempenho por raça: GMD, peso médio e preço/@." } },
+];
 
 const FERRAMENTAS = [
   {
@@ -72,7 +81,7 @@ export default function GestaoInteligenciaPage() {
         <h1 className="text-xl font-bold text-gray-900">Inteligência</h1>
       </div>
 
-      <div className="grid sm:grid-cols-2 gap-4">
+      <div id="intel-grid" className="grid sm:grid-cols-2 gap-4">
         {FERRAMENTAS.map(f => (
           <Link
             key={f.href}
@@ -104,6 +113,7 @@ export default function GestaoInteligenciaPage() {
           </p>
         </div>
       </div>
+      <TourButton tourKey="inteligencia" steps={TOUR_STEPS} />
     </div>
   );
 }
