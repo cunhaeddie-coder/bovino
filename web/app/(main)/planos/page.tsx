@@ -38,12 +38,14 @@ function CalculadoraRebanho({ onFaixaChange, onPeriodoChange }: {
   onPeriodoChange: (p: "mensal" | "anual") => void;
 }) {
   const [cabecas, setCabecas] = useState(100);
+  const [inputVal, setInputVal] = useState("100");
 
   const faixa = FAIXAS_CALC.find(f => cabecas <= f.max) ?? FAIXAS_CALC[FAIXAS_CALC.length - 1];
   const custoPorAnimal = (faixa.preco / Math.max(cabecas, 1)).toFixed(2).replace(".", ",");
 
   function handleChange(val: number) {
     setCabecas(val);
+    setInputVal(String(val));
     if (faixa.plano === "elite") onFaixaChange(faixa.faixaIdx);
   }
 
@@ -66,10 +68,24 @@ function CalculadoraRebanho({ onFaixaChange, onPeriodoChange }: {
         />
         <div className="flex items-center justify-center gap-3">
           <input
-            type="number" min={1} max={99999} value={cabecas}
+            type="number" min={1} max={99999} value={inputVal}
             onChange={e => {
-              const v = Math.max(1, Math.min(99999, Number(e.target.value) || 1));
-              handleChange(v);
+              setInputVal(e.target.value);
+              const v = parseInt(e.target.value, 10);
+              if (!isNaN(v) && v >= 1) {
+                const clamped = Math.min(v, 99999);
+                setCabecas(clamped);
+                const novaFaixa = FAIXAS_CALC.find(f => clamped <= f.max) ?? FAIXAS_CALC[FAIXAS_CALC.length - 1];
+                if (novaFaixa.plano === "elite") onFaixaChange(novaFaixa.faixaIdx);
+              }
+            }}
+            onBlur={() => {
+              const v = parseInt(inputVal, 10);
+              const final = isNaN(v) || v < 1 ? 1 : Math.min(v, 99999);
+              setCabecas(final);
+              setInputVal(String(final));
+              const novaFaixa = FAIXAS_CALC.find(f => final <= f.max) ?? FAIXAS_CALC[FAIXAS_CALC.length - 1];
+              if (novaFaixa.plano === "elite") onFaixaChange(novaFaixa.faixaIdx);
             }}
             className="w-28 text-center text-3xl font-extrabold text-green-700 border-2 border-green-200 rounded-xl px-2 py-1 focus:outline-none focus:border-green-500 bg-green-50 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
           />
