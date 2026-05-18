@@ -26,22 +26,24 @@ function fmt(v: number) {
 }
 
 const FAIXAS_CALC = [
-  { max: 300,   faixaIdx: 0, plano: "premium", label: "até 300 cab.",    preco: 150 },
-  { max: 500,   faixaIdx: 0, plano: "elite",   label: "até 500 cab.",    preco: 280 },
-  { max: 1000,  faixaIdx: 1, plano: "elite",   label: "até 1.000 cab.",  preco: 330 },
-  { max: 5000,  faixaIdx: 2, plano: "elite",   label: "até 5.000 cab.",  preco: 420 },
-  { max: 10000, faixaIdx: 3, plano: "elite",   label: "até 10.000 cab.", preco: 550 },
+  { max: 300,   faixaIdx: 0, plano: "premium", label: "até 300 cab.",    preco: 150, preco_anual: 1650 },
+  { max: 500,   faixaIdx: 0, plano: "elite",   label: "até 500 cab.",    preco: 280, preco_anual: 3080 },
+  { max: 1000,  faixaIdx: 1, plano: "elite",   label: "até 1.000 cab.",  preco: 330, preco_anual: 3630 },
+  { max: 5000,  faixaIdx: 2, plano: "elite",   label: "até 5.000 cab.",  preco: 420, preco_anual: 4620 },
+  { max: 10000, faixaIdx: 3, plano: "elite",   label: "até 10.000 cab.", preco: 550, preco_anual: 6050 },
 ];
 
-function CalculadoraRebanho({ onFaixaChange, onPeriodoChange }: {
+function CalculadoraRebanho({ onFaixaChange, onPeriodoChange, periodo }: {
   onFaixaChange: (i: number) => void;
   onPeriodoChange: (p: "mensal" | "anual") => void;
+  periodo: "mensal" | "anual";
 }) {
   const [cabecas, setCabecas] = useState(100);
   const [inputVal, setInputVal] = useState("100");
 
   const faixa = FAIXAS_CALC.find(f => cabecas <= f.max) ?? FAIXAS_CALC[FAIXAS_CALC.length - 1];
-  const custoPorAnimal = (faixa.preco / Math.max(cabecas, 1)).toFixed(2).replace(".", ",");
+  const precoMensal = periodo === "anual" ? faixa.preco_anual / 12 : faixa.preco;
+  const custoPorAnimal = (precoMensal / Math.max(cabecas, 1)).toFixed(2).replace(".", ",");
 
   function handleChange(val: number) {
     setCabecas(val);
@@ -100,8 +102,11 @@ function CalculadoraRebanho({ onFaixaChange, onPeriodoChange }: {
           {faixa.plano === "elite" ? "Elite" : "Premium"} — {faixa.label}
         </p>
         <p className={`text-3xl font-extrabold ${faixa.plano === "elite" ? "text-amber-600" : "text-green-600"}`}>
-          {fmt(faixa.preco)}<span className="text-base text-gray-400 font-normal">/mês</span>
+          {fmt(Math.round(precoMensal))}<span className="text-base text-gray-400 font-normal">/mês</span>
         </p>
+        {periodo === "anual" && (
+          <p className="text-xs text-green-600 font-semibold mt-0.5">{fmt(faixa.preco_anual)}/ano · 1 mês grátis</p>
+        )}
         <p className="text-xs text-gray-500 mt-1">≈ R$ {custoPorAnimal} por animal/mês</p>
       </div>
 
@@ -178,7 +183,7 @@ export default function PlanosPage() {
 
       {/* Calculadora de Rebanho */}
       <div className="max-w-2xl mx-auto px-4 py-10">
-        <CalculadoraRebanho onFaixaChange={setEliteFaixa} onPeriodoChange={setPeriodo} />
+        <CalculadoraRebanho onFaixaChange={setEliteFaixa} onPeriodoChange={setPeriodo} periodo={periodo} />
       </div>
 
       <div className="max-w-4xl mx-auto px-4 pb-16" id="planos-cards">
