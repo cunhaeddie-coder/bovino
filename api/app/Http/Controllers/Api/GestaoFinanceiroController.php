@@ -120,10 +120,23 @@ class GestaoFinanceiroController extends Controller
             ->groupBy('categoria')
             ->pluck('total', 'categoria');
 
+        $receitasPorMes = \App\Models\ReceitaFazenda::where('fazenda_id', $fazenda->id)
+            ->whereYear('data', $ano)
+            ->selectRaw('MONTH(data) as mes, SUM(valor) as total')
+            ->groupBy('mes')
+            ->pluck('total', 'mes');
+
+        $custosPorMes = $porMes->groupBy('mes')->map(fn($items) => $items->sum('total'));
+
         return response()->json([
             'por_mes'       => $porMes,
             'por_categoria' => $porCategoria,
             'total_ano'     => $porCategoria->sum(),
+            'mensal'        => collect(range(1, 12))->map(fn($m) => [
+                'mes'     => $m,
+                'custos'  => round((float) ($custosPorMes->get($m) ?? 0), 2),
+                'receitas'=> round((float) ($receitasPorMes->get($m) ?? 0), 2),
+            ])->values(),
         ]);
     }
 }

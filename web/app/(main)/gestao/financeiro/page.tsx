@@ -1,7 +1,10 @@
 ﻿"use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import dynamic from "next/dynamic";
 import { api } from "@/lib/api";
+
+const CaixaChart = dynamic(() => import("./CaixaChart"), { ssr: false });
 import { TourButton } from "@/components/ui/TourButton";
 import type { DriveStep } from "driver.js";
 
@@ -31,7 +34,16 @@ const TOUR_STEPS: DriveStep[] = [
 ];
 
 type Custo = { id: number; categoria: string; descricao: string; valor: number; data: string; lote?: { nome: string } | null };
-type ResumoAntigo = { por_categoria: Record<string, number>; total_ano: number };
+type ResumoAntigo = {
+  por_categoria: Record<string, number>;
+  total_ano: number;
+  mensal?: { mes: number; custos: number; receitas: number }[];
+};
+type NFeData = {
+  emitente: string; cnpj: string; numero: string;
+  data: string; valor: number; chave: string;
+  itens: { descricao: string; valor: number }[];
+};
 type Resumo2 = {
   receitas_mes: number; custos_mes: number; lucro_mes: number;
   contas_pagar_total: number; contas_vencidas: number; contas_receber_total: number;
@@ -61,7 +73,7 @@ const STATUS_COR: Record<string, string> = {
 };
 
 export default function FinanceiroPage() {
-  const [aba, setAba]               = useState<"dashboard"|"custos"|"receitas"|"pagar"|"receber"|"lotes"|"fiscal"|"contador">("dashboard");
+  const [aba, setAba]               = useState<"dashboard"|"custos"|"receitas"|"pagar"|"receber"|"lotes"|"fiscal"|"nfe"|"contador">("dashboard");
   const [resumo, setResumo]         = useState<Resumo2 | null>(null);
   const [resumoAntigo, setResumoAntigo] = useState<ResumoAntigo | null>(null);
   const [custos, setCustos]         = useState<Custo[]>([]);
@@ -85,6 +97,14 @@ export default function FinanceiroPage() {
   const [contadorCopiado, setContadorCopiado]   = useState(false);
   const [mes, setMes]   = useState(new Date().getMonth() + 1);
   const [ano, setAno]   = useState(new Date().getFullYear());
+  const [nfeData, setNfeData]       = useState<NFeData | null>(null);
+  const [nfeCat, setNfeCat]         = useState("outros");
+  const [nfeLoteId, setNfeLoteId]   = useState("");
+  const [nfeImportando, setNfeImportando] = useState(false);
+  const [nfeLotes, setNfeLotes]     = useState<{id: number; nome: string}[]>([]);
+  const [nfeErro, setNfeErro]       = useState("");
+  const [nfeSucesso, setNfeSucesso] = useState(false);
+  const nfeInputRef = useRef<HTMLInputElement>(null);
 
   function toArray<T>(v: unknown): T[] {
     if (Array.isArray(v)) return v as T[];
@@ -132,6 +152,65 @@ export default function FinanceiroPage() {
 
   useEffect(() => { if (aba === "fiscal")   carregarFiscal();   }, [aba, filtroTipo]);
   useEffect(() => { if (aba === "contador") carregarContador(); }, [aba]);
+  useEffect(() => {
+    if (aba === "nfe" && nfeLotes.length === 0) {
+      api.get("/gestao/lotes").then(r => {
+        const d = r.data; setNfeLotes(Array.isArray(d) ? d : (d?.data ?? []));
+      }).catch(() => {});
+    }
+  }, [aba]);
+
+  function parseNFe(xml: string): NFeData | null {
+    try {
+      const doc = new DOMParser().parseFromString(xml, "text/xml");
+      const g = (sel: string) => doc.querySelector(sel)?.textContent?.trim() ?? "";
+      const chaveAttr = doc.querySelector("infNFe")?.getAttribute("Id") ?? "";
+      return {
+        emitente: g("emit xNome") || g("emit xFant") || "Emitente não identificado",
+        cnpj:     g("emit CNPJ"),
+        numero:   g("ide nNF"),
+        data:     (g("ide dhEmi") || g("ide dEmi")).split("T")[0],
+        valor:    parseFloat(g("ICMSTot vNF") || g("vNF") || "0"),
+        chave:    chaveAttr.replace("NFe", ""),
+        itens:    Array.from(doc.querySelectorAll("det")).map(d => ({
+          descricao: d.querySelector("xProd")?.textContent?.trim() ?? "",
+          valor:     parseFloat(d.querySelector("vProd")?.textContent ?? "0"),
+        })),
+      };
+    } catch { return null; }
+  }
+
+  function handleNfeFile(e: React.ChangeEvent<HTMLInputElement>) {
+    setNfeErro(""); setNfeSucesso(false); setNfeData(null);
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const parsed = parseNFe(ev.target?.result as string);
+      if (!parsed || parsed.valor === 0) { setNfeErro("Arquivo inválido ou NF-e não reconhecida."); return; }
+      setNfeData(parsed);
+    };
+    reader.readAsText(file, "UTF-8");
+  }
+
+  async function confirmarNfe() {
+    if (!nfeData) return;
+    setNfeImportando(true); setNfeErro("");
+    try {
+      await api.post("/gestao/financeiro", {
+        descricao: `NF-e nº ${nfeData.numero} · ${nfeData.emitente}`,
+        categoria: nfeCat,
+        valor:     nfeData.valor,
+        data:      nfeData.data,
+        nota_fiscal: nfeData.numero,
+        lote_id:   nfeLoteId || undefined,
+      });
+      setNfeSucesso(true); setNfeData(null);
+      if (nfeInputRef.current) nfeInputRef.current.value = "";
+      carregar();
+    } catch { setNfeErro("Erro ao importar. Tente novamente."); }
+    finally { setNfeImportando(false); }
+  }
 
   const MESES = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
 
@@ -164,6 +243,7 @@ export default function FinanceiroPage() {
           { k: "receber",   label: "📥 A Receber" },
           { k: "lotes",     label: "🗂️ Por Lote" },
           { k: "fiscal",    label: "📋 Fiscal" },
+          { k: "nfe",       label: "🗂️ Nota Fiscal" },
           { k: "contador",  label: "🧾 Contador" },
         ] as const).map(({ k, label }) => (
           <button key={k} onClick={() => setAba(k)}
@@ -212,6 +292,14 @@ export default function FinanceiroPage() {
                 <p className="text-2xl font-bold text-green-700">{fmt(resumo!.contas_receber_total)}</p>
               </div>
               <button onClick={() => setAba("receber")} className="text-xs bg-green-600 text-white px-3 py-1.5 rounded-lg font-semibold">Ver detalhes</button>
+            </div>
+          )}
+
+          {/* Painel do Caixa — gráfico mensal */}
+          {resumoAntigo?.mensal && resumoAntigo.mensal.some(m => m.custos > 0 || m.receitas > 0) && (
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 md:p-5">
+              <h2 className="text-sm font-semibold text-gray-700 mb-3">Painel do Caixa · {ano}</h2>
+              <CaixaChart dados={resumoAntigo.mensal} />
             </div>
           )}
 
@@ -559,6 +647,103 @@ export default function FinanceiroPage() {
                 )}
               </tbody>
             </table></div>
+          </div>
+        </div>
+      )}
+
+      {/* NOTA FISCAL */}
+      {aba === "nfe" && (
+        <div className="max-w-xl space-y-4">
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
+            <div className="flex items-center gap-3">
+              <span className="text-3xl">🗂️</span>
+              <div>
+                <h2 className="font-bold text-gray-800">Importar Nota Fiscal (NF-e)</h2>
+                <p className="text-xs text-gray-500">Suba o arquivo XML da NF-e para lançar automaticamente no financeiro</p>
+              </div>
+            </div>
+
+            <div
+              onClick={() => nfeInputRef.current?.click()}
+              className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center cursor-pointer hover:border-green-400 hover:bg-green-50 transition"
+            >
+              <p className="text-3xl mb-2">📄</p>
+              <p className="text-sm font-semibold text-gray-700">Clique para selecionar o XML</p>
+              <p className="text-xs text-gray-400 mt-1">Arquivo .xml da NF-e</p>
+              <input ref={nfeInputRef} type="file" accept=".xml,text/xml" onChange={handleNfeFile} className="hidden" />
+            </div>
+
+            {nfeErro && <p className="text-xs text-red-500 bg-red-50 rounded-lg px-3 py-2">{nfeErro}</p>}
+
+            {nfeSucesso && (
+              <div className="bg-green-50 border border-green-200 rounded-xl p-3 text-sm text-green-700 font-semibold">
+                ✓ Nota fiscal importada com sucesso!
+              </div>
+            )}
+
+            {nfeData && (
+              <div className="space-y-3">
+                <div className="bg-gray-50 rounded-xl p-4 space-y-1.5 text-sm">
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-2">Dados da nota</p>
+                  <div className="grid grid-cols-2 gap-1">
+                    <span className="text-gray-500">Emitente</span>
+                    <span className="font-semibold text-gray-800 truncate">{nfeData.emitente}</span>
+                    <span className="text-gray-500">CNPJ</span>
+                    <span className="text-gray-600">{nfeData.cnpj}</span>
+                    <span className="text-gray-500">Número NF-e</span>
+                    <span className="text-gray-600">{nfeData.numero}</span>
+                    <span className="text-gray-500">Data emissão</span>
+                    <span className="text-gray-600">{nfeData.data ? new Date(nfeData.data + "T12:00:00").toLocaleDateString("pt-BR") : "—"}</span>
+                    <span className="text-gray-500">Valor total</span>
+                    <span className="font-bold text-red-600">{fmt(nfeData.valor)}</span>
+                  </div>
+                  {nfeData.itens.length > 0 && (
+                    <div className="mt-2 pt-2 border-t border-gray-200">
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1">Itens ({nfeData.itens.length})</p>
+                      {nfeData.itens.slice(0, 4).map((it, i) => (
+                        <p key={i} className="text-xs text-gray-500 truncate">{it.descricao} — {fmt(it.valor)}</p>
+                      ))}
+                      {nfeData.itens.length > 4 && <p className="text-xs text-gray-400">+{nfeData.itens.length - 4} itens</p>}
+                    </div>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-semibold text-gray-600 block mb-1">Categoria do custo</label>
+                    <select value={nfeCat} onChange={e => setNfeCat(e.target.value)}
+                      className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-500">
+                      {["aquisicao","alimentacao","saude","mao_de_obra","transporte","outros"].map(c =>
+                        <option key={c} value={c}>{c.replace("_", " ")}</option>
+                      )}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-gray-600 block mb-1">Vincular ao lote (opcional)</label>
+                    <select value={nfeLoteId} onChange={e => setNfeLoteId(e.target.value)}
+                      className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-500">
+                      <option value="">Nenhum</option>
+                      {nfeLotes.map(l => <option key={l.id} value={l.id}>{l.nome}</option>)}
+                    </select>
+                  </div>
+                </div>
+
+                <button onClick={confirmarNfe} disabled={nfeImportando}
+                  className="w-full bg-green-700 text-white font-bold py-3 rounded-full text-sm hover:bg-green-800 disabled:opacity-50 transition">
+                  {nfeImportando ? "Importando..." : "✓ Confirmar importação"}
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-sm text-amber-800">
+            <p className="font-semibold mb-1">💡 Como usar</p>
+            <ul className="text-xs text-amber-700 space-y-0.5 list-disc list-inside">
+              <li>Exporte o XML da NF-e pelo sistema emissor ou portal da SEFAZ</li>
+              <li>Suba o arquivo aqui — os dados são preenchidos automaticamente</li>
+              <li>Escolha a categoria e o lote, depois confirme</li>
+              <li>O lançamento aparece na aba Custos com o número da NF</li>
+            </ul>
           </div>
         </div>
       )}

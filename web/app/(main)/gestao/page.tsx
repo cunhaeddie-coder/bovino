@@ -66,6 +66,7 @@ type Resumo = {
   total: number; machos: number; femeas: number;
   por_categoria: Record<string, number>;
 };
+type MercadoAgora = { preco: number; variacao_pct: number; variacao: number; pregao_aberto: boolean; cepea?: number };
 type AlertaSaude = {
   id: number; descricao: string; tipo: string; proxima_dose: string;
   animal?: { brinco: string; nome: string }; lote?: { nome: string };
@@ -151,10 +152,21 @@ export default function GestaoDashboard() {
   const [alertas, setAlertas]         = useState<AlertaSaude[]>([]);
   const [matches, setMatches]         = useState<MatchLote[]>([]);
   const [valorRebanho, setValorRebanho] = useState<ValorRebanho | null>(null);
+  const [mercado, setMercado]         = useState<MercadoAgora | null>(null);
   const [semFazenda, setSemFazenda]   = useState(false);
   const [loaded, setLoaded]           = useState(false);
 
   useEffect(() => {
+    // Cotação B3 (endpoint público, sem auth)
+    fetch(`${process.env.NEXT_PUBLIC_API_URL ?? ""}/api/v1/cotacoes/b3`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.preco) setMercado(d); })
+      .catch(() => {});
+    fetch(`${process.env.NEXT_PUBLIC_API_URL ?? ""}/api/v1/cotacoes/ultima`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.boi_gordo?.preco_arroba) setMercado(m => m ? { ...m, cepea: d.boi_gordo.preco_arroba } : null); })
+      .catch(() => {});
+
     api.get("/gestao/rebanho/resumo")
       .then(r => { setResumo(r.data); setSemFazenda(false); })
       .catch((e) => { if (e.response?.status === 403) setSemFazenda(true); })
@@ -205,6 +217,35 @@ export default function GestaoDashboard() {
           </div>
         ))}
       </div>
+
+      {/* Mercado Agora */}
+      {mercado && (
+        <Link href="/cotacoes" className="block">
+          <div className="bg-white border border-blue-100 rounded-2xl px-5 py-3 shadow-sm flex items-center gap-4 hover:border-blue-300 transition">
+            <div className="flex-1 flex items-center gap-3 flex-wrap">
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${mercado.pregao_aberto ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
+                {mercado.pregao_aberto ? "● AO VIVO" : "🔒 FECHADO"}
+              </span>
+              <span className="text-xs text-gray-500 font-medium">BGI Futuro · B3</span>
+              <span className="text-xl font-extrabold text-blue-700">
+                {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(mercado.preco)}
+                <span className="text-xs text-gray-400 font-normal"> /@</span>
+              </span>
+              {mercado.pregao_aberto && (
+                <span className={`text-xs font-semibold ${mercado.variacao >= 0 ? "text-green-600" : "text-red-500"}`}>
+                  {mercado.variacao >= 0 ? "▲" : "▼"} {Math.abs(mercado.variacao_pct).toFixed(2)}%
+                </span>
+              )}
+              {mercado.cepea && (
+                <span className="text-xs text-gray-400">
+                  CEPEA <strong className="text-green-700">{new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(mercado.cepea)}/@</strong>
+                </span>
+              )}
+            </div>
+            <span className="text-xs text-blue-600 font-semibold shrink-0">Ver cotações →</span>
+          </div>
+        </Link>
+      )}
 
       {/* Card valor do rebanho */}
       {valorRebanho && valorRebanho.total_animais > 0 && (
