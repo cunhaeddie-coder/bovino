@@ -104,26 +104,27 @@ export default function MovimentacoesPage() {
                 <EmptyState icon="📥" label="Nenhuma aquisição registrada" sub='Registre compras de animais em Financeiro → Custos com categoria "Aquisição"' />
               ) : (
                 <div id="mov-tabela">
-                <Table>
-                  <thead>
-                    <TR header>
-                      <TH>Descrição</TH><TH>Lote</TH><TH>Data</TH><TH right>Valor</TH>
-                    </TR>
-                  </thead>
-                  <tbody className="divide-y divide-gray-50">
-                    {aquisicoes.map(a => (
-                      <TR key={a.id}>
-                        <TD>
-                          <p className="font-medium text-gray-800">{a.descricao}</p>
-                          {a.nota_fiscal && <p className="text-[10px] text-gray-400">NF: {a.nota_fiscal}</p>}
-                        </TD>
-                        <TD><span className="text-gray-500 text-xs">{a.lote?.nome ?? "—"}</span></TD>
-                        <TD><span className="text-gray-500 text-xs">{fmtData(a.data)}</span></TD>
-                        <TD right><span className="font-bold text-red-600">{fmt(a.valor)}</span></TD>
+                  <Table>
+                    <thead>
+                      <TR header>
+                        <TH>Descrição</TH><TH>Lote</TH><TH>Data</TH><TH right>Valor</TH>
                       </TR>
-                    ))}
-                  </tbody>
-                </Table>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {aquisicoes.map(a => (
+                        <TR key={a.id}>
+                          <TD>
+                            <p className="font-medium text-gray-800">{a.descricao}</p>
+                            {a.nota_fiscal && <p className="text-[10px] text-gray-400">NF: {a.nota_fiscal}</p>}
+                          </TD>
+                          <TD><span className="text-gray-500 text-xs">{a.lote?.nome ?? "—"}</span></TD>
+                          <TD><span className="text-gray-500 text-xs">{fmtData(a.data)}</span></TD>
+                          <TD right><span className="font-bold text-red-600">{fmt(a.valor)}</span></TD>
+                        </TR>
+                      ))}
+                    </tbody>
+                  </Table>
+                </div>
               )}
             </div>
           )}
