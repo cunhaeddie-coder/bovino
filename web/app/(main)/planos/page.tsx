@@ -54,8 +54,8 @@ function CalculadoraRebanho({ onFaixaChange, onPeriodoChange }: {
         <h2 className="text-2xl font-extrabold text-gray-900">Quantos animais você tem?</h2>
       </div>
 
-      {/* Slider */}
-      <div className="space-y-2">
+      {/* Slider + input numérico */}
+      <div className="space-y-3">
         <div className="flex justify-between text-xs text-gray-400">
           <span>1</span><span>2.500</span><span>5.000</span><span>10.000</span>
         </div>
@@ -64,9 +64,16 @@ function CalculadoraRebanho({ onFaixaChange, onPeriodoChange }: {
           onChange={e => handleChange(Number(e.target.value))}
           className="w-full accent-green-600 cursor-pointer"
         />
-        <div className="text-center">
-          <span className="text-4xl font-extrabold text-green-700">{cabecas.toLocaleString("pt-BR")}</span>
-          <span className="text-gray-500 text-sm ml-2">cabeças</span>
+        <div className="flex items-center justify-center gap-3">
+          <input
+            type="number" min={1} max={99999} value={cabecas}
+            onChange={e => {
+              const v = Math.max(1, Math.min(99999, Number(e.target.value) || 1));
+              handleChange(v);
+            }}
+            className="w-28 text-center text-3xl font-extrabold text-green-700 border-2 border-green-200 rounded-xl px-2 py-1 focus:outline-none focus:border-green-500 bg-green-50 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+          />
+          <span className="text-gray-500 text-sm">cabeças</span>
         </div>
       </div>
 
