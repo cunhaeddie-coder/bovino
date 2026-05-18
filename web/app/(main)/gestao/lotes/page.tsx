@@ -119,6 +119,7 @@ export default function LotesPage() {
   const [editando, setEditando]         = useState<Lote | null>(null);
   const [form, setForm]                 = useState<FormState>(FORM_VAZIO);
   const [salvando, setSalvando]         = useState(false);
+  const [erroForm, setErroForm]         = useState("");
   const [confirmarPublicar, setConfirmarPublicar] = useState<Lote | null>(null);
 
   async function carregar() {
@@ -148,6 +149,7 @@ export default function LotesPage() {
     setShowForm(false);
     setEditando(null);
     setForm(FORM_VAZIO);
+    setErroForm("");
   }
 
   function set(field: keyof FormState, value: string) {
@@ -182,6 +184,7 @@ export default function LotesPage() {
   async function salvar(e: React.FormEvent) {
     e.preventDefault();
     setSalvando(true);
+    setErroForm("");
     try {
       const payload = calcularPayload();
       if (editando) {
@@ -191,6 +194,10 @@ export default function LotesPage() {
       }
       fecharForm();
       carregar();
+    } catch (err: any) {
+      const msgs = err.response?.data?.errors;
+      const msg  = err.response?.data?.message;
+      setErroForm(msgs ? Object.values(msgs).flat().join(" • ") : (msg ?? "Erro ao salvar. Tente novamente."));
     } finally {
       setSalvando(false);
     }
@@ -327,6 +334,12 @@ export default function LotesPage() {
                     </select>
                   </div>
                 </div>
+
+                {erroForm && (
+                  <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                    ⚠️ {erroForm}
+                  </p>
+                )}
 
                 <div className="flex gap-2 pt-2">
                   <button type="button" onClick={fecharForm}
