@@ -120,15 +120,22 @@ export default function LotesPage() {
   const [form, setForm]                 = useState<FormState>(FORM_VAZIO);
   const [salvando, setSalvando]         = useState(false);
   const [erroForm, setErroForm]         = useState("");
+  const [sucesso, setSucesso]           = useState("");
   const [confirmarPublicar, setConfirmarPublicar] = useState<Lote | null>(null);
 
   async function carregar() {
     setLoading(true);
-    const params = filtroStatus ? `?status=${filtroStatus}` : "";
-    api.get(`/gestao/lotes${params}`).then(r => {
+    try {
+      const params = filtroStatus ? `?status=${filtroStatus}` : "";
+      const r = await api.get(`/gestao/lotes${params}`);
       const d = r.data;
       setLotes(Array.isArray(d) ? d : (d?.data ?? []));
-    }).finally(() => setLoading(false));
+    } catch (err: any) {
+      const msg = err.response?.data?.message ?? `Erro ${err.response?.status ?? "?"}`;
+      setErroForm(`Erro ao carregar lotes: ${msg}`);
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => { carregar(); }, [filtroStatus]);
@@ -185,19 +192,28 @@ export default function LotesPage() {
     e.preventDefault();
     setSalvando(true);
     setErroForm("");
+    setSucesso("");
     try {
       const payload = calcularPayload();
       if (editando) {
         await api.put(`/gestao/lotes/${editando.id}`, payload);
+        setSucesso("Lote atualizado com sucesso!");
       } else {
-        await api.post("/gestao/lotes", payload);
+        const res = await api.post("/gestao/lotes", payload);
+        setSucesso(`Lote "${res.data?.nome ?? payload.nome}" criado (id ${res.data?.id ?? "?"})`);
       }
       fecharForm();
-      carregar();
+      await carregar();
     } catch (err: any) {
-      const msgs = err.response?.data?.errors;
-      const msg  = err.response?.data?.message;
-      setErroForm(msgs ? Object.values(msgs).flat().join(" • ") : (msg ?? "Erro ao salvar. Tente novamente."));
+      const status = err.response?.status ?? "sem resposta";
+      const msgs   = err.response?.data?.errors;
+      const msg    = err.response?.data?.message;
+      const texts  = msgs ? (Object.values(msgs) as string[][]).flat().filter(Boolean) : [];
+      setErroForm(
+        texts.length > 0
+          ? texts.join(" • ")
+          : (msg || `Erro HTTP ${status} ao salvar. Verifique os dados.`)
+      );
     } finally {
       setSalvando(false);
     }
@@ -227,6 +243,13 @@ export default function LotesPage() {
           + Novo lote
         </button>
       </div>
+
+      {sucesso && (
+        <div className="bg-green-50 border border-green-200 text-green-800 text-sm rounded-xl px-4 py-3 flex items-center justify-between">
+          <span>✅ {sucesso}</span>
+          <button onClick={() => setSucesso("")} className="text-green-500 hover:text-green-700 ml-3">×</button>
+        </div>
+      )}
 
       {/* Filtros */}
       <div id="filtros-lotes" className="flex gap-2 flex-wrap">
