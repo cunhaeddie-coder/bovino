@@ -443,6 +443,10 @@ Route::middleware('auth:sanctum')->group(function () {
     // BoviScore
     Route::get('gestao/bovisco', [\App\Http\Controllers\Api\BoviScoreController::class, 'calcular']);
 
+    // Análises gerenciais
+    Route::get('gestao/analises/minha-arroba', [\App\Http\Controllers\Api\GestaoAnalisesController::class, 'minhaArroba']);
+    Route::get('gestao/analises/racas',         [\App\Http\Controllers\Api\GestaoAnalisesController::class, 'racas']);
+
     // App Gestor — IA e valor do rebanho
     Route::prefix('gestao/ia')->group(function () {
         Route::post('/chat', [GestaoIAController::class, 'chat']);
